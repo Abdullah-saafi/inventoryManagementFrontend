@@ -1,0 +1,53 @@
+import { NavLink } from "react-router-dom";
+
+const links = [
+  { to: "/", label: "Dashboard" },
+  { to: "/stores", label: "Stores" },
+  { to: "/items", label: "Items" },
+];
+
+export default function Navbar() {
+  return (
+    <nav className="bg-slate-900 border-b border-slate-700 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+        {/* Brand */}
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-emerald-500 rounded flex items-center justify-center">
+            <span className="text-white text-xs font-black">INV</span>
+          </div>
+          <span className="text-white font-bold text-sm tracking-wide">
+            InventoryMS
+          </span>
+        </div>
+
+        {/* Links */}
+        <div className="flex items-center gap-1">
+          {links.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Badge */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 font-mono">
+            Assalam-oAlaikum
+          </span>
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        </div>
+      </div>
+    </nav>
+  );
+}

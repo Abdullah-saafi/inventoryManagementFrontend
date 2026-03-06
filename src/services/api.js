@@ -33,6 +33,8 @@ export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 
 // ── Users ────────────────────────────────────────────────
 
-export const login = () => API.post(`/users/login`,data)
+export const login = (credentials) => API.post("/users/login", credentials)
+
+export const refreshToken = () => API.post("/users/refresh")
 
 export default API;

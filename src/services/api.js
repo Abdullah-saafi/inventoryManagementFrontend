@@ -2,6 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: "http://localhost:5500/api",
+  withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
 
@@ -29,5 +30,9 @@ export const approveRequest = (id, data) =>
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
+
+// ── Users ────────────────────────────────────────────────
+
+export const login = () => API.post(`/users/login`,data)
 
 export default API;

@@ -1,5 +1,9 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
+import Dashboard from "./pages/Dashboard";
+import Stores from "./pages/Stores";
+import Items from "./pages/Items";
+import Login from "./pages/Login";
 
 // test
 import SubStoreStaff from "./pages/SubStoreStaff";
@@ -20,6 +24,10 @@ export default function App() {
             <Route path="/substore-manager" element={<SubStoreManager />} />
             <Route path="/mainstore" element={<MainStore />} />
             <Route path="/headoffice" element={<HeadOffice />} />
+            <Route path="/login" element={<Login />}/>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/stores" element={<Stores />} />
+            <Route path="/items" element={<Items />} />
           </Routes>
         </main>
       </div>

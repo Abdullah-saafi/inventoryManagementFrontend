@@ -5,7 +5,6 @@ import {
   createItem,
   updateItem,
   deleteItem,
-  getLowStock,
 } from "../services/api";
 import {
   PageHeader,
@@ -33,6 +32,7 @@ const EMPTY_FORM = {
   description: "",
   store_id: "",
 };
+
 const UOM_OPTIONS = [
   "pcs",
   "kg",
@@ -53,14 +53,12 @@ const UOM_OPTIONS = [
 export default function Items() {
   const [items, setItems] = useState([]);
   const [stores, setStores] = useState([]);
-  const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
   const [filterStore, setFilterStore] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-  const [showLow, setShowLow] = useState(false);
 
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -73,14 +71,14 @@ export default function Items() {
       const params = {};
       if (filterStore) params.store_id = filterStore;
       if (filterCategory) params.category = filterCategory;
-      const [itemsRes, storesRes, lowRes] = await Promise.all([
+
+      const [itemsRes, storesRes] = await Promise.all([
         getItems(params),
         getStores(),
-        getLowStock(),
       ]);
+
       setItems(itemsRes.data.data);
       setStores(storesRes.data.data);
-      setLowStock(lowRes.data.data);
     } catch {
       setError("Failed to load items");
     } finally {
@@ -97,6 +95,7 @@ export default function Items() {
     setForm({ ...EMPTY_FORM, store_id: stores[0]?.store_id || "" });
     setShowForm(true);
   };
+
   const openEdit = (i) => {
     setEditing(i);
     setForm({
@@ -115,6 +114,7 @@ export default function Items() {
   const handleSave = async () => {
     if (!form.item_no || !form.item_name || !form.item_uom || !form.store_id)
       return;
+
     setSaving(true);
     try {
       if (editing) {
@@ -124,6 +124,7 @@ export default function Items() {
         await createItem(form);
         setToast({ message: "Item created!", type: "success" });
       }
+
       setShowForm(false);
       load();
     } catch (e) {
@@ -138,6 +139,7 @@ export default function Items() {
 
   const handleDelete = async (id) => {
     if (!confirm("Deactivate this item?")) return;
+
     try {
       await deleteItem(id);
       setToast({ message: "Item deactivated", type: "info" });
@@ -148,7 +150,6 @@ export default function Items() {
   };
 
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
-  const displayItems = showLow ? lowStock : items;
 
   if (loading) return <Spinner />;
   if (error) return <ErrorMsg message={error} />;
@@ -162,14 +163,8 @@ export default function Items() {
       />
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
         <StatCard label="Total Items" value={items.length} color="emerald" />
-        <StatCard
-          label="Low Stock"
-          value={lowStock.length}
-          color="red"
-          sub="At or below min qty"
-        />
         <StatCard label="Categories" value={categories.length} color="blue" />
         <StatCard label="Stores" value={stores.length} color="violet" />
       </div>
@@ -188,6 +183,7 @@ export default function Items() {
             </option>
           ))}
         </Select>
+
         <Select
           value={filterCategory}
           onChange={(e) => setFilterCategory(e.target.value)}
@@ -200,18 +196,12 @@ export default function Items() {
             </option>
           ))}
         </Select>
-        <Btn
-          variant={showLow ? "danger" : "outline"}
-          onClick={() => setShowLow(!showLow)}
-        >
-          {showLow ? "⚠ Low Stock Only" : "Show Low Stock"}
-        </Btn>
+
         <Btn
           variant="ghost"
           onClick={() => {
             setFilterStore("");
             setFilterCategory("");
-            setShowLow(false);
           }}
         >
           Reset
@@ -230,44 +220,46 @@ export default function Items() {
           "Actions",
         ]}
       >
-        {displayItems.map((i) => (
+        {items.map((i) => (
           <TR key={i.item_id}>
             <TD>
               <span className="font-mono text-emerald-400 text-xs">
                 {i.item_no}
               </span>
             </TD>
+
             <TD>
               <span className="font-semibold text-white">{i.item_name}</span>
             </TD>
+
             <TD>
               <span className="text-xs text-slate-400">
                 {i.category || "—"}
               </span>
             </TD>
+
             <TD>
               <span className="text-xs font-mono text-slate-300">
                 {i.item_uom}
               </span>
             </TD>
+
             <TD>
-              <span
-                className={`font-mono font-bold text-sm ${i.item_quantity <= i.min_quantity ? "text-red-400" : "text-white"}`}
-              >
+              <span className="font-mono font-bold text-sm text-white">
                 {i.item_quantity}
-                {i.item_quantity <= i.min_quantity && (
-                  <span className="text-red-400 text-xs ml-1">⚠</span>
-                )}
               </span>
             </TD>
+
             <TD>
               <span className="font-mono text-slate-400 text-sm">
                 {i.min_quantity}
               </span>
             </TD>
+
             <TD>
               <span className="text-xs text-slate-400">{i.store_name}</span>
             </TD>
+
             <TD>
               <div className="flex gap-1">
                 <Btn size="sm" variant="outline" onClick={() => openEdit(i)}>
@@ -302,7 +294,8 @@ export default function Items() {
                 disabled={!!editing}
               />
             </Field>
-            <Field label="UOM" required hint="kg, pcs, ltr, box…">
+
+            <Field label="UOM" required>
               <Select
                 value={form.item_uom}
                 onChange={(e) => setForm({ ...form, item_uom: e.target.value })}
@@ -316,20 +309,21 @@ export default function Items() {
               </Select>
             </Field>
           </div>
+
           <Field label="Item Name" required>
             <Input
               value={form.item_name}
               onChange={(e) => setForm({ ...form, item_name: e.target.value })}
-              placeholder="Office Paper A4"
             />
           </Field>
+
           <Field label="Category">
             <Input
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
-              placeholder="Stationery"
             />
           </Field>
+
           <div className="grid grid-cols-2 gap-3">
             <Field label="Quantity">
               <Input
@@ -338,20 +332,20 @@ export default function Items() {
                 onChange={(e) =>
                   setForm({ ...form, item_quantity: +e.target.value })
                 }
-                min="0"
               />
             </Field>
-            <Field label="Min Quantity" hint="Reorder threshold">
+
+            <Field label="Min Quantity">
               <Input
                 type="number"
                 value={form.min_quantity}
                 onChange={(e) =>
                   setForm({ ...form, min_quantity: +e.target.value })
                 }
-                min="0"
               />
             </Field>
           </div>
+
           <Field label="Store" required>
             <Select
               value={form.store_id}
@@ -366,15 +360,16 @@ export default function Items() {
               ))}
             </Select>
           </Field>
+
           <Field label="Description">
             <Input
               value={form.description}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
-              placeholder="Optional notes"
             />
           </Field>
+
           <div className="flex justify-end gap-2 pt-2">
             <Btn variant="ghost" onClick={() => setShowForm(false)}>
               Cancel

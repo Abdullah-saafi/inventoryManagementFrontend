@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
 
 const links = [
-  { to: "/", label: "Dashboard" },
-  { to: "/stores", label: "Stores" },
-  { to: "/items", label: "Items" },
+  { to: "/substore-staff", label: "Sub Store Staff" },
+  { to: "/substore-manager", label: "Sub Store Manager" },
+  { to: "/mainstore", label: "Main Store" },
+  { to: "/headoffice", label: "Head Office" },
 ];
 
 export default function Navbar() {

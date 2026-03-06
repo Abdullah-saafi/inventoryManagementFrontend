@@ -3,6 +3,7 @@ import {
   getStores,
   createStore,
   updateStore,
+  getStoreById,
   getStoreInventory,
 } from "../services/api";
 import {
@@ -35,11 +36,19 @@ export default function Stores() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
+  // Search
+  const [searchId, setSearchId] = useState("");
+  const [searchResult, setSearchResult] = useState(null);
+  const [searchError, setSearchError] = useState("");
+  const [searching, setSearching] = useState(false);
+
+  // Create / Edit
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
+  // Inventory modal
   const [invStore, setInvStore] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [invLoading, setInvLoading] = useState(false);
@@ -56,6 +65,29 @@ export default function Stores() {
     load();
   }, []);
 
+  // ── Search by Store ID ──────────────────────────────────
+  const handleSearch = async () => {
+    if (!searchId.trim()) return;
+    setSearching(true);
+    setSearchError("");
+    setSearchResult(null);
+    try {
+      const r = await getStoreById(searchId.trim());
+      setSearchResult(r.data.data);
+    } catch {
+      setSearchError("No store found with that ID.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchId("");
+    setSearchResult(null);
+    setSearchError("");
+  };
+
+  // ── Create / Edit ───────────────────────────────────────
   const openCreate = () => {
     setEditing(null);
     setForm(EMPTY_FORM);
@@ -96,6 +128,7 @@ export default function Stores() {
     }
   };
 
+  // ── Inventory ───────────────────────────────────────────
   const openInventory = async (store) => {
     setInvStore(store);
     setInvLoading(true);
@@ -114,23 +147,100 @@ export default function Stores() {
 
   return (
     <div>
-      <PageHeader
-        title="Stores"
-        subtitle="Manage Head Office, Main Store and Sub Stores"
-        action={<Btn onClick={openCreate}>+ New Store</Btn>}
-      />
+      {/* ── Search Bar ─────────────────────────────────── */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 mb-5">
+        <div className="flex gap-2">
+          <input
+            value={searchId}
+            onChange={(e) => setSearchId(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            placeholder="Paste store UUID here… e.g. 00000000-0000-0000-0000-000000000002"
+            className="flex-1 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono"
+          />
+          <Btn onClick={handleSearch} disabled={searching || !searchId.trim()}>
+            {searching ? "Searching…" : "Search"}
+          </Btn>
+          {(searchResult || searchError) && (
+            <Btn variant="ghost" onClick={clearSearch}>
+              Clear
+            </Btn>
+          )}
+        </div>
 
-      <Table
-        headers={[
-          "Code",
-          "Name",
-          "Type",
-          "Address",
-          "Phone",
-          "Status",
-          "Actions",
-        ]}
-      >
+        {/* Search Error */}
+        {searchError && (
+          <div className="mt-3 text-red-400 text-sm">⚠ {searchError}</div>
+        )}
+
+        {/* Search Result */}
+        {searchResult && (
+          <div className="mt-4 bg-slate-900 border border-emerald-500/30 rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="text-white font-bold text-base">
+                  {searchResult.store_name}
+                </div>
+                <div className="text-slate-400 text-xs font-mono mt-0.5">
+                  {searchResult.store_id}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <StoreTypeBadge type={searchResult.store_type} />
+                <span
+                  className={`text-xs font-semibold ${searchResult.is_active ? "text-emerald-400" : "text-slate-500"}`}
+                >
+                  {searchResult.is_active ? "● Active" : "● Inactive"}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              {[
+                { label: "Store Code", value: searchResult.store_code },
+                {
+                  label: "Store Type",
+                  value: searchResult.store_type?.replace("_", " "),
+                },
+                { label: "Phone", value: searchResult.phone || "—" },
+                { label: "Address", value: searchResult.address || "—" },
+                {
+                  label: "Created",
+                  value: new Date(searchResult.created_at).toLocaleDateString(),
+                },
+                {
+                  label: "Updated",
+                  value: new Date(searchResult.updated_at).toLocaleDateString(),
+                },
+              ].map(({ label, value }) => (
+                <div key={label} className="bg-slate-800 rounded p-2">
+                  <div className="text-slate-500 text-xs mb-1">{label}</div>
+                  <div className="text-white text-sm font-medium">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-3">
+              <Btn
+                size="sm"
+                variant="ghost"
+                onClick={() => openInventory(searchResult)}
+              >
+                View Inventory
+              </Btn>
+              <Btn
+                size="sm"
+                variant="outline"
+                onClick={() => openEdit(searchResult)}
+              >
+                Edit Store
+              </Btn>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Stores Table ───────────────────────────────── */}
+      <Table headers={["Code", "Name", "Type", "Address", "Phone", "Status"]}>
         {stores.map((s) => (
           <TR key={s.store_id}>
             <TD>
@@ -139,7 +249,14 @@ export default function Stores() {
               </span>
             </TD>
             <TD>
-              <span className="font-semibold text-white">{s.store_name}</span>
+              <div>
+                <div className="font-semibold text-white text-sm">
+                  {s.store_name}
+                </div>
+                <div className="text-slate-600 text-xs font-mono truncate max-w-[160px]">
+                  {s.store_id}
+                </div>
+              </div>
             </TD>
             <TD>
               <StoreTypeBadge type={s.store_type} />
@@ -152,145 +269,12 @@ export default function Stores() {
               <span
                 className={`text-xs font-semibold ${s.is_active ? "text-emerald-400" : "text-slate-500"}`}
               >
-                {s.is_active ? "Active" : "Inactive"}
+                {s.is_active ? "● Active" : "● Inactive"}
               </span>
-            </TD>
-            <TD>
-              <div className="flex gap-2">
-                <Btn size="sm" variant="ghost" onClick={() => openInventory(s)}>
-                  Inventory
-                </Btn>
-                <Btn size="sm" variant="outline" onClick={() => openEdit(s)}>
-                  Edit
-                </Btn>
-              </div>
             </TD>
           </TR>
         ))}
       </Table>
-
-      {/* Create / Edit Modal */}
-      <Modal
-        open={showForm}
-        onClose={() => setShowForm(false)}
-        title={editing ? "Edit Store" : "Create Store"}
-      >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Store Code" required>
-              <Input
-                value={form.store_code}
-                onChange={(e) =>
-                  setForm({ ...form, store_code: e.target.value })
-                }
-                placeholder="SS-004"
-                disabled={!!editing}
-              />
-            </Field>
-            <Field label="Store Type" required>
-              <Select
-                value={form.store_type}
-                onChange={(e) =>
-                  setForm({ ...form, store_type: e.target.value })
-                }
-                disabled={!!editing}
-              >
-                <option value="HEAD_OFFICE">Head Office</option>
-                <option value="MAIN_STORE">Main Store</option>
-                <option value="SUB_STORE">Sub Store</option>
-              </Select>
-            </Field>
-          </div>
-          <Field label="Store Name" required>
-            <Input
-              value={form.store_name}
-              onChange={(e) => setForm({ ...form, store_name: e.target.value })}
-              placeholder="Sub Store West"
-            />
-          </Field>
-          <Field label="Address">
-            <Input
-              value={form.address}
-              onChange={(e) => setForm({ ...form, address: e.target.value })}
-              placeholder="Block D, West Zone"
-            />
-          </Field>
-          <Field label="Phone">
-            <Input
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              placeholder="021-111-0006"
-            />
-          </Field>
-          <div className="flex justify-end gap-2 pt-2">
-            <Btn variant="ghost" onClick={() => setShowForm(false)}>
-              Cancel
-            </Btn>
-            <Btn onClick={handleSave} disabled={saving}>
-              {saving ? "Saving…" : editing ? "Update" : "Create"}
-            </Btn>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Inventory Modal */}
-      <Modal
-        open={!!invStore}
-        onClose={() => setInvStore(null)}
-        title={`${invStore?.store_name} — Inventory`}
-        width="max-w-2xl"
-      >
-        {invLoading ? (
-          <Spinner />
-        ) : inventory.length === 0 ? (
-          <p className="text-slate-400 text-center py-8">
-            No items in this store
-          </p>
-        ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase">
-                <th className="text-left pb-2">Item No</th>
-                <th className="text-left pb-2">Name</th>
-                <th className="text-left pb-2">Category</th>
-                <th className="text-left pb-2">Qty</th>
-                <th className="text-left pb-2">Min</th>
-                <th className="text-left pb-2">UOM</th>
-              </tr>
-            </thead>
-            <tbody>
-              {inventory.map((i) => (
-                <tr key={i.item_id} className="border-b border-slate-800">
-                  <td className="py-2 font-mono text-emerald-400 text-xs">
-                    {i.item_no}
-                  </td>
-                  <td className="py-2 text-white">{i.item_name}</td>
-                  <td className="py-2 text-slate-400 text-xs">
-                    {i.category || "—"}
-                  </td>
-                  <td
-                    className={`py-2 font-mono font-bold ${i.item_quantity <= i.min_quantity ? "text-red-400" : "text-white"}`}
-                  >
-                    {i.item_quantity}
-                  </td>
-                  <td className="py-2 text-slate-500 font-mono text-xs">
-                    {i.min_quantity}
-                  </td>
-                  <td className="py-2 text-slate-400 text-xs">{i.item_uom}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </Modal>
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ import {
   createRequest,
   getRequests,
 } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -42,6 +43,7 @@ export default function SubStoreStaff() {
     items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
   });
 
+  const {auth} = useAuth()
   const load = async () => {
     setLoading(true);
     try {
@@ -149,7 +151,7 @@ export default function SubStoreStaff() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">Sub Store — Staff</h1>
+          <h1 className="text-xl font-black text-white">Sub Store — {auth.username}</h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Request items and check your request status
           </p>

@@ -25,7 +25,7 @@ export default function Navbar() {
       navigate("/login") 
       
     } catch (error) {
-      console.error("Logout failed", err);
+      console.error("Logout failed", error);
       setAuth({ accessToken: null, username: null, role: null });
       navigate("/login");
     }
@@ -45,7 +45,7 @@ export default function Navbar() {
 
         {/* Links */}
         <div className="flex items-center gap-1">
-          {auth.accessToken && links.filter(link => link.role === auth.role || "super admin")
+          {auth.accessToken && links.filter(link => link.role === auth.role || auth.role === "super admin")
           .map(({ to, label }) => (
             <NavLink
               key={to}

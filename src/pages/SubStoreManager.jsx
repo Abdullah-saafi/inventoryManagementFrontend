@@ -4,8 +4,23 @@ import {
   getRequestById,
   approveRequest,
   rejectRequest,
-  fulfillRequest,
 } from "../services/api";
+
+const StatusBadge = ({ status }) => {
+  const styles = {
+    PENDING: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+    APPROVED: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+    REJECTED: "bg-red-500/20 text-red-400 border border-red-500/30",
+    FULFILLED: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+  };
+  return (
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || ""}`}
+    >
+      {status}
+    </span>
+  );
+};
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -13,15 +28,12 @@ export default function SubStoreManager() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState("");
-
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-
   const [approveModal, setApproveModal] = useState(null);
   const [approverName, setApproverName] = useState("");
   const [editedItems, setEditedItems] = useState([]);
   const [actioning, setActioning] = useState(false);
-
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
@@ -59,9 +71,11 @@ export default function SubStoreManager() {
   const openApprove = async (r) => {
     try {
       const res = await getRequestById(r.request_id);
-      const items = res.data.data.items || [];
       setEditedItems(
-        items.map((i) => ({ ...i, approved_qty: i.requested_qty })),
+        (res.data.data.items || []).map((i) => ({
+          ...i,
+          approved_qty: i.requested_qty,
+        })),
       );
       setApproveModal(r);
       setApproverName("");
@@ -81,9 +95,8 @@ export default function SubStoreManager() {
           approved_qty: i.approved_qty,
         })),
       });
-      await fulfillRequest(approveModal.request_id);
       setToast({
-        message: "Request approved and inventory updated",
+        message: "Request approved — waiting for Main Store to fulfill",
         type: "success",
       });
       setApproveModal(null);
@@ -125,38 +138,30 @@ export default function SubStoreManager() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
-
   if (error)
     return (
-      <div className="text-red-500 text-center py-10 font-semibold">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
         {error}
       </div>
     );
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
-  const statusColors = {
-    PENDING: "bg-amber-500/20 text-amber-400",
-    APPROVED: "bg-emerald-500/20 text-emerald-400",
-    REJECTED: "bg-red-500/20 text-red-400",
-    FULFILLED: "bg-blue-500/20 text-blue-400",
-  };
-
   return (
     <div>
-      {/* Page Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Sub Store — Manager</h1>
-        <p className="text-slate-400 text-sm">
-          Review and approve or reject staff item requests
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-black text-white">Sub Store — Manager</h1>
+          <p className="text-slate-400 text-sm mt-0.5">
+            Review and approve or reject staff item requests
+          </p>
+        </div>
       </div>
 
-      {/* Pending notice */}
       {pendingCount > 0 && (
         <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-amber-400 text-sm font-semibold">
@@ -164,16 +169,15 @@ export default function SubStoreManager() {
             approval
           </span>
           <button
-            className="text-amber-400 border border-amber-400 rounded px-2 py-1 text-xs hover:bg-amber-400/20"
             onClick={() => setFilter("PENDING")}
+            className="text-xs border border-slate-600 text-slate-300 hover:text-white rounded px-3 py-1 transition-colors"
           >
             Show Pending
           </button>
         </div>
       )}
 
-      {/* Filter */}
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -187,76 +191,84 @@ export default function SubStoreManager() {
         </select>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+      <div className="overflow-x-auto rounded-lg border border-slate-700">
+        <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 text-slate-400 text-xs">
-              <th className="text-left pb-2">Request No</th>
-              <th className="text-left pb-2">From</th>
-              <th className="text-left pb-2">To</th>
-              <th className="text-left pb-2">Requested By</th>
-              <th className="text-left pb-2">Date</th>
-              <th className="text-left pb-2">Status</th>
-              <th className="text-left pb-2">Actions</th>
+            <tr className="bg-slate-800 border-b border-slate-700">
+              {[
+                "Request No",
+                "From",
+                "To",
+                "Requested By",
+                "Date",
+                "Status",
+                "Actions",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan="7" className="text-center py-10 text-slate-500">
+                <td colSpan={7} className="text-center py-12 text-slate-500">
                   No requests found.
                 </td>
               </tr>
             ) : (
               requests.map((r) => (
-                <tr key={r.request_id} className="border-b border-slate-700">
-                  <td>
+                <tr
+                  key={r.request_id}
+                  className="border-b border-slate-800 hover:bg-slate-800/50"
+                >
+                  <td className="px-4 py-3">
                     <span className="font-mono text-emerald-400 text-xs font-bold">
                       {r.request_no}
                     </span>
                   </td>
-                  <td>{r.from_store_name}</td>
-                  <td>{r.to_store_name}</td>
-                  <td>{r.requested_by_name || "—"}</td>
-                  <td>
-                    <span className="text-slate-500 text-xs">
-                      {new Date(r.created_at).toLocaleDateString()}
-                    </span>
+                  <td className="px-4 py-3 text-slate-300">
+                    {r.from_store_name}
                   </td>
-                  <td>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${
-                        statusColors[r.status] ||
-                        "bg-slate-500/20 text-slate-300"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
+                  <td className="px-4 py-3 text-slate-300">
+                    {r.to_store_name}
                   </td>
-                  <td>
+                  <td className="px-4 py-3 text-slate-400">
+                    {r.requested_by_name || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-slate-500 text-xs">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge status={r.status} />
+                  </td>
+                  <td className="px-4 py-3">
                     <div className="flex gap-1">
                       <button
-                        className="text-blue-400 text-xs px-2 py-1 rounded hover:bg-slate-700/40"
                         onClick={() => openDetail(r)}
+                        className="text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded px-2 py-1 transition-colors"
                       >
                         Details
                       </button>
                       {r.status === "PENDING" && (
                         <>
                           <button
-                            className="bg-emerald-500 text-white text-xs px-2 py-1 rounded hover:bg-emerald-600"
                             onClick={() => openApprove(r)}
+                            className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 transition-colors"
                           >
                             Approve
                           </button>
                           <button
-                            className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
                             onClick={() => {
                               setRejectModal(r);
                               setRejecterName("");
                               setRejectReason("");
                             }}
+                            className="text-xs bg-red-600 hover:bg-red-500 text-white rounded px-2 py-1 transition-colors"
                           >
                             Reject
                           </button>
@@ -273,192 +285,181 @@ export default function SubStoreManager() {
 
       {/* Detail Modal */}
       {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-slate-900 rounded-lg w-full max-w-xl p-6 overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setDetail(null)}
+          />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+              <h2 className="text-white font-bold">
                 Request — {detail.request_no}
               </h2>
               <button
-                className="text-white text-xl font-bold"
                 onClick={() => setDetail(null)}
+                className="text-slate-400 hover:text-white text-xl"
               >
-                ×
+                x
               </button>
             </div>
-            {detailLoad ? (
-              <div className="flex justify-center py-10">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-white"></div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    ["Status", detail.status],
-                    ["From", detail.from_store_name],
-                    ["To", detail.to_store_name],
-                    ["Requested By", detail.requested_by_name || "—"],
-                    ["Approved By", detail.approved_by_name || "—"],
-                    [
-                      "Date",
-                      new Date(detail.requested_at).toLocaleDateString(),
-                    ],
-                  ].map(([label, val]) => (
-                    <div
-                      key={label}
-                      className="bg-slate-800 rounded p-2 flex flex-col"
-                    >
-                      <span className="text-slate-500 text-xs mb-1">
-                        {label}
-                      </span>
-                      <span className="text-white text-sm">
-                        {label === "Status" ? (
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
-                              statusColors[val] ||
-                              "bg-slate-500/20 text-slate-300"
-                            }`}
-                          >
-                            {val}
-                          </span>
-                        ) : (
-                          val
-                        )}
-                      </span>
-                    </div>
-                  ))}
+            <div className="p-5 space-y-3">
+              {detailLoad ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-7 h-7 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
                 </div>
-
-                {detail.rejection_reason && (
-                  <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                    <div className="text-red-400 text-xs font-semibold mb-1">
-                      REJECTION REASON
-                    </div>
-                    <div className="text-red-300 text-sm">
-                      {detail.rejection_reason}
-                    </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      ["Status", <StatusBadge status={detail.status} />],
+                      ["From", detail.from_store_name],
+                      ["To", detail.to_store_name],
+                      ["Requested By", detail.requested_by_name || "—"],
+                      ["Approved By", detail.approved_by_name || "—"],
+                      [
+                        "Date",
+                        new Date(detail.requested_at).toLocaleDateString(),
+                      ],
+                    ].map(([label, val]) => (
+                      <div key={label} className="bg-slate-800 rounded p-2">
+                        <div className="text-slate-500 text-xs mb-1">
+                          {label}
+                        </div>
+                        <div className="text-white text-sm">{val}</div>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* Items Table */}
-                <div>
-                  <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
-                    Items
-                  </div>
-                  <table className="w-full text-sm border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                        <th className="text-left pb-2">Item</th>
-                        <th className="text-left pb-2">UOM</th>
-                        <th className="text-center pb-2">Requested</th>
-                        <th className="text-center pb-2">Approved</th>
-                        <th className="text-center pb-2">Fulfilled</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(detail.items || []).map((i) => (
-                        <tr
-                          key={i.request_item_id}
-                          className="border-b border-slate-800"
-                        >
-                          <td className="py-2 text-white">{i.item_name}</td>
-                          <td className="py-2 text-slate-400 text-xs">
-                            {i.item_uom}
-                          </td>
-                          <td className="py-2 font-mono text-white text-center">
-                            {i.requested_qty}
-                          </td>
-                          <td className="py-2 font-mono text-center">
-                            <span
-                              className={
-                                i.approved_qty != null
-                                  ? "text-emerald-400"
-                                  : "text-slate-600"
-                              }
-                            >
-                              {i.approved_qty ?? "—"}
-                            </span>
-                          </td>
-                          <td className="py-2 font-mono text-center">
-                            <span
-                              className={
-                                i.fulfilled_qty != null
-                                  ? "text-blue-400"
-                                  : "text-slate-600"
-                              }
-                            >
-                              {i.fulfilled_qty ?? "—"}
-                            </span>
-                          </td>
+                  {detail.rejection_reason && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                      <div className="text-red-400 text-xs font-semibold mb-1">
+                        REJECTION REASON
+                      </div>
+                      <div className="text-red-300 text-sm">
+                        {detail.rejection_reason}
+                      </div>
+                    </div>
+                  )}
+                  <div>
+                    <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
+                      Items
+                    </div>
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-slate-700 text-slate-400 text-xs">
+                          <th className="text-left pb-2">Item</th>
+                          <th className="text-left pb-2">UOM</th>
+                          <th className="text-center pb-2">Requested</th>
+                          <th className="text-center pb-2">Approved</th>
+                          <th className="text-center pb-2">Fulfilled</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {detail.status === "PENDING" && (
-                  <div className="flex gap-2 pt-2 border-t border-slate-700">
-                    <button
-                      className="bg-emerald-500 text-white text-sm px-3 py-1 rounded hover:bg-emerald-600"
-                      onClick={() => {
-                        setDetail(null);
-                        openApprove(detail);
-                      }}
-                    >
-                      Approve
-                    </button>
-                    <button
-                      className="bg-red-500 text-white text-sm px-3 py-1 rounded hover:bg-red-600"
-                      onClick={() => {
-                        setDetail(null);
-                        setRejectModal(detail);
-                        setRejecterName("");
-                        setRejectReason("");
-                      }}
-                    >
-                      Reject
-                    </button>
+                      </thead>
+                      <tbody>
+                        {(detail.items || []).map((i) => (
+                          <tr
+                            key={i.request_item_id}
+                            className="border-b border-slate-800"
+                          >
+                            <td className="py-2 text-white">{i.item_name}</td>
+                            <td className="py-2 text-slate-400 text-xs">
+                              {i.item_uom}
+                            </td>
+                            <td className="py-2 font-mono text-white text-center">
+                              {i.requested_qty}
+                            </td>
+                            <td className="py-2 font-mono text-center">
+                              <span
+                                className={
+                                  i.approved_qty != null
+                                    ? "text-emerald-400"
+                                    : "text-slate-600"
+                                }
+                              >
+                                {i.approved_qty ?? "—"}
+                              </span>
+                            </td>
+                            <td className="py-2 font-mono text-center">
+                              <span
+                                className={
+                                  i.fulfilled_qty != null
+                                    ? "text-blue-400"
+                                    : "text-slate-600"
+                                }
+                              >
+                                {i.fulfilled_qty ?? "—"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                )}
-              </div>
-            )}
+                  {detail.status === "PENDING" && (
+                    <div className="flex gap-2 pt-2 border-t border-slate-700">
+                      <button
+                        onClick={() => {
+                          setDetail(null);
+                          openApprove(detail);
+                        }}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDetail(null);
+                          setRejectModal(detail);
+                          setRejecterName("");
+                          setRejectReason("");
+                        }}
+                        className="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
 
       {/* Approve Modal */}
       {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-slate-900 rounded-lg w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setApproveModal(null)}
+          />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+              <h2 className="text-white font-bold">
                 Approve — {approveModal.request_no}
               </h2>
               <button
-                className="text-white text-xl font-bold"
                 onClick={() => setApproveModal(null)}
+                className="text-slate-400 hover:text-white text-xl"
               >
-                ×
+                x
               </button>
             </div>
-            <div className="space-y-4">
-              <div className="flex flex-col">
-                <label className="text-sm text-slate-400 mb-1">
-                  Your Name <span className="text-red-500">*</span>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Your Name *
                 </label>
                 <input
-                  className="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                   value={approverName}
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
-
               <div>
                 <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
                   Edit quantities if needed
                 </div>
-                <table className="w-full text-sm border-collapse">
+                <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-700 text-slate-400 text-xs">
                       <th className="text-left pb-2">Item</th>
@@ -490,12 +491,12 @@ export default function SubStoreManager() {
                             max={i.requested_qty}
                             value={i.approved_qty}
                             onChange={(e) => {
-                              const updated = [...editedItems];
-                              updated[idx] = {
-                                ...updated[idx],
+                              const u = [...editedItems];
+                              u[idx] = {
+                                ...u[idx],
                                 approved_qty: +e.target.value,
                               };
-                              setEditedItems(updated);
+                              setEditedItems(u);
                             }}
                             className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-emerald-500"
                           />
@@ -505,22 +506,17 @@ export default function SubStoreManager() {
                   </tbody>
                 </table>
               </div>
-
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
                 <button
-                  className="px-3 py-1 rounded border border-slate-600 text-slate-200 hover:bg-slate-700"
                   onClick={() => setApproveModal(null)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  className={`px-3 py-1 rounded text-white ${
-                    !approverName.trim() || actioning
-                      ? "bg-slate-600 cursor-not-allowed"
-                      : "bg-emerald-500 hover:bg-emerald-600"
-                  }`}
                   onClick={handleApprove}
                   disabled={actioning || !approverName.trim()}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
                 >
                   {actioning ? "Processing..." : "Confirm Approve"}
                 </button>
@@ -532,61 +528,60 @@ export default function SubStoreManager() {
 
       {/* Reject Modal */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-slate-900 rounded-lg w-full max-w-lg p-6 overflow-y-auto max-h-[90vh]">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setRejectModal(null)}
+          />
+          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
+              <h2 className="text-white font-bold">
                 Reject — {rejectModal.request_no}
               </h2>
               <button
-                className="text-white text-xl font-bold"
                 onClick={() => setRejectModal(null)}
+                className="text-slate-400 hover:text-white text-xl"
               >
-                ×
+                x
               </button>
             </div>
-            <div className="space-y-4">
-              <div className="flex flex-col">
-                <label className="text-sm text-slate-400 mb-1">
-                  Your Name <span className="text-red-500">*</span>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Your Name *
                 </label>
                 <input
-                  className="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                   value={rejecterName}
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
-              <div className="flex flex-col">
-                <label className="text-sm text-slate-400 mb-1">
-                  Rejection Reason <span className="text-red-500">*</span>
+              <div>
+                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Rejection Reason *
                 </label>
                 <textarea
-                  className="bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                   value={rejectReason}
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
                   placeholder="Explain why this request is rejected"
+                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
-
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
                 <button
-                  className="px-3 py-1 rounded border border-slate-600 text-slate-200 hover:bg-slate-700"
                   onClick={() => setRejectModal(null)}
+                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  className={`px-3 py-1 rounded text-white ${
-                    !rejecterName.trim() || !rejectReason.trim() || actioning
-                      ? "bg-slate-600 cursor-not-allowed"
-                      : "bg-red-500 hover:bg-red-600"
-                  }`}
                   onClick={handleReject}
                   disabled={
-                    !rejecterName.trim() || !rejectReason.trim() || actioning
+                    actioning || !rejecterName.trim() || !rejectReason.trim()
                   }
+                  className="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
                 >
                   {actioning ? "Rejecting..." : "Confirm Reject"}
                 </button>
@@ -596,23 +591,17 @@ export default function SubStoreManager() {
         </div>
       )}
 
-      {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-4 right-4 px-4 py-2 rounded shadow-lg text-white ${
-            toast.type === "success"
-              ? "bg-emerald-500"
-              : toast.type === "error"
-                ? "bg-red-500"
-                : "bg-blue-500"
-          }`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : toast.type === "error" ? "bg-red-500/20 border-red-500/40 text-red-300" : "bg-blue-500/20 border-blue-500/40 text-blue-300"}`}
         >
-          <div className="flex justify-between items-center">
-            <span>{toast.message}</span>
-            <button className="ml-2 font-bold" onClick={() => setToast(null)}>
-              ×
-            </button>
-          </div>
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="opacity-60 hover:opacity-100"
+          >
+            x
+          </button>
         </div>
       )}
     </div>

@@ -25,6 +25,7 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function SubStore() {
+
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -53,7 +54,11 @@ export default function SubStore() {
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
-      if (filterStore) params.store_id = filterStore;
+      if (auth.role !== "super admin") {        
+        params.store_id = auth.store_id;
+      } else if (filterStore) {
+        params.store_id = filterStore;
+      }
       const [sRes, rRes] = await Promise.all([
         getStores(),
         getRequests(params),
@@ -70,8 +75,10 @@ export default function SubStore() {
   };
 
   useEffect(() => {
+  if (auth.store_id || auth.role === "super admin") {
     load();
-  }, [filterStatus, filterStore]);
+  }
+}, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -180,7 +187,15 @@ export default function SubStore() {
           </p>
         </div>
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => {
+            setForm({
+              ...form,
+              from_store_id: auth.store_id || "",
+              requested_by_name: auth.username || "",
+              items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+            })
+            setShowCreate(true)
+          }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
           New Request
@@ -199,18 +214,21 @@ export default function SubStore() {
           <option value="REJECTED">Rejected</option>
           <option value="FULFILLED">Fulfilled</option>
         </select>
-        <select
-          value={filterStore}
-          onChange={(e) => setFilterStore(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">All Sub Stores</option>
-          {subStores.map((s) => (
-            <option key={s.store_id} value={s.store_id}>
-              {s.store_name}
-            </option>
-          ))}
-        </select>
+
+        {auth.role === "super admin" && (
+          <select
+            value={filterStore}
+            onChange={(e) => setFilterStore(e.target.value)}
+            className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+          >
+            <option value="">All Sub Stores</option>
+            {subStores.map((s) => (
+              <option key={s.store_id} value={s.store_id}>
+                {s.store_name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-700">
@@ -302,25 +320,37 @@ export default function SubStore() {
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
+
                 <div>
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Sub Store *
                   </label>
-                  <select
-                    value={form.from_store_id}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, from_store_id: e.target.value }))
-                    }
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">Select Sub Store</option>
-                    {subStores.map((s) => (
-                      <option key={s.store_id} value={s.store_id}>
-                        {s.store_name}
-                      </option>
-                    ))}
-                  </select>
+
+                  {auth.role === "super admin" ? (
+                    <select
+                      value={form.from_store_id}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, from_store_id: e.target.value }))
+                      }
+                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    >
+                      <option value="">Select Sub Store</option>
+                      {subStores.map((s) => (
+                        <option key={s.store_id} value={s.store_id}>
+                          {s.store_name}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={auth.storeName || "Loading..."}
+                      readOnly
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-400 text-sm cursor-not-allowed outline-none"
+                    />
+                  )}
                 </div>
+
                 <div>
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Main Store *

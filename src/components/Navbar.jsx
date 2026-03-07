@@ -35,11 +35,8 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-emerald-500 rounded flex items-center justify-center">
-            <span className="text-white text-xs font-black">INV</span>
-          </div>
           <span className="text-white font-bold text-sm tracking-wide">
-            InventoryMS
+            Baitusslam Inventory System
           </span>
         </div>
 

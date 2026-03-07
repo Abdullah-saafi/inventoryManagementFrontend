@@ -6,8 +6,10 @@ const AuthContext = createContext()
 export const ContextProvider = ({children}) => {
     const [auth, setAuth] = useState({
         accessToken: null,
-        user: null,
-        role: null
+        username: null,
+        role: null,
+        storeName: null,
+        store_id: null
     })
     const [loading, setLoading] = useState(true)
 
@@ -20,7 +22,9 @@ export const ContextProvider = ({children}) => {
                     setAuth({
                         accessToken: data.accessToken,
                         username: data.username,
-                        role: data.role
+                        role: data.role,
+                        storeName: data.storeName,
+                        store_id: data.storeId
                     })
                 }
             } catch (error) {

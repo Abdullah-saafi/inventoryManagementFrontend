@@ -38,7 +38,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-white font-bold text-sm tracking-wide">
+          <span className="text-white font-bold text-red-500 tracking-wide">
             Baitusslam Inventory System
           </span>
         </div>
@@ -92,7 +92,7 @@ export default function Navbar() {
         {/* Badge */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-mono">
-            Assalam-o-Alaikum
+            Assalam-oAlaikum
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>

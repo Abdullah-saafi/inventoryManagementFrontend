@@ -88,7 +88,7 @@ export default function Navbar() {
         {/* Badge */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-500 font-mono">
-            Assalam-oAlaikum
+            Assalam-o-Alaikum
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>

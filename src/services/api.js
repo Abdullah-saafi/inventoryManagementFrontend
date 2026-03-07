@@ -37,4 +37,6 @@ export const login = (credentials) => API.post("/users/login", credentials)
 
 export const refreshToken = () => API.post("/users/refresh")
 
+export const logout = () => API.post("/users/logout")
+
 export default API;

@@ -35,10 +35,16 @@ const Login = () => {
                     username: data.username,
                     role: data.role
                 })
-                if (data.role === "admin") {
-                    navigate("/dashboard")
-                } else {
+                if (data.role === "sub-store") {
+                    navigate("/substore-staff")
+                } else if(data.role === "sub-store-approver") {
+                    navigate("/substore-manager")
+                } else if(data.role === "main-store"){
+                    navigate("/mainstore")
+                } else if(data.role === "headoffice"){
                     navigate("/headoffice")
+                } else{
+                    navigate("/substore-staff")
                 }
 
             }

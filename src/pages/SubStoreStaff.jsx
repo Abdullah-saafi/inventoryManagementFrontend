@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -6,6 +6,7 @@ import {
   getRequests,
   getRequestById,
 } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -44,7 +45,7 @@ export default function SubStore() {
     notes: "",
     items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
   });
-
+  const { auth } = useAuth();
   const load = async () => {
     setLoading(true);
     try {
@@ -167,7 +168,9 @@ export default function SubStore() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">Sub Store User Name</h1>
+          <h1 className="text-xl font-black text-white">
+            Sub Store User {auth.username}
+          </h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Place item requests and track approval status
           </p>

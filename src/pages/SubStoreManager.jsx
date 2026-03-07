@@ -155,7 +155,9 @@ export default function SubStoreManager() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">Sub Store — Manager</h1>
+          <h1 className="text-xl font-black text-white">
+            Sub Store Manager Name
+          </h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Review and approve or reject staff item requests
           </p>

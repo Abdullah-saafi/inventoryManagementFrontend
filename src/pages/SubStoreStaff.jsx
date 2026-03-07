@@ -167,7 +167,7 @@ export default function SubStore() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">Sub Store</h1>
+          <h1 className="text-xl font-black text-white">Sub Store User Name</h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Place item requests and track approval status
           </p>

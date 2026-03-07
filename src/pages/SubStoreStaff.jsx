@@ -4,32 +4,35 @@ import {
   getItems,
   createRequest,
   getRequests,
+  getRequestById,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
-  const styles = {
-    PENDING: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
-    APPROVED: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
-    REJECTED: "bg-red-500/20 text-red-400 border border-red-500/30",
-    FULFILLED: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+  const s = {
+    PENDING: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    APPROVED: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    REJECTED: "bg-red-500/20 text-red-400 border-red-500/30",
+    FULFILLED: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || ""}`}
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || ""}`}
     >
       {status}
     </span>
   );
 };
 
-export default function SubStoreStaff() {
+export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -47,9 +50,12 @@ export default function SubStoreStaff() {
   const load = async () => {
     setLoading(true);
     try {
+      const params = { direction: "SUB_TO_MAIN" };
+      if (filterStatus) params.status = filterStatus;
+      if (filterStore) params.store_id = filterStore;
       const [sRes, rRes] = await Promise.all([
         getStores(),
-        getRequests({ direction: "SUB_TO_MAIN" }),
+        getRequests(params),
       ]);
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
@@ -64,7 +70,7 @@ export default function SubStoreStaff() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [filterStatus, filterStore]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -73,6 +79,18 @@ export default function SubStoreStaff() {
       );
     else setStoreItems([]);
   }, [form.from_store_id]);
+
+  const openDetail = async (r) => {
+    setDL(true);
+    setDetail({ ...r, items: [] });
+    try {
+      const res = await getRequestById(r.request_id);
+      setDetail(res.data.data);
+    } catch {
+    } finally {
+      setDL(false);
+    }
+  };
 
   const addLine = () =>
     setForm((f) => ({
@@ -153,7 +171,7 @@ export default function SubStoreStaff() {
         <div>
           <h1 className="text-xl font-black text-white">Sub Store — {auth.username}</h1>
           <p className="text-slate-400 text-sm mt-0.5">
-            Request items and check your request status
+            Place item requests and track approval status
           </p>
         </div>
         <button
@@ -162,6 +180,32 @@ export default function SubStoreStaff() {
         >
           New Request
         </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+        >
+          <option value="">All Status</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="FULFILLED">Fulfilled</option>
+        </select>
+        <select
+          value={filterStore}
+          onChange={(e) => setFilterStore(e.target.value)}
+          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+        >
+          <option value="">All Sub Stores</option>
+          {subStores.map((s) => (
+            <option key={s.store_id} value={s.store_id}>
+              {s.store_name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-slate-700">
@@ -190,7 +234,7 @@ export default function SubStoreStaff() {
             {requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-slate-500">
-                  No requests yet. Click New Request to place one.
+                  No requests found. Click New Request to place one.
                 </td>
               </tr>
             ) : (
@@ -487,6 +531,14 @@ export default function SubStoreStaff() {
                       </div>
                     </div>
                   )}
+                  {detail.notes && (
+                    <div className="bg-slate-800 rounded p-3">
+                      <div className="text-slate-500 text-xs mb-1">NOTES</div>
+                      <div className="text-slate-300 text-sm">
+                        {detail.notes}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
                       Items
@@ -538,7 +590,7 @@ export default function SubStoreStaff() {
 
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : toast.type === "error" ? "bg-red-500/20 border-red-500/40 text-red-300" : "bg-blue-500/20 border-blue-500/40 text-blue-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-red-500/20 border-red-500/40 text-red-300"}`}
         >
           <span>{toast.message}</span>
           <button

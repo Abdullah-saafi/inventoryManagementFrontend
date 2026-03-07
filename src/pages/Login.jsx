@@ -1,18 +1,13 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
-// import logo from "../assets/logo2.png"
-// import "../style/login.css"
 import { useAuth } from "../context/authContext.jsx"
-import { fetchWithRefresh } from "../services/fetchService.js"
-import API, { login } from "../services/api.js"
+import { login } from "../services/api.js"
 
 const Login = () => {
     const navigate = useNavigate()
 
     const { auth, setAuth } = useAuth()
 
-    //   const [email, setEmail] = useState("")
-    //   const [password, setPassword] = useState("")
     const [form, setForm] = useState({ email: "", password: "" })
     const [message, setMessage] = useState(null)
     const [showPassword, setShowPassword] = useState(false)
@@ -33,8 +28,11 @@ const Login = () => {
                 setAuth({
                     accessToken: data.accessToken,
                     username: data.username,
-                    role: data.role
+                    role: data.role,
+                    storeName: data.store_name,
+                    store_id: data.storeId
                 })
+
                 if (data.role === "sub-store") {
                     navigate("/substore-staff")
                 } else if(data.role === "sub-store-approver") {
@@ -52,12 +50,9 @@ const Login = () => {
         } catch (err) {
             console.log("Full error object:", err);
             
-            // 1. Check if the server actually sent a response
             if (err.response && err.response.data) {
-                // 2. Set the message from the backend (e.g., "Invalid credentials")
                 setMessage(err.response.data.message); 
             } else {
-                // 3. Fallback if the server is totally down
                 setMessage("Something went wrong. Please try again.");
             }
         } finally {
@@ -73,7 +68,6 @@ const Login = () => {
         <>
             <div className="bg-red-600"></div>
             <div id="container">
-                {/* <img src={logo} alt="bait-us-salam logo" /> */}
                 <h1>Login</h1>
                 {message && <p className="error-message">{message}</p>}
         {auth.message && <p className="error-message">{auth.message}</p>}

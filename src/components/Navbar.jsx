@@ -28,7 +28,7 @@ export default function Navbar() {
       });
       navigate("/login");
     } catch (error) {
-      console.error("Logout failed", err);
+      console.error("Logout failed", error);
       setAuth({ accessToken: null, username: null, role: null });
       navigate("/login");
     }
@@ -45,25 +45,24 @@ export default function Navbar() {
 
         {/* Links */}
         <div className="flex items-center gap-1">
-          {auth.accessToken &&
-            links
-              .filter((link) => link.role === auth.role || "super admin")
-              .map(({ to, label }) => (
-                <NavLink
-                  key={to}
-                  to={to}
-                  end={to === "/"}
-                  className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800"
-                    }`
-                  }
-                >
-                  {label}
-                </NavLink>
-              ))}
+          {auth.accessToken && links.filter(link => link.role === auth.role || auth.role === "super admin")
+          .map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              className={({ isActive }) =>
+                `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                  isActive
+                    ? "bg-emerald-600 text-white"
+                    : "text-slate-400 hover:text-white hover:bg-slate-800"
+                }`
+          }
+              
+            >
+              {label}
+            </NavLink>
+          ))}
         </div>
 
         <div className="flex items-center gap-2">

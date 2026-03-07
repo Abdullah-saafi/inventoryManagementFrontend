@@ -170,6 +170,7 @@ export default function SubStore() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
+
           <h1 className="text-xl font-black text-white">
             Sub Store User {auth.username}
           </h1>

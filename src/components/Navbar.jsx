@@ -4,13 +4,10 @@ import { useAuth } from "../context/authContext";
 
 const links = [
   { to: "/substore-staff", label: "Sub Store Staff", role: "sub-store" },
-  {
-    to: "/substore-manager",
-    label: "Sub Store Manager",
-    role: "sub-store-approver",
-  },
+  { to: "/substore-manager", label: "Sub Store Manager", role: "sub-store-approver",},
   { to: "/mainstore", label: "Main Store", role: "main-store" },
   { to: "/headoffice", label: "Head Office", role: "headoffice" },
+  {to: "/add-user", label: "Add User", role: "super admin"}
 ];
 
 export default function Navbar() {

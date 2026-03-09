@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router"
-import { useAuth } from "../context/authContext.jsx"
+import { addUser } from "../services/api"
 
 const AddUser = () => {
     const [form, setForm] = useState({
@@ -11,12 +10,7 @@ const AddUser = () => {
         confirmPassword: ""
     })
     const [message, setMessage] = useState("")
-    const [messageType, setMessageType] = useState("")
     const [loading, setLoading] = useState(false)
-
-    const {auth, setAuth} = useAuth()
-
-    const navigate = useNavigate()
 
     const handleChange = (e)=>{
         setForm({...form,[e.target.name]: e.target.value})
@@ -27,9 +21,8 @@ const AddUser = () => {
         setLoading(true)
         
         try {
-           
-            const data = await response.json()
-            setMessageType(data.type)
+            const response = await addUser(form)
+            const data = response.data
             setMessage(data.message)
         } catch (error) {
             console.log("Error in add user catch",error)

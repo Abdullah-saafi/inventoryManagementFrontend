@@ -39,4 +39,10 @@ export const refreshToken = () => API.post("/users/refresh")
 
 export const logout = () => API.post("/users/logout")
 
+export const addUser = () => API.post("/users/addUser")
+
+// ── Main Store ────────────────────────────────────────────────
+
+export const getStoreManager = (params) => API.get("/users/getManager", {params})
+
 export default API;

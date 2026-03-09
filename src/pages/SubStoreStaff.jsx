@@ -5,6 +5,7 @@ import {
   createRequest,
   getRequests,
   getRequestById,
+  getStoreManager,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 
@@ -28,6 +29,7 @@ export default function SubStore() {
 
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
+  const [managerName, setManagerName] = useState("Loading...");
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,7 +56,7 @@ export default function SubStore() {
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {        
+      if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -75,10 +77,34 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-  if (auth.store_id || auth.role === "super admin") {
-    load();
-  }
-}, [filterStatus, filterStore, auth.store_id]);
+  const fetchManager = async () => {
+    try {
+      const storeId =
+        auth.role === "super admin"
+          ? form.from_store_id
+          : auth.store_id;
+
+      if (!storeId) return;
+
+      const res = await getStoreManager({ store_id: storeId });
+
+      setManagerName(res.data.data?.name || res.data.name);
+
+    } catch (err) {
+      console.error(err);
+      setManagerName("Manager Not Found");
+    }
+  };
+
+  fetchManager();
+}, [auth.store_id, form.from_store_id]);
+
+
+  useEffect(() => {
+    if (auth.store_id || auth.role === "super admin") {
+      load();
+    }
+  }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -354,20 +380,14 @@ export default function SubStore() {
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Main Store *
                   </label>
-                  <select
-                    value={form.to_store_id}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, to_store_id: e.target.value }))
-                    }
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">Select Main Store</option>
-                    {mainStores.map((s) => (
-                      <option key={s.store_id} value={s.store_id}>
-                        {s.store_name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={managerName}
+                      readOnly
+                      className="w-full bg-slate-800 border border-emerald-500/50 rounded px-3 py-2 text-emerald-400 text-sm cursor-not-allowed outline-none font-semibold"
+                    />
+                  </div>
                 </div>
               </div>
               <div>
@@ -376,6 +396,7 @@ export default function SubStore() {
                 </label>
                 <input
                   value={form.requested_by_name}
+                  readOnly
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,
@@ -479,7 +500,7 @@ export default function SubStore() {
                       <div className="col-span-1 flex justify-center pb-1">
                         <button
                           onClick={() => removeLine(idx)}
-                          disabled={form.items.length === 1}
+                          // disabled={form.items.length === 1}
                           className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
                         >
                           x

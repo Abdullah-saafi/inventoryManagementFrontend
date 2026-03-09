@@ -5,6 +5,7 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -38,11 +39,16 @@ export default function SubStoreManager() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
+  const {auth} = useAuth()
+
   const load = async () => {
     setLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filter) params.status = filter;
+      if (auth.role !== "super admin" && auth.store_id) {
+        params.store_id = auth.store_id; 
+      }
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch {
@@ -54,7 +60,7 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, auth]);
 
   const openDetail = async (r) => {
     setDL(true);
@@ -78,7 +84,7 @@ export default function SubStoreManager() {
         })),
       );
       setApproveModal(r);
-      setApproverName("");
+      setApproverName(auth.username || "");
     } catch {
       setToast({ message: "Failed to load items", type: "error" });
     }
@@ -123,7 +129,7 @@ export default function SubStoreManager() {
       });
       setToast({ message: "Request rejected", type: "info" });
       setRejectModal(null);
-      setRejecterName("");
+      setRejecterName(auth.username || "");
       setRejectReason("");
       load();
     } catch (e) {
@@ -156,7 +162,7 @@ export default function SubStoreManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-white">
-            Sub Store Manager Name
+            {auth.username || "Manager"} — {auth.storeName || "Store"}
           </h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Review and approve or reject staff item requests

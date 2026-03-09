@@ -207,7 +207,7 @@ export default function MainStore() {
       <div className="mb-6">
         <h1 className="text-xl font-black text-white">Main Store</h1>
         <p className="text-slate-400 text-sm mt-0.5">
-          Manage sub store requests, view inventory, and request from Head
+          Manage sub store requests, view inventory, and request To Head
           Office
         </p>
       </div>
@@ -217,7 +217,7 @@ export default function MainStore() {
         {[
           { id: "requests", label: "Sub Store Requests" },
           { id: "items", label: "All Items" },
-          { id: "ho", label: "Request from Head Office" },
+          { id: "ho", label: "Request To Head Office" },
         ].map((t) => (
           <button
             key={t.id}
@@ -457,7 +457,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: Request from Head Office ───────────── */}
+      {/* ── TAB: Request To Head Office ───────────── */}
       {tab === "ho" && (
         <div className="max-w-2xl">
           <div className="mb-4">

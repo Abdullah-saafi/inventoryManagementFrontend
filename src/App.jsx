@@ -9,6 +9,7 @@ import MainStore from "./pages/MainStore";
 import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
+import AddUser from "./pages/AddUser";
 
 // Add route
 export default function App() {
@@ -23,6 +24,10 @@ export default function App() {
             {/* test? */}
             <Route element={<ProtectedRoute allowedRoles={["sub-store", "super admin"]}/>}>
               <Route path="/substore-staff" element={<SubStoreStaff />} />
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["super admin"]}/>}>
+              <Route path="/add-user" element={<AddUser/>}/>
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["sub-store-approver", "super admin"]}/>}>

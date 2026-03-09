@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { getRequests, getRequestById } from "../services/api";
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
-});
-
+import {
+  getRequests,
+  getRequestById,
+  managerApproveRequest,
+  managerRejectRequest,
+  hoApproveRequest,
+  hoRejectRequest,
+} from "../services/api";
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const BADGE = {
   PENDING: "bg-amber-500/20 text-amber-400 border-amber-500/30",
@@ -329,16 +330,13 @@ export default function MainStoreManager() {
     if (!actorName.trim()) return showToast("Your name is required", "error");
     setActioning(true);
     try {
-      await API.patch(
-        `/requests/${subApproveModal.request_id}/manager-approve`,
-        {
-          manager_approved_by_name: actorName,
-          approved_items: subEditedItems.map((i) => ({
-            request_item_id: i.request_item_id,
-            approved_qty: i.approved_qty,
-          })),
-        },
-      );
+      await managerApproveRequest(subApproveModal.request_id, {
+        manager_approved_by_name: actorName,
+        approved_items: subEditedItems.map((i) => ({
+          request_item_id: i.request_item_id,
+          approved_qty: i.approved_qty,
+        })),
+      });
       showToast(
         "Final approval granted — Main Store can now fulfill this request",
       );
@@ -358,7 +356,7 @@ export default function MainStoreManager() {
       return showToast("Name and reason required", "error");
     setActioning(true);
     try {
-      await API.patch(`/requests/${subRejectModal.request_id}/manager-reject`, {
+      await managerRejectRequest(subRejectModal.request_id, {
         manager_approved_by_name: actorName,
         manager_rejection_reason: rejectReason,
       });
@@ -378,7 +376,7 @@ export default function MainStoreManager() {
     if (!actorName.trim()) return showToast("Your name is required", "error");
     setActioning(true);
     try {
-      await API.patch(`/requests/${hoApproveModal.request_id}/ho-approve`, {
+      await hoApproveRequest(hoApproveModal.request_id, {
         manager_approved_by_name: actorName,
       });
       showToast("HO request approved — Head Office will see and fulfill it");
@@ -397,7 +395,7 @@ export default function MainStoreManager() {
       return showToast("Name and reason required", "error");
     setActioning(true);
     try {
-      await API.patch(`/requests/${hoRejectModal.request_id}/ho-reject`, {
+      await hoRejectRequest(hoRejectModal.request_id, {
         manager_approved_by_name: actorName,
         manager_rejection_reason: rejectReason,
       });

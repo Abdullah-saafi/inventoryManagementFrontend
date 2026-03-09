@@ -25,17 +25,14 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function SubStore() {
-
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
-  const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
@@ -54,7 +51,7 @@ export default function SubStore() {
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {        
+      if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -75,10 +72,10 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-  if (auth.store_id || auth.role === "super admin") {
-    load();
-  }
-}, [filterStatus, filterStore, auth.store_id]);
+    if (auth.store_id || auth.role === "super admin") {
+      load();
+    }
+  }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -133,14 +130,11 @@ export default function SubStore() {
       !requested_by_name ||
       items.some((i) => !i.item_no || i.requested_qty < 1)
     )
-      return setToast({
-        message: "Please fill all required fields",
-        type: "error",
-      });
+      return;
     setCreating(true);
     try {
       await createRequest({ ...form, direction: "SUB_TO_MAIN" });
-      setToast({ message: "Request submitted successfully", type: "success" });
+
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -151,10 +145,6 @@ export default function SubStore() {
       });
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Failed to submit",
-        type: "error",
-      });
     } finally {
       setCreating(false);
     }
@@ -191,9 +181,11 @@ export default function SubStore() {
               ...form,
               from_store_id: auth.store_id || "",
               requested_by_name: auth.username || "",
-              items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
-            })
-            setShowCreate(true)
+              items: [
+                { item_no: "", item_name: "", item_uom: "", requested_qty: 1 },
+              ],
+            });
+            setShowCreate(true);
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
@@ -319,7 +311,6 @@ export default function SubStore() {
             </div>
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-
                 <div>
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Sub Store *
@@ -329,7 +320,10 @@ export default function SubStore() {
                     <select
                       value={form.from_store_id}
                       onChange={(e) =>
-                        setForm((f) => ({ ...f, from_store_id: e.target.value }))
+                        setForm((f) => ({
+                          ...f,
+                          from_store_id: e.target.value,
+                        }))
                       }
                       className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                     >
@@ -619,20 +613,6 @@ export default function SubStore() {
               )}
             </div>
           </div>
-        </div>
-      )}
-
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-red-500/20 border-red-500/40 text-red-300"}`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            x
-          </button>
         </div>
       )}
     </div>

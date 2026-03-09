@@ -10,6 +10,7 @@ const StatusBadge = ({ status }) => {
   const styles = {
     PENDING: "bg-amber-500/20 text-amber-400 border border-amber-500/30",
     APPROVED: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+    MANAGER_APPROVED: "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30",
     REJECTED: "bg-red-500/20 text-red-400 border border-red-500/30",
     FULFILLED: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
   };
@@ -17,7 +18,7 @@ const StatusBadge = ({ status }) => {
     <span
       className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || ""}`}
     >
-      {status}
+      {status?.replace(/_/g, " ")}
     </span>
   );
 };
@@ -26,7 +27,6 @@ export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
   const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -37,6 +37,12 @@ export default function SubStoreManager() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -80,12 +86,13 @@ export default function SubStoreManager() {
       setApproveModal(r);
       setApproverName("");
     } catch {
-      setToast({ message: "Failed to load items", type: "error" });
+      showToast("Failed to load request items", "error");
     }
   };
 
   const handleApprove = async () => {
-    if (!approverName.trim()) return;
+    if (!approverName.trim())
+      return showToast("Your name is required", "error");
     setActioning(true);
     try {
       await approveRequest(approveModal.request_id, {
@@ -95,42 +102,36 @@ export default function SubStoreManager() {
           approved_qty: i.approved_qty,
         })),
       });
-      setToast({
-        message: "Request approved — waiting for Main Store to fulfill",
-        type: "success",
-      });
+      showToast(
+        "Request approved — waiting for Main Store Manager final approval",
+      );
       setApproveModal(null);
       setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error approving",
-        type: "error",
-      });
+      showToast(e?.response?.data?.message || "Error approving", "error");
     } finally {
       setActioning(false);
     }
   };
 
   const handleReject = async () => {
-    if (!rejecterName.trim() || !rejectReason.trim()) return;
+    if (!rejecterName.trim() || !rejectReason.trim())
+      return showToast("Name and reason required", "error");
     setActioning(true);
     try {
       await rejectRequest(rejectModal.request_id, {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      setToast({ message: "Request rejected", type: "info" });
+      showToast("Request rejected");
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error rejecting",
-        type: "error",
-      });
+      showToast(e?.response?.data?.message || "Error rejecting", "error");
     } finally {
       setActioning(false);
     }
@@ -155,13 +156,25 @@ export default function SubStoreManager() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">
-            Sub Store Manager Name
-          </h1>
+          <h1 className="text-xl font-black text-white">Sub Store Manager</h1>
           <p className="text-slate-400 text-sm mt-0.5">
-            Review and approve or reject staff item requests
+            Review and approve or reject staff item requests. Approved requests
+            go to Main Store Manager for final approval.
           </p>
         </div>
+      </div>
+
+      {/* Flow explanation */}
+      <div className="mb-4 bg-slate-800/40 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 text-xs">
+        <span className="font-semibold text-slate-300">Approval Flow: </span>
+        Sub Store Staff →{" "}
+        <span className="text-amber-400 font-semibold">
+          Sub Store Manager (you)
+        </span>{" "}
+        →{" "}
+        <span className="text-cyan-400 font-semibold">Main Store Manager</span>{" "}
+        →{" "}
+        <span className="text-blue-400 font-semibold">Main Store Fulfills</span>
       </div>
 
       {pendingCount > 0 && (
@@ -186,8 +199,13 @@ export default function SubStoreManager() {
           className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
+          <option value="PENDING">Pending — Awaiting My Approval</option>
+          <option value="APPROVED">
+            Approved — Awaiting Main Store Manager
+          </option>
+          <option value="MANAGER_APPROVED">
+            Manager Approved — Ready to Fulfill
+          </option>
           <option value="REJECTED">Rejected</option>
           <option value="FULFILLED">Fulfilled</option>
         </select>
@@ -256,6 +274,7 @@ export default function SubStoreManager() {
                       >
                         Details
                       </button>
+                      {/* Sub Store Manager can only act on PENDING requests */}
                       {r.status === "PENDING" && (
                         <>
                           <button
@@ -301,7 +320,7 @@ export default function SubStoreManager() {
                 onClick={() => setDetail(null)}
                 className="text-slate-400 hover:text-white text-xl"
               >
-                x
+                ✕
               </button>
             </div>
             <div className="p-5 space-y-3">
@@ -317,7 +336,7 @@ export default function SubStoreManager() {
                       ["From", detail.from_store_name],
                       ["To", detail.to_store_name],
                       ["Requested By", detail.requested_by_name || "—"],
-                      ["Approved By", detail.approved_by_name || "—"],
+                      ["Approved By (Sub Mgr)", detail.approved_by_name || "—"],
                       [
                         "Date",
                         new Date(detail.requested_at).toLocaleDateString(),
@@ -331,6 +350,40 @@ export default function SubStoreManager() {
                       </div>
                     ))}
                   </div>
+
+                  {/* Status progress indicator */}
+                  <div className="bg-slate-800 rounded p-3">
+                    <div className="text-slate-500 text-xs mb-2 font-semibold uppercase">
+                      Approval Progress
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span
+                        className={`font-semibold ${detail.status !== "PENDING" ? "text-emerald-400" : "text-amber-400"}`}
+                      >
+                        {detail.status === "PENDING"
+                          ? "⏳ Sub Mgr"
+                          : "✓ Sub Mgr"}
+                      </span>
+                      <span className="text-slate-600">→</span>
+                      <span
+                        className={`font-semibold ${detail.status === "MANAGER_APPROVED" || detail.status === "FULFILLED" ? "text-cyan-400" : "text-slate-600"}`}
+                      >
+                        {detail.status === "MANAGER_APPROVED" ||
+                        detail.status === "FULFILLED"
+                          ? "✓ Main Mgr"
+                          : "○ Main Mgr"}
+                      </span>
+                      <span className="text-slate-600">→</span>
+                      <span
+                        className={`font-semibold ${detail.status === "FULFILLED" ? "text-blue-400" : "text-slate-600"}`}
+                      >
+                        {detail.status === "FULFILLED"
+                          ? "✓ Fulfilled"
+                          : "○ Fulfill"}
+                      </span>
+                    </div>
+                  </div>
+
                   {detail.rejection_reason && (
                     <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
                       <div className="text-red-400 text-xs font-semibold mb-1">
@@ -341,6 +394,7 @@ export default function SubStoreManager() {
                       </div>
                     </div>
                   )}
+
                   <div>
                     <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
                       Items
@@ -395,6 +449,8 @@ export default function SubStoreManager() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Only show action buttons for PENDING — this manager's step */}
                   {detail.status === "PENDING" && (
                     <div className="flex gap-2 pt-2 border-t border-slate-700">
                       <button
@@ -417,6 +473,19 @@ export default function SubStoreManager() {
                       >
                         Reject
                       </button>
+                    </div>
+                  )}
+                  {detail.status === "APPROVED" && (
+                    <div className="bg-cyan-500/10 border border-cyan-500/20 rounded p-3 text-cyan-300 text-xs">
+                      ✓ You have approved this request. Waiting for{" "}
+                      <strong>Main Store Manager</strong> to give final approval
+                      before it can be fulfilled.
+                    </div>
+                  )}
+                  {detail.status === "MANAGER_APPROVED" && (
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded p-3 text-blue-300 text-xs">
+                      ✓ Final approval granted. Main Store staff can now fulfill
+                      this request.
                     </div>
                   )}
                 </>
@@ -442,10 +511,15 @@ export default function SubStoreManager() {
                 onClick={() => setApproveModal(null)}
                 className="text-slate-400 hover:text-white text-xl"
               >
-                x
+                ✕
               </button>
             </div>
             <div className="p-5 space-y-4">
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded p-3 text-amber-300 text-xs">
+                After your approval, this request will go to the{" "}
+                <strong>Main Store Manager</strong> for final sign-off before
+                Main Store can fulfill it.
+              </div>
               <div>
                 <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Your Name *
@@ -453,7 +527,7 @@ export default function SubStoreManager() {
                 <input
                   value={approverName}
                   onChange={(e) => setApproverName(e.target.value)}
-                  placeholder="Manager name"
+                  placeholder="Sub Store Manager name"
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -544,7 +618,7 @@ export default function SubStoreManager() {
                 onClick={() => setRejectModal(null)}
                 className="text-slate-400 hover:text-white text-xl"
               >
-                x
+                ✕
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -555,7 +629,7 @@ export default function SubStoreManager() {
                 <input
                   value={rejecterName}
                   onChange={(e) => setRejecterName(e.target.value)}
-                  placeholder="Manager name"
+                  placeholder="Sub Store Manager name"
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -593,16 +667,18 @@ export default function SubStoreManager() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : toast.type === "error" ? "bg-red-500/20 border-red-500/40 text-red-300" : "bg-blue-500/20 border-blue-500/40 text-blue-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
+          ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-red-500/20 border-red-500/40 text-red-300"}`}
         >
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
             className="opacity-60 hover:opacity-100"
           >
-            x
+            ✕
           </button>
         </div>
       )}

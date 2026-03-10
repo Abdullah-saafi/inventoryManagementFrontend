@@ -11,7 +11,7 @@ const links = [
   },
   { to: "/mainstore", label: "Main Store", role: "main-store" },
   {
-    to: "/substoreapprover",
+    to: "/mainstore-approver",
     label: "Main Store Approver",
     role: "main-store-approver",
   },

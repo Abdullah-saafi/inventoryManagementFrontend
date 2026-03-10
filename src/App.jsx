@@ -1,8 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Login from "./pages/Login";
-
-// test
 import SubStoreStaff from "./pages/SubStoreStaff";
 import SubStoreManager from "./pages/SubStoreManager";
 import MainStore from "./pages/MainStore";
@@ -11,7 +9,6 @@ import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
 
-// Add route
 export default function App() {
   return (
     <BrowserRouter>
@@ -21,7 +18,8 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/unauthorized" element={<Unauthorized />} />
-            {/* test? */}
+
+            {/* Sub Store User — creates requests */}
             <Route
               element={
                 <ProtectedRoute allowedRoles={["sub-store", "super admin"]} />
@@ -30,6 +28,7 @@ export default function App() {
               <Route path="/substore-staff" element={<SubStoreStaff />} />
             </Route>
 
+            {/* Sub Store Manager — 1st level approval */}
             <Route
               element={
                 <ProtectedRoute
@@ -40,6 +39,7 @@ export default function App() {
               <Route path="/substore-manager" element={<SubStoreManager />} />
             </Route>
 
+            {/* Main Store Staff — fulfills approved requests */}
             <Route
               element={
                 <ProtectedRoute allowedRoles={["main-store", "super admin"]} />
@@ -48,8 +48,21 @@ export default function App() {
               <Route path="/mainstore" element={<MainStore />} />
             </Route>
 
-            <Route path="/substoreapprover" element={<MainStoreApprover />} />
+            {/* Main Store Manager — final approval of sub-store requests + approves HO requests */}
+            <Route
+              element={
+                <ProtectedRoute
+                  allowedRoles={["main-store-approver", "super admin"]}
+                />
+              }
+            >
+              <Route
+                path="/mainstore-approver"
+                element={<MainStoreApprover />}
+              />
+            </Route>
 
+            {/* Head Office — creates HO requests, fulfills HO approved requests */}
             <Route
               element={
                 <ProtectedRoute allowedRoles={["headoffice", "super admin"]} />
@@ -57,6 +70,10 @@ export default function App() {
             >
               <Route path="/headoffice" element={<HeadOffice />} />
             </Route>
+
+            {/* Default redirect */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </main>
       </div>

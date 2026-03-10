@@ -10,10 +10,10 @@ import {
 
 const StatusBadge = ({ status }) => {
   const s = {
-    PENDING: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    PENDING: "bg-amber-500/20   text-amber-400   border-amber-500/30",
     APPROVED: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    REJECTED: "bg-red-500/20 text-red-400 border-red-500/30",
-    FULFILLED: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    REJECTED: "bg-red-500/20     text-red-400     border-red-500/30",
+    FULFILLED: "bg-blue-500/20    text-blue-400    border-blue-500/30",
   };
   return (
     <span
@@ -90,9 +90,9 @@ export default function MainStore() {
   // Load items when from_store changes in HO form
   useEffect(() => {
     if (hoForm.from_store_id) {
-      getItems({ store_id: hoForm.from_store_id }).then((r) =>
-        setStoreItems(r.data.data),
-      );
+      getItems({ store_id: hoForm.from_store_id })
+        .then((r) => setStoreItems(r.data.data || []))
+        .catch(() => setStoreItems([]));
     } else {
       setStoreItems([]);
     }
@@ -156,7 +156,9 @@ export default function MainStore() {
       !from_store_id ||
       !to_store_id ||
       !requested_by_name ||
-      items.some((i) => !i.item_no || i.requested_qty < 1)
+      items.some(
+        (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+      )
     )
       return showToast("Please fill all required fields", "error");
     setCreating(true);
@@ -556,82 +558,75 @@ export default function MainStore() {
                   + Add Row
                 </button>
               </div>
-              {!hoForm.from_store_id ? (
-                <div className="text-slate-500 text-xs text-center py-6 border border-dashed border-slate-700 rounded-lg">
-                  Select a Main Store first to load available items
-                </div>
-              ) : (
-                hoForm.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-slate-800 rounded-lg p-3 grid grid-cols-12 gap-2 items-end mb-2"
-                  >
-                    <div className="col-span-5">
-                      <label className="text-slate-500 text-xs mb-1 block">
-                        Item
-                      </label>
-                      <select
-                        value={item.item_no}
-                        onChange={(e) =>
-                          updateLine(idx, "item_no", e.target.value)
-                        }
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                      >
-                        <option value="">Select item</option>
-                        {storeItems.map((si) => (
-                          <option key={si.item_id} value={si.item_no}>
-                            {si.item_no} — {si.item_name} (Stock:{" "}
-                            {si.item_quantity} {si.item_uom})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="col-span-3">
-                      <label className="text-slate-500 text-xs mb-1 block">
-                        Name
-                      </label>
-                      <input
-                        value={item.item_name}
-                        readOnly
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-sm"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-slate-500 text-xs mb-1 block">
-                        Qty
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.requested_qty}
-                        onChange={(e) =>
-                          updateLine(idx, "requested_qty", +e.target.value)
-                        }
-                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <label className="text-slate-500 text-xs mb-1 block">
-                        UOM
-                      </label>
-                      <input
-                        value={item.item_uom}
-                        readOnly
-                        className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-xs text-center"
-                      />
-                    </div>
-                    <div className="col-span-1 flex justify-center pb-1">
-                      <button
-                        onClick={() => removeLine(idx)}
-                        disabled={hoForm.items.length === 1}
-                        className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
-                      >
-                        x
-                      </button>
-                    </div>
+              {hoForm.items.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="bg-slate-800 rounded-lg p-3 grid grid-cols-12 gap-2 items-end mb-2"
+                >
+                  <div className="col-span-3">
+                    <label className="text-slate-500 text-xs mb-1 block">
+                      Item No *
+                    </label>
+                    <input
+                      value={item.item_no}
+                      onChange={(e) =>
+                        updateLine(idx, "item_no", e.target.value)
+                      }
+                      placeholder="e.g. ITEM-001"
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
                   </div>
-                ))
-              )}
+                  <div className="col-span-4">
+                    <label className="text-slate-500 text-xs mb-1 block">
+                      Item Name *
+                    </label>
+                    <input
+                      value={item.item_name}
+                      onChange={(e) =>
+                        updateLine(idx, "item_name", e.target.value)
+                      }
+                      placeholder="Item description"
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-slate-500 text-xs mb-1 block">
+                      UOM *
+                    </label>
+                    <input
+                      value={item.item_uom}
+                      onChange={(e) =>
+                        updateLine(idx, "item_uom", e.target.value)
+                      }
+                      placeholder="pcs"
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-slate-500 text-xs mb-1 block">
+                      Qty *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.requested_qty}
+                      onChange={(e) =>
+                        updateLine(idx, "requested_qty", +e.target.value)
+                      }
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    />
+                  </div>
+                  <div className="col-span-1 flex justify-center pb-1">
+                    <button
+                      onClick={() => removeLine(idx)}
+                      disabled={hoForm.items.length === 1}
+                      className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
+                    >
+                      x
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="flex justify-end pt-2 border-t border-slate-700">
@@ -682,7 +677,7 @@ export default function MainStore() {
                       ["Approved By", detail.approved_by_name || "—"],
                       [
                         "Date",
-                        new Date(detail.requested_at).toLocaleDateString(),
+                        new Date(detail.created_at).toLocaleDateString(),
                       ],
                     ].map(([label, val]) => (
                       <div key={label} className="bg-slate-800 rounded p-2">

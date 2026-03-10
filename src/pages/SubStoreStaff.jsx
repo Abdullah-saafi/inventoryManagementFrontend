@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -10,22 +10,33 @@ import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
-    PENDING: "border-yellow-500 text-yellow-400",
-    APPROVED: "border-yellow-500 text-yellow-400",
-    REJECTED: "border-yellow-500 text-yellow-400",
-    FULFILLED: "border-yellow-500 text-yellow-400",
+    PENDING: "border-yellow-500  text-yellow-400",
+    APPROVED: "border-blue-500    text-blue-400",
+    MANAGER_APPROVED: "border-indigo-500  text-indigo-400",
+    REJECTED: "border-red-500     text-red-400",
+    FULFILLED: "border-emerald-500 text-emerald-400",
+    HO_PENDING: "border-orange-500  text-orange-400",
+    HO_APPROVED: "border-cyan-500    text-cyan-400",
+    HO_FULFILLED: "border-teal-500    text-teal-400",
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || ""}`}
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-slate-500 text-slate-400"}`}
     >
       {status}
     </span>
   );
 };
 
-export default function SubStore() {
+const EMPTY_LINE = {
+  selected_item_no: "", // tracks dropdown selection only (UI-only)
+  item_no: "",
+  item_name: "",
+  item_uom: "",
+  requested_qty: 1,
+};
 
+export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -44,7 +55,7 @@ export default function SubStore() {
     to_store_id: "",
     requested_by_name: "",
     notes: "",
-    items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+    items: [{ ...EMPTY_LINE }],
   });
 
   const { auth } = useAuth();
@@ -54,7 +65,7 @@ export default function SubStore() {
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
-      if (auth.role !== "super admin") {        
+      if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
       } else if (filterStore) {
         params.store_id = filterStore;
@@ -75,10 +86,8 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-  if (auth.store_id || auth.role === "super admin") {
-    load();
-  }
-}, [filterStatus, filterStore, auth.store_id]);
+    if (auth.store_id || auth.role === "super admin") load();
+  }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -101,45 +110,57 @@ export default function SubStore() {
   };
 
   const addLine = () =>
-    setForm((f) => ({
-      ...f,
-      items: [
-        ...f.items,
-        { item_no: "", item_name: "", item_uom: "", requested_qty: 1 },
-      ],
-    }));
+    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+
   const removeLine = (idx) =>
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
-      if (field === "item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
+
+      // Selecting from dropdown auto-fills the manual fields (still editable)
+      if (field === "selected_item_no") {
+        if (value) {
+          const found = storeItems.find((i) => i.item_no === value);
+          if (found) {
+            items[idx].item_no = found.item_no;
+            items[idx].item_name = found.item_name;
+            items[idx].item_uom = found.item_uom;
+          }
+        } else {
+          // Dropdown cleared → wipe manual fields too
+          items[idx].item_no = "";
+          items[idx].item_name = "";
+          items[idx].item_uom = "";
         }
       }
+
       return { ...f, items };
     });
   };
 
   const handleCreate = async () => {
     const { from_store_id, to_store_id, requested_by_name, items } = form;
-    if (
-      !from_store_id ||
-      !to_store_id ||
-      !requested_by_name ||
-      items.some((i) => !i.item_no || i.requested_qty < 1)
-    )
+    const invalid = items.some(
+      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name || invalid)
       return setToast({
         message: "Please fill all required fields",
         type: "error",
       });
+
     setCreating(true);
     try {
-      await createRequest({ ...form, direction: "SUB_TO_MAIN" });
+      // Strip UI-only field before sending to API
+      const payload = {
+        ...form,
+        direction: "SUB_TO_MAIN",
+        items: items.map(({ selected_item_no, ...rest }) => rest),
+      };
+      await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);
       setForm({
@@ -147,7 +168,7 @@ export default function SubStore() {
         to_store_id: "",
         requested_by_name: "",
         notes: "",
-        items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+        items: [{ ...EMPTY_LINE }],
       });
       load();
     } catch (e) {
@@ -175,12 +196,12 @@ export default function SubStore() {
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-white">
             Sub Store User {auth.username}
           </h1>
-
           <p className="text-slate-400 text-sm mt-0.5">
             Place item requests and track approval status
           </p>
@@ -188,12 +209,13 @@ export default function SubStore() {
         <button
           onClick={() => {
             setForm({
-              ...form,
               from_store_id: auth.store_id || "",
+              to_store_id: "",
               requested_by_name: auth.username || "",
-              items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
-            })
-            setShowCreate(true)
+              notes: "",
+              items: [{ ...EMPTY_LINE }],
+            });
+            setShowCreate(true);
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
@@ -201,6 +223,7 @@ export default function SubStore() {
         </button>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <select
           value={filterStatus}
@@ -230,6 +253,7 @@ export default function SubStore() {
         )}
       </div>
 
+      {/* Requests Table */}
       <div className="overflow-x-auto rounded-lg border border-slate-700">
         <table className="w-full text-sm">
           <thead>
@@ -300,7 +324,7 @@ export default function SubStore() {
         </table>
       </div>
 
-      {/* Create Modal */}
+      {/* ── Create Modal ── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -312,24 +336,27 @@ export default function SubStore() {
               <h2 className="text-white font-bold">New Item Request</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                className="text-slate-400 hover:text-white text-xl"
+                className="text-slate-400 hover:text-white text-xl leading-none"
               >
-                x
+                ×
               </button>
             </div>
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
 
+            <div className="p-5 space-y-4">
+              {/* Store selectors */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Sub Store *
                   </label>
-
                   {auth.role === "super admin" ? (
                     <select
                       value={form.from_store_id}
                       onChange={(e) =>
-                        setForm((f) => ({ ...f, from_store_id: e.target.value }))
+                        setForm((f) => ({
+                          ...f,
+                          from_store_id: e.target.value,
+                        }))
                       }
                       className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                     >
@@ -370,6 +397,8 @@ export default function SubStore() {
                   </select>
                 </div>
               </div>
+
+              {/* Requested by */}
               <div>
                 <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Requested By *
@@ -386,6 +415,8 @@ export default function SubStore() {
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
+
+              {/* Notes */}
               <div>
                 <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Notes
@@ -400,6 +431,8 @@ export default function SubStore() {
                   className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
+
+              {/* Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-slate-400 text-xs font-semibold uppercase">
@@ -412,83 +445,139 @@ export default function SubStore() {
                     + Add Row
                   </button>
                 </div>
+
                 {!form.from_store_id ? (
                   <div className="text-slate-500 text-xs text-center py-6 border border-dashed border-slate-700 rounded-lg">
                     Select a Sub Store first
                   </div>
                 ) : (
-                  form.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-800 rounded-lg p-3 grid grid-cols-12 gap-2 items-end mb-2"
-                    >
-                      <div className="col-span-5">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Item
-                        </label>
-                        <select
-                          value={item.item_no}
-                          onChange={(e) =>
-                            updateLine(idx, "item_no", e.target.value)
-                          }
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                        >
-                          <option value="">Select item</option>
-                          {storeItems.map((si) => (
-                            <option key={si.item_id} value={si.item_no}>
-                              {si.item_no} — {si.item_name} (Stock:{" "}
-                              {si.item_quantity} {si.item_uom})
+                  <div className="space-y-3">
+                    {form.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-800 rounded-lg p-3 border border-slate-700"
+                      >
+                        {/* Row header */}
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                            Item {idx + 1}
+                          </span>
+                          <button
+                            onClick={() => removeLine(idx)}
+                            disabled={form.items.length === 1}
+                            className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold leading-none"
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        {/* Catalogue dropdown */}
+                        <div className="mb-3">
+                          <label className="text-slate-400 text-xs mb-1 flex items-center gap-1.5">
+                            <span>Select from catalogue</span>
+                            <span className="text-slate-600 italic font-normal">
+                              — or leave blank and enter details manually below
+                            </span>
+                          </label>
+                          <select
+                            value={item.selected_item_no}
+                            onChange={(e) =>
+                              updateLine(
+                                idx,
+                                "selected_item_no",
+                                e.target.value,
+                              )
+                            }
+                            className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                          >
+                            <option value="">
+                              — Not in catalogue / enter manually —
                             </option>
-                          ))}
-                        </select>
+                            {storeItems.map((si) => (
+                              <option key={si.item_id} value={si.item_no}>
+                                {si.item_no} — {si.item_name} (Stock:{" "}
+                                {si.item_quantity} {si.item_uom})
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Subtle divider */}
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="flex-1 h-px bg-slate-700" />
+                          <span className="text-slate-600 text-xs">
+                            item details
+                          </span>
+                          <div className="flex-1 h-px bg-slate-700" />
+                        </div>
+
+                        {/* Manual fields — always visible, auto-populated by dropdown */}
+                        <div className="grid grid-cols-12 gap-2">
+                          <div className="col-span-3">
+                            <label className="text-slate-400 text-xs mb-1 block">
+                              Item No *
+                            </label>
+                            <input
+                              value={item.item_no}
+                              onChange={(e) =>
+                                updateLine(idx, "item_no", e.target.value)
+                              }
+                              placeholder="e.g. ITM-001"
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                            />
+                          </div>
+                          <div className="col-span-5">
+                            <label className="text-slate-400 text-xs mb-1 block">
+                              Item Name *
+                            </label>
+                            <input
+                              value={item.item_name}
+                              onChange={(e) =>
+                                updateLine(idx, "item_name", e.target.value)
+                              }
+                              placeholder="Full item name"
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-slate-400 text-xs mb-1 block">
+                              UOM *
+                            </label>
+                            <input
+                              value={item.item_uom}
+                              onChange={(e) =>
+                                updateLine(idx, "item_uom", e.target.value)
+                              }
+                              placeholder="pcs / kg…"
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-slate-400 text-xs mb-1 block">
+                              Qty *
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.requested_qty}
+                              onChange={(e) =>
+                                updateLine(
+                                  idx,
+                                  "requested_qty",
+                                  +e.target.value,
+                                )
+                              }
+                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-span-3">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Name
-                        </label>
-                        <input
-                          value={item.item_name}
-                          readOnly
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-sm"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Qty
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.requested_qty}
-                          onChange={(e) =>
-                            updateLine(idx, "requested_qty", +e.target.value)
-                          }
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          UOM
-                        </label>
-                        <input
-                          value={item.item_uom}
-                          readOnly
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-xs text-center"
-                        />
-                      </div>
-                      <div className="col-span-1 flex justify-center pb-1">
-                        <button
-                          onClick={() => removeLine(idx)}
-                          disabled={form.items.length === 1}
-                          className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
-                        >
-                          x
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
+
+              {/* Actions */}
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
                 <button
                   onClick={() => setShowCreate(false)}
@@ -509,7 +598,7 @@ export default function SubStore() {
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* ── Detail Modal ── */}
       {detail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -523,9 +612,9 @@ export default function SubStore() {
               </h2>
               <button
                 onClick={() => setDetail(null)}
-                className="text-slate-400 hover:text-white text-xl"
+                className="text-slate-400 hover:text-white text-xl leading-none"
               >
-                x
+                ×
               </button>
             </div>
             <div className="p-5 space-y-3">
@@ -622,16 +711,21 @@ export default function SubStore() {
         </div>
       )}
 
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-red-500/20 border-red-500/40 text-red-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+              : "bg-red-500/20 border-red-500/40 text-red-300"
+          }`}
         >
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
             className="opacity-60 hover:opacity-100"
           >
-            x
+            ×
           </button>
         </div>
       )}

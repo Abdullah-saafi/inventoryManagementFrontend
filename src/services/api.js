@@ -39,7 +39,7 @@ export const refreshToken = () => API.post("/users/refresh")
 
 export const logout = () => API.post("/users/logout")
 
-export const addUser = () => API.post("/users/addUser")
+export const addUser = (credentials) => API.post("/users/addUser", credentials)
 
 // ── Main Store ────────────────────────────────────────────────
 

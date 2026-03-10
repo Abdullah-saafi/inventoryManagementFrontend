@@ -97,14 +97,14 @@ export default function SubStore() {
   };
 
   fetchManager();
-}, [auth.store_id, form.from_store_id]);
+}, [auth.store_id, form.from_store_id, auth.role]);
 
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") {
       load();
     }
-  }, [filterStatus, filterStore, auth.store_id]);
+  }, [auth.store_id, auth.role, filterStatus, filterStore]);
 
   useEffect(() => {
     if (form.from_store_id)
@@ -113,6 +113,16 @@ export default function SubStore() {
       );
     else setStoreItems([]);
   }, [form.from_store_id]);
+
+  useEffect(() => {
+  if (auth.store_id && !form.from_store_id) {
+    setForm(prev => ({
+      ...prev,
+      from_store_id: auth.store_id,
+      requested_by_name: auth.username
+    }));
+  }
+}, [auth.store_id, auth.username]);
 
   const openDetail = async (r) => {
     setDL(true);
@@ -369,7 +379,7 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={auth.storeName || "Loading..."}
+                      value={auth.storeName || auth.store_name || "Loading..."}
                       readOnly
                       className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-400 text-sm cursor-not-allowed outline-none"
                     />
@@ -378,12 +388,12 @@ export default function SubStore() {
 
                 <div>
                   <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Main Store *
+                    Sub Store Manager *
                   </label>
                   <div className="relative">
                     <input
                       type="text"
-                      value={managerName}
+                      value={managerName? managerName : "loading..."}
                       readOnly
                       className="w-full bg-slate-800 border border-emerald-500/50 rounded px-3 py-2 text-emerald-400 text-sm cursor-not-allowed outline-none font-semibold"
                     />

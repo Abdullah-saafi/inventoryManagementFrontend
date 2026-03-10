@@ -12,11 +12,11 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
 
+    // ... (handleSubmit and handleChange stay exactly the same)
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.email) return setMessage("Email is required")
         if (!form.password) return setMessage("Password is required")
-
         try {
             setLoading(true)
             const response = await login(form)
@@ -30,7 +30,6 @@ const Login = () => {
                     storeName: data.store_name,
                     store_id: data.storeId
                 })
-
                 const routes = {
                     "sub-store": "/substore-staff",
                     "sub-store-approver": "/substore-manager",
@@ -50,23 +49,22 @@ const Login = () => {
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
-    // Common styles for input wrappers to handle "incorrect" state
     const inputWrapperClass = (fieldError) => `
         flex items-center w-full rounded-lg overflow-hidden border-2 transition-all duration-200
         ${fieldError ? 'border-red-500 bg-red-50' : 'border-slate-700 bg-slate-800 focus-within:border-emerald-500'}
     `
 
+    // FIX: This string forces the browser to use your colors even when autofilling
+    // 1. box-shadow: inset creates a fake background that covers the browser's yellow
+    // 2. text-fill-color: forces the text to stay white
+    const autofillFix = "autofill:shadow-[inset_0_0_0px_1000px_#1e293b] [-webkit-text-fill-color:white]";
+
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-start font-sans">
-            {/* Main Container - replicates your old 600px side-bar style */}
             <div id="container" className="w-full max-w-[500px] h-screen bg-slate-900 p-8 flex flex-col justify-center items-center shadow-2xl border-r border-slate-800">
-
-                <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
-                    Login
-                </h1>
+                <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">Login</h1>
                 <p className="text-slate-400 mb-8 text-sm">Welcome back! Please enter your details.</p>
 
-                {/* Error Messages */}
                 {(message || auth.message) && (
                     <div className="w-full p-3 mb-4 rounded bg-red-500/10 border border-red-500/50 text-red-500 text-sm text-center font-medium">
                         {message || auth.message}
@@ -74,17 +72,17 @@ const Login = () => {
                 )}
 
                 <form className="w-full max-w-[350px] space-y-4" onSubmit={handleSubmit}>
-
                     {/* Email Field */}
                     <div className={inputWrapperClass(message?.includes("Email") || message === "Invalid username or password")}>
                         <label className="p-3 bg-slate-800 text-slate-400">
                             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z" /></svg>
                         </label>
                         <input
-                            className="bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500"
-                            type="text"
+                            className={`bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500 ${autofillFix}`}
+                            type="email"
                             name='email'
                             placeholder='Enter Email'
+                            autoComplete="email"
                             value={form.email}
                             onChange={handleChange}
                             onFocus={() => setMessage(null)}
@@ -98,13 +96,15 @@ const Login = () => {
                         </label>
                         <div className="flex-grow flex items-center pr-2">
                             <input
-                                className="bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500"
+                                className={`bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500 ${autofillFix}`}
                                 type={showPassword ? "text" : "password"}
                                 name='password'
                                 placeholder='Enter Password'
+                                autoComplete="current-password"
                                 value={form.password}
                                 onChange={handleChange}
                             />
+                            {/* ... password toggle button stays same */}
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
@@ -112,12 +112,10 @@ const Login = () => {
                                 aria-label={showPassword ? "Hide password" : "Show password"}
                             >
                                 {showPassword ? (
-                                    /* Full Visibility Off (Eye with Slash) */
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
                                         <path d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 59-60.5 109.5T772-302Zm20 246L624-222q-35 11-70.5 16.5T480-200q-151 0-269-83.5T40-500q21-53 53-98.5t73-81.5L56-792l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T300-500q0-11 1.5-21t4.5-21l-84-82Zm319 93Zm-151 75Z" />
                                     </svg>
                                 ) : (
-                                    /* Full Visibility (Open Eye) */
                                     <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="currentColor">
                                         <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z" />
                                     </svg>
@@ -126,24 +124,13 @@ const Login = () => {
                         </div>
                     </div>
 
-                    <button
-                        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed mt-4 shadow-lg shadow-emerald-900/20"
-                        disabled={loading}
-                    >
-                        {loading ? (
-                            <span className="flex items-center justify-center gap-2">
-                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                Processing...
-                            </span>
-                        ) : "Login"}
+                    <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg transition-all transform active:scale-[0.98] disabled:opacity-50 mt-4 shadow-lg shadow-emerald-900/20" disabled={loading}>
+                        {loading ? "Processing..." : "Login"}
                     </button>
                 </form>
             </div>
-
-            {/* Visual filler for the right side (hidden on small screens) */}
+            {/* Visual filler stays the same */}
             <div className="hidden lg:flex flex-grow h-screen bg-slate-950 items-center justify-center relative overflow-hidden">
-                <div className="absolute w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] -top-20 -right-20"></div>
-                <div className="absolute w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-[100px] bottom-0 left-0"></div>
                 <div className="text-center z-10">
                     <h2 className="text-slate-200 text-2xl font-light tracking-widest uppercase">Inventory Management System</h2>
                     <p className="text-slate-500 mt-2">Precision. Efficiency. Control.</p>

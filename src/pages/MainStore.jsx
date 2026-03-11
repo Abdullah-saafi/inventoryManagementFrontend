@@ -6,6 +6,7 @@ import {
   getStores,
   getItems,
   createRequest,
+  getItemSummary,
 } from "../services/api";
 
 const StatusBadge = ({ status }) => {
@@ -24,26 +25,38 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-export default function MainStore() {
-  const [tab, setTab] = useState("requests");
+const TABS = [
+  { id: "overview", label: "Overview" },
+  { id: "requests", label: "Sub Store Requests" },
+  { id: "items", label: "All Items" },
+  { id: "ho-status", label: "HO Requests Status" },
+  { id: "ho-create", label: "New HO Request" },
+];
 
-  // Requests tab
+export default function MainStore() {
+  const [tab, setTab] = useState("overview");
+
+  // ── data ──
   const [requests, setRequests] = useState([]);
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
-
-  // Items tab
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
-
-  // Request from HO tab
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [itemSummaryReceived, setItemSummaryReceived] = useState([]);
+  const [itemSummaryGiven, setItemSummaryGiven] = useState([]);
+  const [hoRequests, setHoRequests] = useState([]);
+  const [hoFilter, setHoFilter] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+
   const [hoForm, setHoForm] = useState({
     from_store_id: "",
     to_store_id: "",
@@ -51,10 +64,6 @@ export default function MainStore() {
     notes: "",
     items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
   });
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -76,6 +85,15 @@ export default function MainStore() {
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
       setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
       setItems(iRes.data.data);
+
+      const [recvSummary, givenSummary, hoReqRes] = await Promise.all([
+        getItemSummary({ direction: "MAIN_TO_HO" }),
+        getItemSummary({ direction: "SUB_TO_MAIN" }),
+        getRequests({ direction: "MAIN_TO_HO" }),
+      ]);
+      setItemSummaryReceived(recvSummary.data.data);
+      setItemSummaryGiven(givenSummary.data.data);
+      setHoRequests(hoReqRes.data.data);
     } catch {
       setError("Failed to load data");
     } finally {
@@ -87,15 +105,12 @@ export default function MainStore() {
     load();
   }, [reqFilter]);
 
-  // Load items when from_store changes in HO form
   useEffect(() => {
-    if (hoForm.from_store_id) {
+    if (hoForm.from_store_id)
       getItems({ store_id: hoForm.from_store_id })
         .then((r) => setStoreItems(r.data.data || []))
         .catch(() => setStoreItems([]));
-    } else {
-      setStoreItems([]);
-    }
+    else setStoreItems([]);
   }, [hoForm.from_store_id]);
 
   const openDetail = async (r) => {
@@ -114,7 +129,7 @@ export default function MainStore() {
     setFulfilling(requestId);
     try {
       await fulfillRequest(requestId);
-      showToast("Request marked as fulfilled and inventory updated");
+      showToast("Request fulfilled and inventory updated");
       setDetail(null);
       load();
     } catch (e) {
@@ -124,7 +139,6 @@ export default function MainStore() {
     }
   };
 
-  // HO request line item helpers
   const addLine = () =>
     setHoForm((f) => ({
       ...f,
@@ -172,6 +186,8 @@ export default function MainStore() {
         notes: "",
         items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
       });
+      setTab("ho-status");
+      load();
     } catch (e) {
       showToast(e.response?.data?.message || "Failed to submit", "error");
     } finally {
@@ -179,7 +195,7 @@ export default function MainStore() {
     }
   };
 
-  // Items filter
+  // ── derived ──
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
   const displayedItems = items.filter((i) => {
     const matchSearch =
@@ -189,6 +205,44 @@ export default function MainStore() {
     const matchCat = !filterCategory || i.category === filterCategory;
     return matchSearch && matchCat;
   });
+  const filteredHoRequests = hoFilter
+    ? hoRequests.filter((r) => r.status === hoFilter)
+    : hoRequests;
+  const pendingApproved = requests.filter(
+    (r) => r.status === "APPROVED",
+  ).length;
+
+  // ── item flow map ──
+  const buildItemMap = () => {
+    const map = {};
+    itemSummaryReceived.forEach((i) => {
+      if (!map[i.item_no])
+        map[i.item_no] = {
+          item_no: i.item_no,
+          item_name: i.item_name,
+          item_uom: i.item_uom,
+          received: 0,
+          given: 0,
+        };
+      map[i.item_no].received += parseFloat(i.total_fulfilled || 0);
+    });
+    itemSummaryGiven.forEach((i) => {
+      if (!map[i.item_no])
+        map[i.item_no] = {
+          item_no: i.item_no,
+          item_name: i.item_name,
+          item_uom: i.item_uom,
+          received: 0,
+          given: 0,
+        };
+      map[i.item_no].given += parseFloat(i.total_fulfilled || 0);
+    });
+    const invMap = {};
+    items.forEach((i) => {
+      invMap[i.item_no] = parseFloat(i.item_quantity || 0);
+    });
+    return { rows: Object.values(map), invMap };
+  };
 
   if (loading)
     return (
@@ -203,35 +257,253 @@ export default function MainStore() {
       </div>
     );
 
+  const { rows: itemRows, invMap } = buildItemMap();
+  const totalReceived = itemRows.reduce((s, r) => s + r.received, 0);
+  const totalGiven = itemRows.reduce((s, r) => s + r.given, 0);
+
   return (
     <div>
-      {/* Header */}
-      <div className="mb-6">
+      {/* ── Page Header ── */}
+      <div className="mb-4">
         <h1 className="text-xl font-black text-white">Main Store</h1>
         <p className="text-slate-400 text-sm mt-0.5">
-          Manage sub store requests, view inventory, and request from Head
+          Manage sub store requests, track inventory flow, and request from Head
           Office
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-slate-700 mb-5">
-        {[
-          { id: "requests", label: "Sub Store Requests" },
-          { id: "items", label: "All Items" },
-          { id: "ho", label: "Request from Head Office" },
-        ].map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px transition-colors ${tab === t.id ? "border-emerald-500 text-emerald-400" : "border-transparent text-slate-400 hover:text-white"}`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* ── Internal Nav Bar ── */}
+      <nav className="bg-slate-900 border border-slate-700 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 flex-wrap">
+        {TABS.map((t) => {
+          const badge =
+            t.id === "requests" && pendingApproved > 0
+              ? pendingApproved
+              : t.id === "ho-status" &&
+                  hoRequests.filter((r) => r.status === "PENDING").length > 0
+                ? hoRequests.filter((r) => r.status === "PENDING").length
+                : null;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
+                ${tab === t.id ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
+            >
+              {t.label}
+              {badge && (
+                <span
+                  className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
+                  ${tab === t.id ? "bg-white/20 text-white" : "bg-emerald-600 text-white"}`}
+                >
+                  {badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
 
-      {/* ── TAB: Sub Store Requests ─────────────────── */}
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB: OVERVIEW                                      */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "overview" && (
+        <div className="space-y-5">
+          {/* Stat cards */}
+          <div className="grid grid-cols-4 gap-3">
+            {[
+              {
+                label: "Items in Inventory",
+                value: items.length,
+                cls: "text-white",
+              },
+              {
+                label: "Received from HO",
+                value: totalReceived.toFixed(0),
+                cls: "text-emerald-400",
+              },
+              {
+                label: "Given to Sub Stores",
+                value: totalGiven.toFixed(0),
+                cls: "text-blue-400",
+              },
+              {
+                label: "Pending to Fulfill",
+                value: pendingApproved,
+                cls: pendingApproved > 0 ? "text-amber-400" : "text-white",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-slate-800/50 border border-slate-700 rounded-lg p-4"
+              >
+                <div className="text-slate-400 text-xs uppercase mb-1">
+                  {s.label}
+                </div>
+                <div className={`font-bold text-2xl font-mono ${s.cls}`}>
+                  {s.value}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Item Flow Table */}
+          {itemRows.length > 0 ? (
+            <div className="rounded-lg border border-slate-700 overflow-hidden">
+              <div className="bg-slate-800 px-4 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 inline-block" />
+                  <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">
+                    Item Flow — Received vs Given vs Remaining
+                  </span>
+                </div>
+                <div className="flex gap-4 text-xs">
+                  <span className="text-emerald-400">
+                    ▲ In:{" "}
+                    <span className="font-mono font-bold">
+                      {totalReceived.toFixed(0)}
+                    </span>
+                  </span>
+                  <span className="text-blue-400">
+                    ▼ Out:{" "}
+                    <span className="font-mono font-bold">
+                      {totalGiven.toFixed(0)}
+                    </span>
+                  </span>
+                  <span className="text-white">
+                    = Stock:{" "}
+                    <span className="font-mono font-bold">
+                      {items
+                        .reduce(
+                          (s, i) => s + parseFloat(i.item_quantity || 0),
+                          0,
+                        )
+                        .toFixed(0)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-700 bg-slate-800/50">
+                      {[
+                        "Item No",
+                        "Item Name",
+                        "UOM",
+                        "↓ Received from HO",
+                        "↑ Given to Sub Stores",
+                        "Current Stock",
+                        "Net",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-2 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                        >
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {itemRows.map((row) => {
+                      const stock = invMap[row.item_no] ?? null;
+                      const net = row.received - row.given;
+                      return (
+                        <tr
+                          key={row.item_no}
+                          className="border-b border-slate-800 hover:bg-slate-800/40"
+                        >
+                          <td className="px-4 py-2.5 font-mono text-slate-400 text-xs">
+                            {row.item_no}
+                          </td>
+                          <td className="px-4 py-2.5 text-white font-semibold text-xs">
+                            {row.item_name}
+                          </td>
+                          <td className="px-4 py-2.5 text-slate-500 font-mono text-xs">
+                            {row.item_uom}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono font-bold text-emerald-400">
+                            {row.received.toFixed(0)}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono font-bold text-blue-400">
+                            {row.given.toFixed(0)}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono font-bold">
+                            {stock !== null ? (
+                              <span
+                                className={
+                                  stock <= 0 ? "text-red-400" : "text-white"
+                                }
+                              >
+                                {stock.toFixed(0)}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600">—</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 font-mono font-bold">
+                            <span
+                              className={
+                                net >= 0 ? "text-emerald-400" : "text-red-400"
+                              }
+                            >
+                              {net >= 0 ? "+" : ""}
+                              {net.toFixed(0)}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="bg-slate-800/60 border-t-2 border-slate-600">
+                      <td
+                        colSpan={3}
+                        className="px-4 py-2 text-slate-400 text-xs font-semibold uppercase"
+                      >
+                        Totals
+                      </td>
+                      <td className="px-4 py-2 font-mono font-bold text-emerald-300">
+                        {totalReceived.toFixed(0)}
+                      </td>
+                      <td className="px-4 py-2 font-mono font-bold text-blue-300">
+                        {totalGiven.toFixed(0)}
+                      </td>
+                      <td className="px-4 py-2 font-mono font-bold text-white">
+                        {items
+                          .reduce(
+                            (s, i) => s + parseFloat(i.item_quantity || 0),
+                            0,
+                          )
+                          .toFixed(0)}
+                      </td>
+                      <td className="px-4 py-2 font-mono font-bold">
+                        <span
+                          className={
+                            totalReceived - totalGiven >= 0
+                              ? "text-emerald-300"
+                              : "text-red-300"
+                          }
+                        >
+                          {totalReceived - totalGiven >= 0 ? "+" : ""}
+                          {(totalReceived - totalGiven).toFixed(0)}
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-slate-700 bg-slate-800/30 text-center py-12 text-slate-500 text-sm">
+              No fulfilled requests yet — item flow data will appear here once
+              requests are fulfilled.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB: SUB STORE REQUESTS                           */}
+      {/* ══════════════════════════════════════════════════ */}
       {tab === "requests" && (
         <div>
           <div className="mb-4">
@@ -247,7 +519,6 @@ export default function MainStore() {
               <option value="FULFILLED">Fulfilled</option>
             </select>
           </div>
-
           <div className="overflow-x-auto rounded-lg border border-slate-700">
             <table className="w-full text-sm">
               <thead>
@@ -291,6 +562,11 @@ export default function MainStore() {
                         <span className="font-mono text-emerald-400 text-xs font-bold">
                           {r.request_no}
                         </span>
+                        {r.item_count > 0 && (
+                          <span className="ml-2 bg-slate-700 text-slate-400 text-xs font-mono rounded px-1.5 py-0.5 border border-slate-600">
+                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-slate-300">
                         {r.from_store_name}
@@ -314,7 +590,7 @@ export default function MainStore() {
                         <div className="flex gap-1">
                           <button
                             onClick={() => openDetail(r)}
-                            className="text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded px-2 py-1 transition-colors"
+                            className="text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded px-2 py-1"
                           >
                             Details
                           </button>
@@ -322,7 +598,7 @@ export default function MainStore() {
                             <button
                               onClick={() => handleFulfill(r.request_id)}
                               disabled={fulfilling === r.request_id}
-                              className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-2 py-1 transition-colors disabled:opacity-40"
+                              className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-2 py-1 disabled:opacity-40"
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
                             </button>
@@ -338,7 +614,9 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: All Items ──────────────────────────── */}
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB: ALL ITEMS                                    */}
+      {/* ══════════════════════════════════════════════════ */}
       {tab === "items" && (
         <div>
           <div className="flex flex-wrap gap-2 mb-4">
@@ -372,7 +650,6 @@ export default function MainStore() {
               </button>
             )}
           </div>
-
           <div className="overflow-x-auto rounded-lg border border-slate-700">
             <table className="w-full text-sm">
               <thead>
@@ -459,8 +736,116 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: Request from Head Office ───────────── */}
-      {tab === "ho" && (
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB: HO REQUESTS STATUS                          */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "ho-status" && (
+        <div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-slate-400 text-sm">
+              All requests submitted by Main Store to Head Office
+            </p>
+            <select
+              value={hoFilter}
+              onChange={(e) => setHoFilter(e.target.value)}
+              className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="PENDING">
+                Pending (awaiting manager approval)
+              </option>
+              <option value="APPROVED">
+                Approved (waiting HO fulfillment)
+              </option>
+              <option value="FULFILLED">Fulfilled</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-slate-700">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-800 border-b border-slate-700">
+                  {[
+                    "Request No",
+                    "Requested By",
+                    "Date",
+                    "Items",
+                    "Total Qty",
+                    "Status",
+                    "",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filteredHoRequests.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="text-center py-12 text-slate-500"
+                    >
+                      No HO requests found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredHoRequests.map((r) => (
+                    <tr
+                      key={r.request_id}
+                      className="border-b border-slate-800 hover:bg-slate-800/50"
+                    >
+                      <td className="px-4 py-3 font-mono text-amber-400 text-xs font-bold">
+                        {r.request_no}
+                      </td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {r.requested_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 text-xs">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">
+                        {r.item_count}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-xs">
+                        {r.status === "FULFILLED" ? (
+                          <span className="text-emerald-400 font-bold">
+                            {parseFloat(r.total_fulfilled || 0).toFixed(0)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">
+                            {parseFloat(r.total_requested || 0).toFixed(0)}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => openDetail(r)}
+                          className="text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded px-2 py-1"
+                        >
+                          Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════ */}
+      {/* TAB: NEW HO REQUEST                              */}
+      {/* ══════════════════════════════════════════════════ */}
+      {tab === "ho-create" && (
         <div className="max-w-2xl">
           <div className="mb-4">
             <h2 className="text-white font-semibold text-base">
@@ -470,7 +855,6 @@ export default function MainStore() {
               Request items from Head Office to replenish Main Store inventory
             </p>
           </div>
-
           <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -512,7 +896,6 @@ export default function MainStore() {
                 </select>
               </div>
             </div>
-
             <div>
               <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                 Requested By *
@@ -529,7 +912,6 @@ export default function MainStore() {
                 className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
               />
             </div>
-
             <div>
               <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
                 Notes
@@ -544,8 +926,6 @@ export default function MainStore() {
                 className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
               />
             </div>
-
-            {/* Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-slate-400 text-xs font-semibold uppercase">
@@ -622,18 +1002,17 @@ export default function MainStore() {
                       disabled={hoForm.items.length === 1}
                       className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
                     >
-                      x
+                      ×
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-
             <div className="flex justify-end pt-2 border-t border-slate-700">
               <button
                 onClick={handleHoRequest}
                 disabled={creating}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded transition-colors disabled:opacity-40"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40"
               >
                 {creating ? "Submitting..." : "Submit Request to Head Office"}
               </button>
@@ -642,7 +1021,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* Detail Modal */}
+      {/* ── Detail Modal ── */}
       {detail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -658,7 +1037,7 @@ export default function MainStore() {
                 onClick={() => setDetail(null)}
                 className="text-slate-400 hover:text-white text-xl"
               >
-                x
+                ×
               </button>
             </div>
             <div className="p-5 space-y-3">
@@ -688,7 +1067,6 @@ export default function MainStore() {
                       </div>
                     ))}
                   </div>
-
                   {detail.notes && (
                     <div className="bg-slate-800 rounded p-3">
                       <div className="text-slate-500 text-xs mb-1">NOTES</div>
@@ -697,7 +1075,16 @@ export default function MainStore() {
                       </div>
                     </div>
                   )}
-
+                  {detail.rejection_reason && (
+                    <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                      <div className="text-red-400 text-xs font-semibold mb-1">
+                        REJECTION REASON
+                      </div>
+                      <div className="text-red-300 text-sm">
+                        {detail.rejection_reason}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
                       Items
@@ -752,13 +1139,12 @@ export default function MainStore() {
                       </tbody>
                     </table>
                   </div>
-
                   {detail.status === "APPROVED" && (
                     <div className="pt-2 border-t border-slate-700">
                       <button
                         onClick={() => handleFulfill(detail.request_id)}
                         disabled={fulfilling === detail.request_id}
-                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded transition-colors disabled:opacity-40"
+                        className="w-full bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold py-2 rounded disabled:opacity-40"
                       >
                         {fulfilling === detail.request_id
                           ? "Processing..."
@@ -773,16 +1159,24 @@ export default function MainStore() {
         </div>
       )}
 
+      {/* ── Toast ── */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : toast.type === "error" ? "bg-red-500/20 border-red-500/40 text-red-300" : "bg-blue-500/20 border-blue-500/40 text-blue-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
+          ${
+            toast.type === "success"
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+              : toast.type === "error"
+                ? "bg-red-500/20 border-red-500/40 text-red-300"
+                : "bg-blue-500/20 border-blue-500/40 text-blue-300"
+          }`}
         >
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
             className="opacity-60 hover:opacity-100"
           >
-            x
+            ×
           </button>
         </div>
       )}

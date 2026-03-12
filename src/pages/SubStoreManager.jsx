@@ -158,26 +158,8 @@ export default function SubStoreManager() {
           <h1 className="text-xl font-black text-white">
             Sub Store Manager Name
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">
-            Review and approve or reject staff item requests
-          </p>
         </div>
       </div>
-
-      {pendingCount > 0 && (
-        <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-amber-400 text-sm font-semibold">
-            {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
-            approval
-          </span>
-          <button
-            onClick={() => setFilter("PENDING")}
-            className="text-xs border border-slate-600 text-slate-300 hover:text-white rounded px-3 py-1 transition-colors"
-          >
-            Show Pending
-          </button>
-        </div>
-      )}
 
       <div className="mb-4">
         <select

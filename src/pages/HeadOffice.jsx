@@ -132,16 +132,6 @@ export default function HeadOffice() {
         </p>
       </div>
 
-      {/* Flow explanation */}
-      <div className="mb-4 bg-slate-800/40 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 text-xs">
-        <span className="font-semibold text-slate-300">Your role: </span>
-        Main Store Staff creates a request → Main Store Manager approves it →{" "}
-        <span className="text-emerald-400 font-semibold">
-          Head Office (you) fulfills it
-        </span>{" "}
-        → Main Store inventory updated automatically
-      </div>
-
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-700 mb-5">
         {[

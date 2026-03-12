@@ -197,54 +197,6 @@ export default function MainStoreApprover() {
         </p>
       </div>
 
-      {/* Flow explanation */}
-      <div className="mb-4 bg-slate-800/40 border border-slate-700 rounded-lg px-4 py-3 text-slate-400 text-xs">
-        <span className="font-semibold text-slate-300">HO Request Flow: </span>
-        Main Store Staff creates request →{" "}
-        <span className="text-emerald-400 font-semibold">
-          Main Store Manager approves (you)
-        </span>{" "}
-        → Head Office sees it and fulfills it → Main Store inventory updated
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        {[
-          {
-            label: "Awaiting My Approval",
-            value: pendingCount,
-            active: pendingCount > 0,
-            cls: "bg-amber-500/10 border-amber-500/30 text-amber-400",
-          },
-          {
-            label: "Total Shown",
-            value: requests.length,
-            active: false,
-            cls: "",
-          },
-          {
-            label: "Fulfilled",
-            value: requests.filter((r) => r.status === "FULFILLED").length,
-            active: false,
-            cls: "",
-          },
-        ].map((s) => (
-          <div
-            key={s.label}
-            className={`rounded-lg p-4 border ${s.active ? s.cls : "bg-slate-800/50 border-slate-700"}`}
-          >
-            <div className="text-slate-400 text-xs uppercase mb-1">
-              {s.label}
-            </div>
-            <div
-              className={`font-bold text-2xl font-mono ${s.active ? "" : "text-white"}`}
-            >
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Filter */}
       <div className="mb-4">
         <select

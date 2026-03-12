@@ -62,7 +62,15 @@ export default function MainStore() {
     to_store_id: "",
     requested_by_name: "",
     notes: "",
-    items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+    items: [
+      {
+        item_no: "",
+        item_name: "",
+        item_uom: "",
+        item_category: "",
+        requested_qty: 1,
+      },
+    ],
   });
 
   const showToast = (message, type = "success") => {
@@ -144,7 +152,13 @@ export default function MainStore() {
       ...f,
       items: [
         ...f.items,
-        { item_no: "", item_name: "", item_uom: "", requested_qty: 1 },
+        {
+          item_no: "",
+          item_name: "",
+          item_uom: "",
+          item_category: "",
+          requested_qty: 1,
+        },
       ],
     }));
   const removeLine = (idx) =>
@@ -184,7 +198,15 @@ export default function MainStore() {
         to_store_id: "",
         requested_by_name: "",
         notes: "",
-        items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+        items: [
+          {
+            item_no: "",
+            item_name: "",
+            item_uom: "",
+            item_category: "",
+            requested_qty: 1,
+          },
+        ],
       });
       setTab("ho-status");
       load();
@@ -197,7 +219,28 @@ export default function MainStore() {
 
   // ── derived ──
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
-  const displayedItems = items.filter((i) => {
+
+  // Group items by item_no, tracking main store qty and sub store qty separately
+  const groupedItems = Object.values(
+    items.reduce((acc, i) => {
+      const qty = parseFloat(i.item_quantity || 0);
+      if (!acc[i.item_no]) {
+        acc[i.item_no] = {
+          ...i,
+          item_quantity: qty, // total across all stores
+          main_qty: i.store_type === "MAIN_STORE" ? qty : 0,
+          sub_qty: i.store_type === "SUB_STORE" ? qty : 0,
+        };
+      } else {
+        acc[i.item_no].item_quantity += qty;
+        if (i.store_type === "MAIN_STORE") acc[i.item_no].main_qty += qty;
+        if (i.store_type === "SUB_STORE") acc[i.item_no].sub_qty += qty;
+      }
+      return acc;
+    }, {}),
+  );
+
+  const displayedItems = groupedItems.filter((i) => {
     const matchSearch =
       !search ||
       i.item_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -659,9 +702,10 @@ export default function MainStore() {
                     "Name",
                     "Category",
                     "UOM",
-                    "Quantity",
+                    "Total Qty",
+                    "Sub Store Qty",
+                    "Main Store Qty",
                     "Min Qty",
-                    "Store",
                     "Stock",
                   ].map((h) => (
                     <th
@@ -677,7 +721,7 @@ export default function MainStore() {
                 {displayedItems.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="text-center py-12 text-slate-500"
                     >
                       No items found.
@@ -710,14 +754,17 @@ export default function MainStore() {
                           <span
                             className={`font-mono font-bold ${isLow ? "text-red-400" : "text-white"}`}
                           >
-                            {i.item_quantity}
+                            {Number(i.item_quantity).toFixed(0)}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-400 font-bold">
+                          {Number(i.sub_qty).toFixed(0)}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-emerald-400 font-bold">
+                          {Number(i.main_qty).toFixed(0)}
                         </td>
                         <td className="px-4 py-3 font-mono text-slate-400 text-xs">
                           {i.min_quantity}
-                        </td>
-                        <td className="px-4 py-3 text-slate-400 text-xs">
-                          {i.store_name}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -941,69 +988,84 @@ export default function MainStore() {
               {hoForm.items.map((item, idx) => (
                 <div
                   key={idx}
-                  className="bg-slate-800 rounded-lg p-3 grid grid-cols-12 gap-2 items-end mb-2"
+                  className="bg-slate-800 rounded-lg p-3 space-y-2 mb-2"
                 >
-                  <div className="col-span-3">
+                  <div className="grid grid-cols-12 gap-2 items-end">
+                    <div className="col-span-3">
+                      <label className="text-slate-500 text-xs mb-1 block">
+                        Item No *
+                      </label>
+                      <input
+                        value={item.item_no}
+                        onChange={(e) =>
+                          updateLine(idx, "item_no", e.target.value)
+                        }
+                        placeholder="e.g. ITEM-001"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <label className="text-slate-500 text-xs mb-1 block">
+                        Item Name *
+                      </label>
+                      <input
+                        value={item.item_name}
+                        onChange={(e) =>
+                          updateLine(idx, "item_name", e.target.value)
+                        }
+                        placeholder="Item description"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-slate-500 text-xs mb-1 block">
+                        UOM *
+                      </label>
+                      <input
+                        value={item.item_uom}
+                        onChange={(e) =>
+                          updateLine(idx, "item_uom", e.target.value)
+                        }
+                        placeholder="pcs"
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="text-slate-500 text-xs mb-1 block">
+                        Qty *
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={item.requested_qty}
+                        onChange={(e) =>
+                          updateLine(idx, "requested_qty", +e.target.value)
+                        }
+                        className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-center pb-1">
+                      <button
+                        onClick={() => removeLine(idx)}
+                        disabled={hoForm.items.length === 1}
+                        className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-slate-500 text-xs mb-1 block">
-                      Item No *
+                      Category
                     </label>
                     <input
-                      value={item.item_no}
+                      value={item.item_category}
                       onChange={(e) =>
-                        updateLine(idx, "item_no", e.target.value)
+                        updateLine(idx, "item_category", e.target.value)
                       }
-                      placeholder="e.g. ITEM-001"
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      placeholder="e.g. Stationery, IT Supplies, Cleaning…"
+                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
                     />
-                  </div>
-                  <div className="col-span-4">
-                    <label className="text-slate-500 text-xs mb-1 block">
-                      Item Name *
-                    </label>
-                    <input
-                      value={item.item_name}
-                      onChange={(e) =>
-                        updateLine(idx, "item_name", e.target.value)
-                      }
-                      placeholder="Item description"
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-slate-500 text-xs mb-1 block">
-                      UOM *
-                    </label>
-                    <input
-                      value={item.item_uom}
-                      onChange={(e) =>
-                        updateLine(idx, "item_uom", e.target.value)
-                      }
-                      placeholder="pcs"
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-slate-500 text-xs mb-1 block">
-                      Qty *
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.requested_qty}
-                      onChange={(e) =>
-                        updateLine(idx, "requested_qty", +e.target.value)
-                      }
-                      className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                    />
-                  </div>
-                  <div className="col-span-1 flex justify-center pb-1">
-                    <button
-                      onClick={() => removeLine(idx)}
-                      disabled={hoForm.items.length === 1}
-                      className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
-                    >
-                      ×
-                    </button>
                   </div>
                 </div>
               ))}

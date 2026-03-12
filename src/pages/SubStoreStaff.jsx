@@ -10,9 +10,9 @@ import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
-    PENDING:   "border-yellow-500 text-yellow-400",
-    APPROVED:  "border-emerald-500 text-emerald-400",
-    REJECTED:  "border-red-500    text-red-400",
+    PENDING: "border-yellow-500 text-yellow-400",
+    APPROVED: "border-emerald-500 text-emerald-400",
+    REJECTED: "border-red-500    text-red-400",
     FULFILLED: "border-blue-500   text-blue-400",
   };
   return (
@@ -26,7 +26,7 @@ const StatusBadge = ({ status }) => {
 
 const EMPTY_LINE = {
   selected_item_no: "", // tracks dropdown selection only (UI-only)
-  item_search: "",      // search filter for catalogue dropdown (UI-only)
+  item_search: "", // search filter for catalogue dropdown (UI-only)
   _showDropdown: false, // controls live dropdown visibility (UI-only)
   item_no: "",
   item_name: "",
@@ -170,7 +170,9 @@ export default function SubStore() {
       const payload = {
         ...form,
         direction: "SUB_TO_MAIN",
-        items: items.map(({ selected_item_no, item_search, _showDropdown, ...rest }) => rest),
+        items: items.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
       };
       await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
@@ -211,9 +213,7 @@ export default function SubStore() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">
-             {auth.username}
-          </h1>
+          <h1 className="text-xl font-black text-white">{auth.username}</h1>
           <p className="text-slate-400 text-sm mt-0.5">
             Place item requests and track approval status
           </p>
@@ -235,36 +235,65 @@ export default function SubStore() {
         </button>
       </div>
 
-    
-
       {/* ── Received Items Breakdown ───────────────────────────────────── */}
       {fulfilledRequests.length > 0 && (
         <div className="mb-5 rounded-lg border border-slate-700 overflow-hidden">
           <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-            <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">Items Received from Main Store</span>
+            <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">
+              Items Received from Main Store
+            </span>
           </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-700 bg-slate-800/50">
-                {["Request No", "Date", "No. of Items", "Total Qty Received"].map(h => (
-                  <th key={h} className="text-left px-4 py-2 text-slate-400 font-semibold text-xs uppercase tracking-wider">{h}</th>
+                {[
+                  "Request No",
+                  "Date",
+                  "No. of Items",
+                  "Total Qty Received",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left px-4 py-2 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                  >
+                    {h}
+                  </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {fulfilledRequests.map(r => (
-                <tr key={r.request_id} className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer" onClick={() => openDetail(r)}>
-                  <td className="px-4 py-2.5 font-mono text-emerald-400 text-xs font-bold">{r.request_no}</td>
-                  <td className="px-4 py-2.5 text-slate-400 text-xs">{new Date(r.created_at).toLocaleDateString()}</td>
-                  <td className="px-4 py-2.5 text-slate-300 font-mono text-xs">{r.item_count}</td>
-                  <td className="px-4 py-2.5 font-mono font-bold text-emerald-400">{parseFloat(r.total_fulfilled || 0).toFixed(0)}</td>
+              {fulfilledRequests.map((r) => (
+                <tr
+                  key={r.request_id}
+                  className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+                  onClick={() => openDetail(r)}
+                >
+                  <td className="px-4 py-2.5 font-mono text-emerald-400 text-xs font-bold">
+                    {r.request_no}
+                  </td>
+                  <td className="px-4 py-2.5 text-slate-400 text-xs">
+                    {new Date(r.created_at).toLocaleDateString()}
+                  </td>
+                  <td className="px-4 py-2.5 text-slate-300 font-mono text-xs">
+                    {r.item_count}
+                  </td>
+                  <td className="px-4 py-2.5 font-mono font-bold text-emerald-400">
+                    {parseFloat(r.total_fulfilled || 0).toFixed(0)}
+                  </td>
                 </tr>
               ))}
               <tr className="bg-slate-800/60 border-t-2 border-slate-600">
-                <td colSpan={3} className="px-4 py-2 text-slate-400 text-xs font-semibold uppercase">Total Received</td>
+                <td
+                  colSpan={3}
+                  className="px-4 py-2 text-slate-400 text-xs font-semibold uppercase"
+                >
+                  Total Received
+                </td>
                 <td className="px-4 py-2 font-mono font-bold text-emerald-300 text-base">
-                  {fulfilledRequests.reduce((s, r) => s + parseFloat(r.total_fulfilled || 0), 0).toFixed(0)}
+                  {fulfilledRequests
+                    .reduce((s, r) => s + parseFloat(r.total_fulfilled || 0), 0)
+                    .toFixed(0)}
                 </td>
               </tr>
             </tbody>
@@ -307,13 +336,7 @@ export default function SubStore() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-800 border-b border-slate-700">
-              {[
-                "Request No",
-                "Requested By",
-                "Date",
-                "Status",
-                "",
-              ].map((h) => (
+              {["Request No", "Requested By", "Date", "Status", ""].map((h) => (
                 <th
                   key={h}
                   className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
@@ -350,8 +373,10 @@ export default function SubStore() {
                           </span>
                         )}
                       </td>
-                    
-                      <td className="px-4 py-3 text-slate-400">{r.requested_by_name || "—"}</td>
+
+                      <td className="px-4 py-3 text-slate-400">
+                        {r.requested_by_name || "—"}
+                      </td>
                       <td className="px-4 py-3 text-slate-500 text-xs">
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
@@ -359,13 +384,18 @@ export default function SubStore() {
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span className={`text-xs transition-colors ${isExpanded ? "text-emerald-400" : "text-slate-500"}`}>
+                        <span
+                          className={`text-xs transition-colors ${isExpanded ? "text-emerald-400" : "text-slate-500"}`}
+                        >
                           {isExpanded ? "▲ Hide" : "▼ View"}
                         </span>
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr key={r.request_id + "-detail"} className="bg-slate-900/80 border-b-2 border-emerald-600/30">
+                      <tr
+                        key={r.request_id + "-detail"}
+                        className="bg-slate-900/80 border-b-2 border-emerald-600/30"
+                      >
                         <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
@@ -376,45 +406,91 @@ export default function SubStore() {
                               {/* Meta info */}
                               <div className="grid grid-cols-3 gap-2">
                                 {[
-                                  ["Approved By", detail.approved_by_name || "—"],
+                                  [
+                                    "Approved By",
+                                    detail.approved_by_name || "—",
+                                  ],
                                   ["Notes", detail.notes || "—"],
-                                  ["Status", <StatusBadge status={detail.status} />],
+                                  [
+                                    "Status",
+                                    <StatusBadge status={detail.status} />,
+                                  ],
                                 ].map(([label, val]) => (
-                                  <div key={label} className="bg-slate-800 rounded p-2">
-                                    <div className="text-slate-500 text-xs mb-1">{label}</div>
-                                    <div className="text-white text-sm">{val}</div>
+                                  <div
+                                    key={label}
+                                    className="bg-slate-800 rounded p-2"
+                                  >
+                                    <div className="text-slate-500 text-xs mb-1">
+                                      {label}
+                                    </div>
+                                    <div className="text-white text-sm">
+                                      {val}
+                                    </div>
                                   </div>
                                 ))}
                               </div>
                               {/* Rejection reason */}
                               {detail.rejection_reason && (
                                 <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                                  <div className="text-red-400 text-xs font-semibold mb-1">REJECTION REASON</div>
-                                  <div className="text-red-300 text-sm">{detail.rejection_reason}</div>
+                                  <div className="text-red-400 text-xs font-semibold mb-1">
+                                    REJECTION REASON
+                                  </div>
+                                  <div className="text-red-300 text-sm">
+                                    {detail.rejection_reason}
+                                  </div>
                                 </div>
                               )}
                               {/* Items table */}
                               <div>
-                                <div className="text-slate-400 text-xs uppercase font-semibold mb-2">Items</div>
+                                <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
+                                  Items
+                                </div>
                                 <table className="w-full text-sm">
                                   <thead>
                                     <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                                      <th className="text-left pb-2 pr-4">Item No</th>
-                                      <th className="text-left pb-2 pr-4">Item Name</th>
-                                      <th className="text-left pb-2 pr-4">UOM</th>
-                                      <th className="text-center pb-2 pr-4">Requested</th>
-                                      <th className="text-center pb-2">Approved</th>
+                                      <th className="text-left pb-2 pr-4">
+                                        Item No
+                                      </th>
+                                      <th className="text-left pb-2 pr-4">
+                                        Item Name
+                                      </th>
+                                      <th className="text-left pb-2 pr-4">
+                                        UOM
+                                      </th>
+                                      <th className="text-center pb-2 pr-4">
+                                        Requested
+                                      </th>
+                                      <th className="text-center pb-2">
+                                        Approved
+                                      </th>
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {(detail.items || []).map((i) => (
-                                      <tr key={i.request_item_id} className="border-b border-slate-800">
-                                        <td className="py-2 pr-4 font-mono text-emerald-400 text-xs">{i.item_no}</td>
-                                        <td className="py-2 pr-4 text-white">{i.item_name}</td>
-                                        <td className="py-2 pr-4 text-slate-400 text-xs">{i.item_uom}</td>
-                                        <td className="py-2 pr-4 font-mono text-white text-center">{i.requested_qty}</td>
+                                      <tr
+                                        key={i.request_item_id}
+                                        className="border-b border-slate-800"
+                                      >
+                                        <td className="py-2 pr-4 font-mono text-emerald-400 text-xs">
+                                          {i.item_no}
+                                        </td>
+                                        <td className="py-2 pr-4 text-white">
+                                          {i.item_name}
+                                        </td>
+                                        <td className="py-2 pr-4 text-slate-400 text-xs">
+                                          {i.item_uom}
+                                        </td>
+                                        <td className="py-2 pr-4 font-mono text-white text-center">
+                                          {i.requested_qty}
+                                        </td>
                                         <td className="py-2 font-mono text-center">
-                                          <span className={i.approved_qty != null ? "text-emerald-400" : "text-slate-600"}>
+                                          <span
+                                            className={
+                                              i.approved_qty != null
+                                                ? "text-emerald-400"
+                                                : "text-slate-600"
+                                            }
+                                          >
                                             {i.approved_qty ?? "—"}
                                           </span>
                                         </td>
@@ -587,7 +663,6 @@ export default function SubStore() {
                         <div className="mb-3">
                           <label className="text-slate-400 text-xs mb-1 flex items-center gap-1.5">
                             <span>Select from catalogue</span>
-                         
                           </label>
                           <div className="relative mt-1.5">
                             <input
@@ -596,8 +671,15 @@ export default function SubStore() {
                                 updateLine(idx, "item_search", e.target.value);
                                 updateLine(idx, "_showDropdown", true);
                               }}
-                              onFocus={() => updateLine(idx, "_showDropdown", true)}
-                              onBlur={() => setTimeout(() => updateLine(idx, "_showDropdown", false), 150)}
+                              onFocus={() =>
+                                updateLine(idx, "_showDropdown", true)
+                              }
+                              onBlur={() =>
+                                setTimeout(
+                                  () => updateLine(idx, "_showDropdown", false),
+                                  150,
+                                )
+                              }
                               placeholder="Search by item name or number…"
                               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
                             />
@@ -614,30 +696,55 @@ export default function SubStore() {
                                   — Not listed / enter manually —
                                 </div>
                                 {storeItems
-                                  .filter(si => {
-                                    const q = (item.item_search || "").toLowerCase();
+                                  .filter((si) => {
+                                    const q = (
+                                      item.item_search || ""
+                                    ).toLowerCase();
                                     if (!q) return true;
-                                    return si.item_no.toLowerCase().includes(q) || si.item_name.toLowerCase().includes(q);
+                                    return (
+                                      si.item_no.toLowerCase().includes(q) ||
+                                      si.item_name.toLowerCase().includes(q)
+                                    );
                                   })
-                                  .map(si => (
+                                  .map((si) => (
                                     <div
                                       key={si.item_id}
                                       onMouseDown={() => {
-                                        updateLine(idx, "selected_item_no", si.item_no);
-                                        updateLine(idx, "item_search", si.item_no + " — " + si.item_name);
+                                        updateLine(
+                                          idx,
+                                          "selected_item_no",
+                                          si.item_no,
+                                        );
+                                        updateLine(
+                                          idx,
+                                          "item_search",
+                                          si.item_no + " — " + si.item_name,
+                                        );
                                         updateLine(idx, "_showDropdown", false);
                                       }}
                                       className={`px-3 py-2 cursor-pointer hover:bg-slate-700 border-t border-slate-700/50 ${item.selected_item_no === si.item_no ? "bg-emerald-600/20" : ""}`}
                                     >
-                                      <span className="font-mono text-emerald-400 text-xs">{si.item_no}</span>
-                                      <span className="text-white text-xs ml-2">{si.item_name}</span>
+                                      <span className="font-mono text-emerald-400 text-xs">
+                                        {si.item_no}
+                                      </span>
+                                      <span className="text-white text-xs ml-2">
+                                        {si.item_name}
+                                      </span>
                                     </div>
                                   ))}
-                                {storeItems.filter(si => {
-                                  const q = (item.item_search || "").toLowerCase();
-                                  return !q || si.item_no.toLowerCase().includes(q) || si.item_name.toLowerCase().includes(q);
+                                {storeItems.filter((si) => {
+                                  const q = (
+                                    item.item_search || ""
+                                  ).toLowerCase();
+                                  return (
+                                    !q ||
+                                    si.item_no.toLowerCase().includes(q) ||
+                                    si.item_name.toLowerCase().includes(q)
+                                  );
                                 }).length === 0 && (
-                                  <div className="px-3 py-2 text-xs text-slate-600 italic">No items match your search</div>
+                                  <div className="px-3 py-2 text-xs text-slate-600 italic">
+                                    No items match your search
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -699,10 +806,13 @@ export default function SubStore() {
                               Available
                             </label>
                             {(() => {
-                              const found = storeItems.find(si => si.item_no === item.item_no);
+                              const found = storeItems.find(
+                                (si) => si.item_no === item.item_no,
+                              );
                               return found ? (
                                 <div className="w-full bg-slate-600 border border-slate-700 rounded px-2 py-1.5 text-sm  ">
-                                  {parseFloat(found.item_quantity).toFixed(0)} {found.item_uom}
+                                  {parseFloat(found.item_quantity).toFixed(0)}{" "}
+                                  {found.item_uom}
                                 </div>
                               ) : (
                                 <div className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-600 italic">
@@ -756,8 +866,6 @@ export default function SubStore() {
           </div>
         </div>
       )}
-
-}
 
       {/* Toast */}
       {toast && (

@@ -10,14 +10,14 @@ import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
-    PENDING: "border-yellow-500 text-yellow-400",
-    APPROVED: "border-emerald-500 text-emerald-400",
-    REJECTED: "border-red-500    text-red-400",
-    FULFILLED: "border-blue-500   text-blue-400",
+    PENDING: "border-yellow-400 text-yellow-600 bg-yellow-50",
+    APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
+    REJECTED: "border-red-400 text-red-600 bg-red-50",
+    FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-slate-500 text-slate-400"}`}
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-gray-300 text-gray-500 bg-gray-50"}`}
     >
       {status}
     </span>
@@ -25,9 +25,9 @@ const StatusBadge = ({ status }) => {
 };
 
 const EMPTY_LINE = {
-  selected_item_no: "", // tracks dropdown selection only (UI-only)
-  item_search: "", // search filter for catalogue dropdown (UI-only)
-  _showDropdown: false, // controls live dropdown visibility (UI-only)
+  selected_item_no: "",
+  item_search: "",
+  _showDropdown: false,
   item_no: "",
   item_name: "",
   item_uom: "",
@@ -77,7 +77,6 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-      // Load fulfilled for summary
       const fulfilledParams = { direction: "SUB_TO_MAIN", status: "FULFILLED" };
       if (auth.role !== "super admin") fulfilledParams.store_id = auth.store_id;
       else if (filterStore) fulfilledParams.store_id = filterStore;
@@ -95,7 +94,6 @@ export default function SubStore() {
   }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
-    // Show items from Main Store (destination) so sub store sees what is available to request
     const storeToFetch = form.to_store_id || form.from_store_id;
     if (storeToFetch)
       getItems({ store_id: storeToFetch })
@@ -105,7 +103,6 @@ export default function SubStore() {
   }, [form.from_store_id, form.to_store_id, showCreate]);
 
   const openDetail = async (r) => {
-    // Toggle: clicking same row collapses it
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -132,7 +129,6 @@ export default function SubStore() {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
 
-      // Selecting from dropdown auto-fills the manual fields (still editable)
       if (field === "selected_item_no") {
         if (value) {
           const found = storeItems.find((i) => i.item_no === value);
@@ -142,7 +138,6 @@ export default function SubStore() {
             items[idx].item_uom = found.item_uom;
           }
         } else {
-          // Dropdown cleared → wipe manual fields too
           items[idx].item_no = "";
           items[idx].item_name = "";
           items[idx].item_uom = "";
@@ -166,7 +161,6 @@ export default function SubStore() {
 
     setCreating(true);
     try {
-      // Strip UI-only field before sending to API
       const payload = {
         ...form,
         direction: "SUB_TO_MAIN",
@@ -198,12 +192,12 @@ export default function SubStore() {
   if (loading)
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
   if (error)
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
         {error}
       </div>
     );
@@ -213,8 +207,8 @@ export default function SubStore() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">{auth.username}</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <p className="text-gray-500 text-sm mt-0.5">
             Place item requests and track approval status
           </p>
         </div>
@@ -235,18 +229,18 @@ export default function SubStore() {
         </button>
       </div>
 
-      {/* ── Received Items Breakdown ───────────────────────────────────── */}
+      {/* Received Items Breakdown */}
       {fulfilledRequests.length > 0 && (
-        <div className="mb-5 rounded-lg border border-slate-700 overflow-hidden">
-          <div className="bg-slate-800 px-4 py-2.5 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
-            <span className="text-slate-300 text-xs font-semibold uppercase tracking-wider">
+        <div className="mb-5 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+          <div className="bg-gray-50 px-4 py-2.5 flex items-center gap-2 border-b border-gray-200">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <span className="text-gray-600 text-xs font-semibold uppercase tracking-wider">
               Items Received from Main Store
             </span>
           </div>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-700 bg-slate-800/50">
+              <tr className="border-b border-gray-200 bg-gray-50">
                 {[
                   "Request No",
                   "Date",
@@ -255,7 +249,7 @@ export default function SubStore() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="text-left px-4 py-2 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                    className="text-left px-4 py-2 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                   >
                     {h}
                   </th>
@@ -266,31 +260,31 @@ export default function SubStore() {
               {fulfilledRequests.map((r) => (
                 <tr
                   key={r.request_id}
-                  className="border-b border-slate-800 hover:bg-slate-800/40 cursor-pointer"
+                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
                   onClick={() => openDetail(r)}
                 >
-                  <td className="px-4 py-2.5 font-mono text-emerald-400 text-xs font-bold">
+                  <td className="px-4 py-2.5 font-mono text-emerald-600 text-xs font-bold">
                     {r.request_no}
                   </td>
-                  <td className="px-4 py-2.5 text-slate-400 text-xs">
+                  <td className="px-4 py-2.5 text-gray-500 text-xs">
                     {new Date(r.created_at).toLocaleDateString()}
                   </td>
-                  <td className="px-4 py-2.5 text-slate-300 font-mono text-xs">
+                  <td className="px-4 py-2.5 text-gray-700 font-mono text-xs">
                     {r.item_count}
                   </td>
-                  <td className="px-4 py-2.5 font-mono font-bold text-emerald-400">
+                  <td className="px-4 py-2.5 font-mono font-bold text-emerald-600">
                     {parseFloat(r.total_fulfilled || 0).toFixed(0)}
                   </td>
                 </tr>
               ))}
-              <tr className="bg-slate-800/60 border-t-2 border-slate-600">
+              <tr className="bg-gray-50 border-t-2 border-gray-300">
                 <td
                   colSpan={3}
-                  className="px-4 py-2 text-slate-400 text-xs font-semibold uppercase"
+                  className="px-4 py-2 text-gray-500 text-xs font-semibold uppercase"
                 >
                   Total Received
                 </td>
-                <td className="px-4 py-2 font-mono font-bold text-emerald-300 text-base">
+                <td className="px-4 py-2 font-mono font-bold text-emerald-600 text-base">
                   {fulfilledRequests
                     .reduce((s, r) => s + parseFloat(r.total_fulfilled || 0), 0)
                     .toFixed(0)}
@@ -306,7 +300,7 @@ export default function SubStore() {
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
@@ -319,7 +313,7 @@ export default function SubStore() {
           <select
             value={filterStore}
             onChange={(e) => setFilterStore(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
           >
             <option value="">All Sub Stores</option>
             {subStores.map((s) => (
@@ -332,14 +326,14 @@ export default function SubStore() {
       </div>
 
       {/* Requests Table */}
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-800 border-b border-slate-700">
+            <tr className="bg-gray-50 border-b border-gray-200">
               {["Request No", "Requested By", "Date", "Status", ""].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                 >
                   {h}
                 </th>
@@ -349,7 +343,7 @@ export default function SubStore() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
@@ -360,24 +354,23 @@ export default function SubStore() {
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer ${isExpanded ? "bg-slate-800/60" : ""}`}
+                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-400 text-xs font-bold">
+                        <span className="font-mono text-emerald-600 text-xs font-bold">
                           {r.request_no}
                         </span>
                         {r.item_count > 0 && (
-                          <span className="ml-2 bg-slate-700 text-slate-400 text-xs font-mono rounded px-1.5 py-0.5 border border-slate-600">
+                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                             {r.item_count} item{r.item_count > 1 ? "s" : ""}
                           </span>
                         )}
                       </td>
-
-                      <td className="px-4 py-3 text-slate-400">
+                      <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
+                      <td className="px-4 py-3 text-gray-400 text-xs">
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
@@ -385,7 +378,7 @@ export default function SubStore() {
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span
-                          className={`text-xs transition-colors ${isExpanded ? "text-emerald-400" : "text-slate-500"}`}
+                          className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                         >
                           {isExpanded ? "▲ Hide" : "▼ View"}
                         </span>
@@ -394,16 +387,15 @@ export default function SubStore() {
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
-                        className="bg-slate-900/80 border-b-2 border-emerald-600/30"
+                        className="bg-gray-50 border-b-2 border-emerald-200"
                       >
                         <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
+                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
                             <div className="space-y-3">
-                              {/* Meta info */}
                               <div className="grid grid-cols-3 gap-2">
                                 {[
                                   [
@@ -418,36 +410,34 @@ export default function SubStore() {
                                 ].map(([label, val]) => (
                                   <div
                                     key={label}
-                                    className="bg-slate-800 rounded p-2"
+                                    className="bg-white rounded p-2 border border-gray-200"
                                   >
-                                    <div className="text-slate-500 text-xs mb-1">
+                                    <div className="text-gray-400 text-xs mb-1">
                                       {label}
                                     </div>
-                                    <div className="text-white text-sm">
+                                    <div className="text-gray-800 text-sm">
                                       {val}
                                     </div>
                                   </div>
                                 ))}
                               </div>
-                              {/* Rejection reason */}
                               {detail.rejection_reason && (
-                                <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                                  <div className="text-red-400 text-xs font-semibold mb-1">
+                                <div className="bg-red-50 border border-red-200 rounded p-3">
+                                  <div className="text-red-500 text-xs font-semibold mb-1">
                                     REJECTION REASON
                                   </div>
-                                  <div className="text-red-300 text-sm">
+                                  <div className="text-red-600 text-sm">
                                     {detail.rejection_reason}
                                   </div>
                                 </div>
                               )}
-                              {/* Items table */}
                               <div>
-                                <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
+                                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
                                   Items
                                 </div>
                                 <table className="w-full text-sm">
                                   <thead>
-                                    <tr className="border-b border-slate-700 text-slate-400 text-xs">
+                                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                       <th className="text-left pb-2 pr-4">
                                         Item No
                                       </th>
@@ -469,26 +459,26 @@ export default function SubStore() {
                                     {(detail.items || []).map((i) => (
                                       <tr
                                         key={i.request_item_id}
-                                        className="border-b border-slate-800"
+                                        className="border-b border-gray-100"
                                       >
-                                        <td className="py-2 pr-4 font-mono text-emerald-400 text-xs">
+                                        <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
                                           {i.item_no}
                                         </td>
-                                        <td className="py-2 pr-4 text-white">
+                                        <td className="py-2 pr-4 text-gray-800">
                                           {i.item_name}
                                         </td>
-                                        <td className="py-2 pr-4 text-slate-400 text-xs">
+                                        <td className="py-2 pr-4 text-gray-400 text-xs">
                                           {i.item_uom}
                                         </td>
-                                        <td className="py-2 pr-4 font-mono text-white text-center">
+                                        <td className="py-2 pr-4 font-mono text-gray-800 text-center">
                                           {i.requested_qty}
                                         </td>
                                         <td className="py-2 font-mono text-center">
                                           <span
                                             className={
                                               i.approved_qty != null
-                                                ? "text-emerald-400"
-                                                : "text-slate-600"
+                                                ? "text-emerald-600"
+                                                : "text-gray-300"
                                             }
                                           >
                                             {i.approved_qty ?? "—"}
@@ -512,29 +502,28 @@ export default function SubStore() {
         </table>
       </div>
 
-      {/* ── Create Modal ── */}
+      {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setShowCreate(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">New Item Request</h2>
+          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h2 className="text-gray-900 font-bold">New Item Request</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                className="text-slate-400 hover:text-white text-xl leading-none"
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none"
               >
                 ×
               </button>
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Store selectors */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Sub Store *
                   </label>
                   {auth.role === "super admin" ? (
@@ -546,7 +535,7 @@ export default function SubStore() {
                           from_store_id: e.target.value,
                         }))
                       }
-                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">Select Sub Store</option>
                       {subStores.map((s) => (
@@ -560,13 +549,13 @@ export default function SubStore() {
                       type="text"
                       value={auth.storeName || "Loading..."}
                       readOnly
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-400 text-sm cursor-not-allowed outline-none"
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Main Store *
                   </label>
                   <select
@@ -574,7 +563,7 @@ export default function SubStore() {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, to_store_id: e.target.value }))
                     }
-                    className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                   >
                     <option value="">Select Main Store</option>
                     {mainStores.map((s) => (
@@ -586,9 +575,8 @@ export default function SubStore() {
                 </div>
               </div>
 
-              {/* Requested by */}
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Requested By *
                 </label>
                 <input
@@ -600,13 +588,12 @@ export default function SubStore() {
                     }))
                   }
                   placeholder="Your name"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
-              {/* Notes */}
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Notes
                 </label>
                 <textarea
@@ -616,26 +603,25 @@ export default function SubStore() {
                   }
                   rows={2}
                   placeholder="Optional reason"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
 
-              {/* Items */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-xs font-semibold uppercase">
+                  <span className="text-gray-500 text-xs font-semibold uppercase">
                     Items
                   </span>
                   <button
                     onClick={addLine}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-slate-600 rounded px-2 py-1"
+                    className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                   >
                     + Add Row
                   </button>
                 </div>
 
                 {!form.from_store_id ? (
-                  <div className="text-slate-500 text-xs text-center py-6 border border-dashed border-slate-700 rounded-lg">
+                  <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
                     Select a Sub Store first
                   </div>
                 ) : (
@@ -643,25 +629,23 @@ export default function SubStore() {
                     {form.items.map((item, idx) => (
                       <div
                         key={idx}
-                        className="bg-slate-800 rounded-lg p-3 border border-slate-700"
+                        className="bg-gray-50 rounded-lg p-3 border border-gray-200"
                       >
-                        {/* Row header */}
                         <div className="flex items-center justify-between mb-3">
-                          <span className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
                             Item {idx + 1}
                           </span>
                           <button
                             onClick={() => removeLine(idx)}
                             disabled={form.items.length === 1}
-                            className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold leading-none"
+                            className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
                           >
                             ×
                           </button>
                         </div>
 
-                        {/* Catalogue search + live dropdown */}
                         <div className="mb-3">
-                          <label className="text-slate-400 text-xs mb-1 flex items-center gap-1.5">
+                          <label className="text-gray-500 text-xs mb-1 flex items-center gap-1.5">
                             <span>Select from catalogue</span>
                           </label>
                           <div className="relative mt-1.5">
@@ -681,12 +665,12 @@ export default function SubStore() {
                                 )
                               }
                               placeholder="Search by item name or number…"
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                             />
                             {item._showDropdown && (
-                              <div className="absolute z-50 w-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                                 <div
-                                  className="px-3 py-2 text-xs text-slate-500 hover:bg-slate-700 cursor-pointer"
+                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer"
                                   onMouseDown={() => {
                                     updateLine(idx, "selected_item_no", "");
                                     updateLine(idx, "item_search", "");
@@ -722,12 +706,12 @@ export default function SubStore() {
                                         );
                                         updateLine(idx, "_showDropdown", false);
                                       }}
-                                      className={`px-3 py-2 cursor-pointer hover:bg-slate-700 border-t border-slate-700/50 ${item.selected_item_no === si.item_no ? "bg-emerald-600/20" : ""}`}
+                                      className={`px-3 py-2 cursor-pointer hover:bg-gray-50 border-t border-gray-100 ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                     >
-                                      <span className="font-mono text-emerald-400 text-xs">
+                                      <span className="font-mono text-emerald-600 text-xs">
                                         {si.item_no}
                                       </span>
-                                      <span className="text-white text-xs ml-2">
+                                      <span className="text-gray-800 text-xs ml-2">
                                         {si.item_name}
                                       </span>
                                     </div>
@@ -742,7 +726,7 @@ export default function SubStore() {
                                     si.item_name.toLowerCase().includes(q)
                                   );
                                 }).length === 0 && (
-                                  <div className="px-3 py-2 text-xs text-slate-600 italic">
+                                  <div className="px-3 py-2 text-xs text-gray-400 italic">
                                     No items match your search
                                   </div>
                                 )}
@@ -751,19 +735,17 @@ export default function SubStore() {
                           </div>
                         </div>
 
-                        {/* Subtle divider */}
                         <div className="flex items-center gap-2 mb-3">
-                          <div className="flex-1 h-px bg-slate-700" />
-                          <span className="text-slate-600 text-xs">
+                          <div className="flex-1 h-px bg-gray-200" />
+                          <span className="text-gray-400 text-xs">
                             item details
                           </span>
-                          <div className="flex-1 h-px bg-slate-700" />
+                          <div className="flex-1 h-px bg-gray-200" />
                         </div>
 
-                        {/* Manual fields — always visible, auto-populated by dropdown */}
                         <div className="grid grid-cols-12 gap-2">
                           <div className="col-span-2">
-                            <label className="text-slate-400 text-xs mb-1 block">
+                            <label className="text-gray-500 text-xs mb-1 block">
                               Item No *
                             </label>
                             <input
@@ -772,11 +754,11 @@ export default function SubStore() {
                                 updateLine(idx, "item_no", e.target.value)
                               }
                               placeholder="e.g. ITM-001"
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                             />
                           </div>
                           <div className="col-span-4">
-                            <label className="text-slate-400 text-xs mb-1 block">
+                            <label className="text-gray-500 text-xs mb-1 block">
                               Item Name *
                             </label>
                             <input
@@ -785,11 +767,11 @@ export default function SubStore() {
                                 updateLine(idx, "item_name", e.target.value)
                               }
                               placeholder="Full item name"
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-slate-400 text-xs mb-1 block">
+                            <label className="text-gray-500 text-xs mb-1 block">
                               UOM *
                             </label>
                             <input
@@ -798,11 +780,11 @@ export default function SubStore() {
                                 updateLine(idx, "item_uom", e.target.value)
                               }
                               placeholder="pcs / kg…"
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                             />
                           </div>
                           <div className="col-span-2">
-                            <label className="text-slate-400 text-xs mb-1 block">
+                            <label className="text-gray-500 text-xs mb-1 block">
                               Available
                             </label>
                             {(() => {
@@ -810,19 +792,19 @@ export default function SubStore() {
                                 (si) => si.item_no === item.item_no,
                               );
                               return found ? (
-                                <div className="w-full bg-slate-600 border border-slate-700 rounded px-2 py-1.5 text-sm  ">
+                                <div className="w-full bg-gray-100 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
                                   {parseFloat(found.item_quantity).toFixed(0)}{" "}
                                   {found.item_uom}
                                 </div>
                               ) : (
-                                <div className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-xs text-slate-600 italic">
+                                <div className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-400 italic">
                                   —
                                 </div>
                               );
                             })()}
                           </div>
                           <div className="col-span-2">
-                            <label className="text-slate-400 text-xs mb-1 block">
+                            <label className="text-gray-500 text-xs mb-1 block">
                               Qty *
                             </label>
                             <input
@@ -836,7 +818,7 @@ export default function SubStore() {
                                   +e.target.value,
                                 )
                               }
-                              className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                             />
                           </div>
                         </div>
@@ -846,11 +828,10 @@ export default function SubStore() {
                 )}
               </div>
 
-              {/* Actions */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -872,8 +853,8 @@ export default function SubStore() {
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
             toast.type === "success"
-              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
-              : "bg-red-500/20 border-red-500/40 text-red-300"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : "bg-red-50 border-red-200 text-red-700"
           }`}
         >
           <span>{toast.message}</span>

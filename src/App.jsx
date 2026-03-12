@@ -12,7 +12,7 @@ import Unauthorized from "./pages/Unauthorized";
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-950 text-slate-100">
+      <div className="min-h-screen bg-gray-50 text-gray-900">
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 py-6">
           <Routes>

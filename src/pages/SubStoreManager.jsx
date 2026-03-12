@@ -8,10 +8,10 @@ import {
 
 const StatusBadge = ({ status }) => {
   const styles = {
-    PENDING: "bg-amber-500/20   text-amber-400   border border-amber-500/30",
-    APPROVED: "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
-    REJECTED: "bg-red-500/20     text-red-400     border border-red-500/30",
-    FULFILLED: "bg-blue-500/20    text-blue-400    border border-blue-500/30",
+    PENDING: "bg-yellow-50 text-yellow-600 border border-yellow-300",
+    APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
+    REJECTED: "bg-red-50 text-red-600 border border-red-300",
+    FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
   };
   return (
     <span
@@ -143,12 +143,12 @@ export default function SubStoreManager() {
   if (loading)
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
   if (error)
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
         {error}
       </div>
     );
@@ -159,24 +159,24 @@ export default function SubStoreManager() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">
+          <h1 className="text-xl font-black text-gray-900">
             Sub Store Manager Name
           </h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <p className="text-gray-500 text-sm mt-0.5">
             Review and approve or reject staff item requests
           </p>
         </div>
       </div>
 
       {pendingCount > 0 && (
-        <div className="mb-4 bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-amber-400 text-sm font-semibold">
+        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
+          <span className="text-yellow-700 text-sm font-semibold">
             {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
             approval
           </span>
           <button
             onClick={() => setFilter("PENDING")}
-            className="text-xs border border-slate-600 text-slate-300 hover:text-white rounded px-3 py-1 transition-colors"
+            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1 transition-colors"
           >
             Show Pending
           </button>
@@ -187,7 +187,7 @@ export default function SubStoreManager() {
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
@@ -197,15 +197,15 @@ export default function SubStoreManager() {
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-800 border-b border-slate-700">
+            <tr className="bg-gray-50 border-b border-gray-200">
               {["Request No", "Requested By", "Date", "Status", "Actions"].map(
                 (h) => (
                   <th
                     key={h}
-                    className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                    className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                   >
                     {h}
                   </th>
@@ -216,7 +216,7 @@ export default function SubStoreManager() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
@@ -227,24 +227,23 @@ export default function SubStoreManager() {
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer ${isExpanded ? "bg-slate-800/60" : ""}`}
+                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-400 text-xs font-bold">
+                        <span className="font-mono text-emerald-600 text-xs font-bold">
                           {r.request_no}
                         </span>
                         {r.item_count > 0 && (
-                          <span className="ml-2 bg-slate-700 text-slate-400 text-xs font-mono rounded px-1.5 py-0.5 border border-slate-600">
+                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                             {r.item_count} item{r.item_count > 1 ? "s" : ""}
                           </span>
                         )}
                       </td>
-
-                      <td className="px-4 py-3 text-slate-400">
+                      <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-slate-500 text-xs">
+                      <td className="px-4 py-3 text-gray-400 text-xs">
                         {new Date(r.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
@@ -253,7 +252,7 @@ export default function SubStoreManager() {
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span
-                            className={`text-xs transition-colors ${isExpanded ? "text-emerald-400" : "text-slate-500"}`}
+                            className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
                             {isExpanded ? "▲ Hide" : "▼ Details"}
                           </span>
@@ -275,7 +274,7 @@ export default function SubStoreManager() {
                                   setRejecterName("");
                                   setRejectReason("");
                                 }}
-                                className="text-xs bg-red-600 hover:bg-red-500 text-white rounded px-2 py-1 transition-colors"
+                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 transition-colors"
                               >
                                 Reject
                               </button>
@@ -287,12 +286,12 @@ export default function SubStoreManager() {
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
-                        className="bg-slate-900/80 border-b-2 border-emerald-600/30"
+                        className="bg-gray-50 border-b-2 border-emerald-200"
                       >
                         <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
+                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
                             detail && (
@@ -301,33 +300,33 @@ export default function SubStoreManager() {
                                   {[].map(([label, val]) => (
                                     <div
                                       key={label}
-                                      className="bg-slate-800 rounded p-2"
+                                      className="bg-white rounded p-2 border border-gray-200"
                                     >
-                                      <div className="text-slate-500 text-xs mb-1">
+                                      <div className="text-gray-400 text-xs mb-1">
                                         {label}
                                       </div>
-                                      <div className="text-white text-sm">
+                                      <div className="text-gray-800 text-sm">
                                         {val}
                                       </div>
                                     </div>
                                   ))}
                                 </div>
                                 {detail.rejection_reason && (
-                                  <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                                    <div className="text-red-400 text-xs font-semibold mb-1">
+                                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                                    <div className="text-red-500 text-xs font-semibold mb-1">
                                       REJECTION REASON
                                     </div>
-                                    <div className="text-red-300 text-sm">
+                                    <div className="text-red-600 text-sm">
                                       {detail.rejection_reason}
                                     </div>
                                   </div>
                                 )}
                                 {detail.notes && (
-                                  <div className="bg-slate-800 rounded p-3">
-                                    <div className="text-slate-500 text-xs mb-1">
+                                  <div className="bg-white rounded p-3 border border-gray-200">
+                                    <div className="text-gray-400 text-xs mb-1">
                                       NOTES
                                     </div>
-                                    <div className="text-slate-300 text-sm">
+                                    <div className="text-gray-700 text-sm">
                                       {detail.notes}
                                     </div>
                                   </div>
@@ -335,7 +334,7 @@ export default function SubStoreManager() {
                                 <div>
                                   <table className="w-full text-sm">
                                     <thead>
-                                      <tr className="border-b border-slate-700 text-slate-400 text-xs">
+                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                         <th className="text-left pb-2 pr-4">
                                           Item No
                                         </th>
@@ -360,26 +359,26 @@ export default function SubStoreManager() {
                                       {(detail.items || []).map((i) => (
                                         <tr
                                           key={i.request_item_id}
-                                          className="border-b border-slate-800"
+                                          className="border-b border-gray-100"
                                         >
-                                          <td className="py-2 pr-4 font-mono text-emerald-400 text-xs">
+                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
                                             {i.item_no}
                                           </td>
-                                          <td className="py-2 pr-4 text-white">
+                                          <td className="py-2 pr-4 text-gray-800">
                                             {i.item_name}
                                           </td>
-                                          <td className="py-2 pr-4 text-slate-400 text-xs">
+                                          <td className="py-2 pr-4 text-gray-400 text-xs">
                                             {i.item_uom}
                                           </td>
-                                          <td className="py-2 pr-4 font-mono text-white text-center">
+                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">
                                             {i.requested_qty}
                                           </td>
                                           <td className="py-2 pr-4 font-mono text-center">
                                             <span
                                               className={
                                                 i.approved_qty != null
-                                                  ? "text-emerald-400"
-                                                  : "text-slate-600"
+                                                  ? "text-emerald-600"
+                                                  : "text-gray-300"
                                               }
                                             >
                                               {i.approved_qty ?? "—"}
@@ -389,8 +388,8 @@ export default function SubStoreManager() {
                                             <span
                                               className={
                                                 i.fulfilled_qty != null
-                                                  ? "text-blue-400"
-                                                  : "text-slate-600"
+                                                  ? "text-blue-600"
+                                                  : "text-gray-300"
                                               }
                                             >
                                               {i.fulfilled_qty ?? "—"}
@@ -419,40 +418,40 @@ export default function SubStoreManager() {
       {approveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setApproveModal(null)}
           />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">
+          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h2 className="text-gray-900 font-bold">
                 Approve — {approveModal.request_no}
               </h2>
               <button
                 onClick={() => setApproveModal(null)}
-                className="text-slate-400 hover:text-white text-xl"
+                className="text-gray-400 hover:text-gray-700 text-xl"
               >
                 x
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Your Name *
                 </label>
                 <input
                   value={approverName}
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
-                <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
+                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
                   Edit quantities if needed
                 </div>
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-slate-700 text-slate-400 text-xs">
+                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
                       <th className="text-left pb-2">Item</th>
                       <th className="text-center pb-2">Requested</th>
                       <th className="text-center pb-2">Approve Qty</th>
@@ -462,17 +461,17 @@ export default function SubStoreManager() {
                     {editedItems.map((i, idx) => (
                       <tr
                         key={i.request_item_id}
-                        className="border-b border-slate-800"
+                        className="border-b border-gray-100"
                       >
                         <td className="py-2">
-                          <div className="text-white text-sm">
+                          <div className="text-gray-800 text-sm">
                             {i.item_name}
                           </div>
-                          <div className="text-slate-500 text-xs">
+                          <div className="text-gray-400 text-xs">
                             {i.item_uom}
                           </div>
                         </td>
-                        <td className="py-2 font-mono text-slate-400 text-center">
+                        <td className="py-2 font-mono text-gray-500 text-center">
                           {i.requested_qty}
                         </td>
                         <td className="py-2 text-center">
@@ -489,7 +488,7 @@ export default function SubStoreManager() {
                               };
                               setEditedItems(u);
                             }}
-                            className="w-20 bg-slate-700 border border-slate-600 rounded px-2 py-1 text-white text-sm text-center focus:outline-none focus:border-emerald-500"
+                            className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
                           />
                         </td>
                       </tr>
@@ -497,10 +496,10 @@ export default function SubStoreManager() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setApproveModal(null)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -521,35 +520,35 @@ export default function SubStoreManager() {
       {rejectModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setRejectModal(null)}
           />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">
+          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h2 className="text-gray-900 font-bold">
                 Reject — {rejectModal.request_no}
               </h2>
               <button
                 onClick={() => setRejectModal(null)}
-                className="text-slate-400 hover:text-white text-xl"
+                className="text-gray-400 hover:text-gray-700 text-xl"
               >
                 x
               </button>
             </div>
             <div className="p-5 space-y-4">
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Your Name *
                 </label>
                 <input
                   value={rejecterName}
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
                 />
               </div>
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Rejection Reason *
                 </label>
                 <textarea
@@ -557,13 +556,13 @@ export default function SubStoreManager() {
                   onChange={(e) => setRejectReason(e.target.value)}
                   rows={3}
                   placeholder="Explain why this request is rejected"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setRejectModal(null)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -572,7 +571,7 @@ export default function SubStoreManager() {
                   disabled={
                     actioning || !rejecterName.trim() || !rejectReason.trim()
                   }
-                  className="bg-red-600 hover:bg-red-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
+                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
                 >
                   {actioning ? "Rejecting..." : "Confirm Reject"}
                 </button>
@@ -584,7 +583,7 @@ export default function SubStoreManager() {
 
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : toast.type === "error" ? "bg-red-500/20 border-red-500/40 text-red-300" : "bg-blue-500/20 border-blue-500/40 text-blue-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : toast.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-blue-50 border-blue-200 text-blue-700"}`}
         >
           <span>{toast.message}</span>
           <button

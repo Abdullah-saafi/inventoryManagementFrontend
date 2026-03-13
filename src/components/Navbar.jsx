@@ -11,11 +11,18 @@ const links = [
   },
   { to: "/mainstore", label: "Main Store", role: "main-store" },
   {
+<<<<<<< HEAD
     to: "/mainstoreapprover",
     label: "Main Store Manager ",
     role: "main-store-approver",
   },
 
+=======
+    to: "/mainstore-approver",
+    label: "Main Store Approver",
+    role: "main-store-approver",
+  },
+>>>>>>> phase-01
   { to: "/headoffice", label: "Head Office", role: "headoffice" },
 ];
 
@@ -39,12 +46,13 @@ export default function Navbar() {
       navigate("/login");
     }
   };
+
   return (
-    <nav className="bg-slate-900 border-b border-slate-700 sticky top-0 z-50">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-white font-bold text-red-500 tracking-wide">
+          <span className="text-gray-900 font-bold tracking-wide">
             Baitusslam Inventory System
           </span>
         </div>
@@ -66,7 +74,7 @@ export default function Navbar() {
                     `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                       isActive
                         ? "bg-emerald-600 text-white"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     }`
                   }
                 >
@@ -78,13 +86,16 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {auth.accessToken && (
             <>
-              <button className="logout" onClick={logoutUser}>
+              <button
+                className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors"
+                onClick={logoutUser}
+              >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  height="24px"
+                  height="20px"
                   viewBox="0 -960 960 960"
-                  width="24px"
-                  fill="#000000"
+                  width="20px"
+                  fill="currentColor"
                 >
                   <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
                 </svg>
@@ -97,8 +108,9 @@ export default function Navbar() {
 
         {/* Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-500 font-mono">
-            Assalam-oAlaikum
+          <span className="text-gray-500 font-mono text-sm text-right">
+            Assalam-o-Alaikum <br />
+            <span className="text-gray-800 font-semibold">{auth.username}</span>
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>

@@ -6,27 +6,41 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// ── Stores ──────────────────────────────────────────────
-export const getStores = () => API.get("/stores");
+// ── Stores ──────────────────────────────────────────────────
+export const getStores = (params) => API.get("/stores", { params });
 export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
-export const updateStore = (id, data) => API.put(`/stores/${id}`, data);
-export const getStoreInventory = (id) => API.get(`/stores/${id}/inventory`);
 
-// ── Items ────────────────────────────────────────────────
+// ── Items ────────────────────────────────────────────────────
 export const getItems = (params) => API.get("/items", { params });
 export const getItemById = (id) => API.get(`/items/${id}`);
 export const createItem = (data) => API.post("/items", data);
-export const updateItem = (id, data) => API.put(`/items/${id}`, data);
+export const updateItem = (id, data) => API.patch(`/items/${id}`, data);
 export const deleteItem = (id) => API.delete(`/items/${id}`);
-export const getLowStock = (params) => API.get("/items/low-stock", { params });
 
-// ── Requests ─────────────────────────────────────────────
+// ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
+export const getItemSummary = (params) =>
+  API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data);
 
+<<<<<<< HEAD
 // Sub Store Manager (1st level): PENDING → APPROVED
+=======
+// These three endpoints work for BOTH flows (SUB_TO_MAIN and MAIN_TO_HO)
+//
+// SUB_TO_MAIN:
+//   approveRequest  → called by sub-store-approver  (Sub Store Manager)
+//   rejectRequest   → called by sub-store-approver
+//   fulfillRequest  → called by main-store staff
+//
+// MAIN_TO_HO:
+//   approveRequest  → called by main-store-approver (Main Store Manager)
+//   rejectRequest   → called by main-store-approver
+//   fulfillRequest  → called by headoffice staff
+
+>>>>>>> phase-01
 export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
 
@@ -45,6 +59,7 @@ export const managerRejectRequest = (id, data) =>
 // Main Store Staff: MANAGER_APPROVED → FULFILLED
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 
+<<<<<<< HEAD
 // Main Store Manager: HO_PENDING → HO_APPROVED
 export const hoApproveRequest = (id, data) =>
   API.patch(`/requests/${id}/ho-approve`, data);
@@ -58,6 +73,9 @@ export const hoFulfillRequest = (id) =>
   API.patch(`/requests/${id}/ho-fulfill`, {});
 
 // ── Users ────────────────────────────────────────────────
+=======
+// ── Users ────────────────────────────────────────────────────
+>>>>>>> phase-01
 export const login = (credentials) => API.post("/users/login", credentials);
 export const refreshToken = () => API.post("/users/refresh");
 export const logout = () => API.post("/users/logout");

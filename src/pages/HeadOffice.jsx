@@ -13,6 +13,7 @@ const BADGE = {
   REJECTED: "bg-red-50 text-red-600 border-red-300",
   FULFILLED: "bg-blue-50 text-blue-600 border-blue-300",
 };
+
 const StatusBadge = ({ status }) => (
   <span
     className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${BADGE[status] || "border-gray-300 text-gray-500"}`}
@@ -23,17 +24,14 @@ const StatusBadge = ({ status }) => (
 
 export default function HeadOffice() {
   const [tab, setTab] = useState("requests");
-
   const [requests, setRequests] = useState([]);
-  const [filter, setFilter] = useState("APPROVED");
+  const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
 
   const [items, setItems] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [itemsLoading, setItemsLoading] = useState(false);
   const [filterStore, setFilterStore] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [search, setSearch] = useState("");
@@ -60,18 +58,14 @@ export default function HeadOffice() {
   };
 
   const loadItems = async () => {
-    setItemsLoading(true);
     try {
       const params = {};
       if (filterStore) params.store_id = filterStore;
       if (filterCategory) params.category = filterCategory;
       const [iRes, sRes] = await Promise.all([getItems(params), getStores()]);
       setItems(iRes.data.data);
-      setStores(sRes.data.data);
     } catch {
       showToast("Failed to load inventory", "error");
-    } finally {
-      setItemsLoading(false);
     }
   };
 
@@ -92,7 +86,6 @@ export default function HeadOffice() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
     } finally {
       setDL(false);
     }
@@ -113,7 +106,6 @@ export default function HeadOffice() {
   };
 
   const pendingCount = requests.filter((r) => r.status === "APPROVED").length;
-  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
   const displayed = items.filter(
     (i) =>
       !search ||
@@ -130,7 +122,6 @@ export default function HeadOffice() {
       <div className="flex gap-1 border-b border-gray-200 mb-5">
         {[
           { id: "requests", label: "Fulfill Requests", count: pendingCount },
-          { id: "inventory", label: "View Inventory" },
         ].map((t) => (
           <button
             key={t.id}
@@ -148,7 +139,6 @@ export default function HeadOffice() {
         ))}
       </div>
 
-      {/* TAB: Fulfill Requests */}
       {tab === "requests" && (
         <div>
           {pendingCount > 0 && (
@@ -159,6 +149,7 @@ export default function HeadOffice() {
               </span>
             </div>
           )}
+
           <div className="mb-4">
             <select
               value={filter}
@@ -269,6 +260,7 @@ export default function HeadOffice() {
                               </div>
                             </td>
                           </tr>
+
                           {isExpanded && (
                             <tr
                               key={r.request_id + "-detail"}
@@ -391,132 +383,10 @@ export default function HeadOffice() {
         </div>
       )}
 
-      {/* TAB: Inventory */}
-      {tab === "inventory" && (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search item name or number..."
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm w-56 focus:outline-none focus:border-emerald-500 placeholder-gray-400"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {(filterStore || filterCategory || search) && (
-              <button
-                onClick={() => {
-                  setFilterStore("");
-                  setFilterCategory("");
-                  setSearch("");
-                }}
-                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          {itemsLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    {[
-                      "Item No",
-                      "Name",
-                      "Category",
-                      "UOM",
-                      "Quantity",
-                      "Min Qty",
-                      "Store",
-                      "Stock",
-                    ].map((h) => (
-                      <th
-                        key={h}
-                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                      >
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayed.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={8}
-                        className="text-center py-12 text-gray-400"
-                      >
-                        No items found.
-                      </td>
-                    </tr>
-                  ) : (
-                    displayed.map((i) => {
-                      const isLow =
-                        parseFloat(i.item_quantity) <=
-                        parseFloat(i.min_quantity);
-                      return (
-                        <tr
-                          key={i.item_id}
-                          className="border-b border-gray-100 hover:bg-gray-50"
-                        >
-                          <td className="px-4 py-3 font-mono text-emerald-600 text-xs">
-                            {i.item_no}
-                          </td>
-                          <td className="px-4 py-3 text-gray-800 font-semibold">
-                            {i.item_name}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">
-                            {i.category || "—"}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                            {i.item_uom}
-                          </td>
-                          <td className="px-4 py-3 font-mono font-bold text-gray-800">
-                            {i.item_quantity}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                            {i.min_quantity}
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 text-xs">
-                            {i.store_name}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span
-                              className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
-                            >
-                              {isLow ? "Low" : "OK"}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : toast.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-blue-50 border-blue-200 text-blue-700"}`}
+          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}
         >
           <span>{toast.message}</span>
           <button

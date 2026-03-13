@@ -204,13 +204,9 @@ export default function SubStore() {
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <p className="text-gray-500 text-sm mt-0.5">
-            Place item requests and track approval status
-          </p>
         </div>
         <button
           onClick={() => {
@@ -228,72 +224,6 @@ export default function SubStore() {
           New Request
         </button>
       </div>
-
-      {/* Received Items Breakdown */}
-      {fulfilledRequests.length > 0 && (
-        <div className="mb-5 rounded-lg border border-gray-200 overflow-hidden shadow-sm">
-          <div className="bg-gray-50 px-4 py-2.5 flex items-center gap-2 border-b border-gray-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            <span className="text-gray-600 text-xs font-semibold uppercase tracking-wider">
-              Items Received from Main Store
-            </span>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 bg-gray-50">
-                {[
-                  "Request No",
-                  "Date",
-                  "No. of Items",
-                  "Total Qty Received",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left px-4 py-2 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {fulfilledRequests.map((r) => (
-                <tr
-                  key={r.request_id}
-                  className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => openDetail(r)}
-                >
-                  <td className="px-4 py-2.5 font-mono text-emerald-600 text-xs font-bold">
-                    {r.request_no}
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-500 text-xs">
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-2.5 text-gray-700 font-mono text-xs">
-                    {r.item_count}
-                  </td>
-                  <td className="px-4 py-2.5 font-mono font-bold text-emerald-600">
-                    {parseFloat(r.total_fulfilled || 0).toFixed(0)}
-                  </td>
-                </tr>
-              ))}
-              <tr className="bg-gray-50 border-t-2 border-gray-300">
-                <td
-                  colSpan={3}
-                  className="px-4 py-2 text-gray-500 text-xs font-semibold uppercase"
-                >
-                  Total Received
-                </td>
-                <td className="px-4 py-2 font-mono font-bold text-emerald-600 text-base">
-                  {fulfilledRequests
-                    .reduce((s, r) => s + parseFloat(r.total_fulfilled || 0), 0)
-                    .toFixed(0)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
@@ -397,17 +327,7 @@ export default function SubStore() {
                           ) : (
                             <div className="space-y-3">
                               <div className="grid grid-cols-3 gap-2">
-                                {[
-                                  [
-                                    "Approved By",
-                                    detail.approved_by_name || "—",
-                                  ],
-                                  ["Notes", detail.notes || "—"],
-                                  [
-                                    "Status",
-                                    <StatusBadge status={detail.status} />,
-                                  ],
-                                ].map(([label, val]) => (
+                                {[,].map(([label, val]) => (
                                   <div
                                     key={label}
                                     className="bg-white rounded p-2 border border-gray-200"

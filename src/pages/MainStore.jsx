@@ -910,9 +910,6 @@ export default function MainStore() {
                     <div className="mb-3">
                       <label className="text-gray-500 text-xs mb-1 flex items-center gap-1.5">
                         <span>Select from catalogue</span>
-                        <span className="text-gray-400 italic font-normal">
-                          — or leave blank and enter manually below
-                        </span>
                       </label>
                       <div className="relative mt-1.5">
                         <input
@@ -1050,26 +1047,7 @@ export default function MainStore() {
                           className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                         />
                       </div>
-                      <div className="col-span-2">
-                        <label className="text-gray-500 text-xs mb-1 block">
-                          Available
-                        </label>
-                        {(() => {
-                          const found = storeItems.find(
-                            (si) => si.item_no === item.item_no,
-                          );
-                          return found ? (
-                            <div className="w-full bg-gray-100 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
-                              {parseFloat(found.item_quantity).toFixed(0)}{" "}
-                              {found.item_uom}
-                            </div>
-                          ) : (
-                            <div className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-400 italic">
-                              —
-                            </div>
-                          );
-                        })()}
-                      </div>
+
                       <div className="col-span-2">
                         <label className="text-gray-500 text-xs mb-1 block">
                           Qty *

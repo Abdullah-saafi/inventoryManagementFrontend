@@ -29,7 +29,7 @@ export default function SubStore() {
 
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
-  const [managerName, setManagerName] = useState("Loading...");
+  const [managerName, setManagerName] = useState("");
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -77,27 +77,27 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-  const fetchManager = async () => {
-    try {
-      const storeId =
-        auth.role === "super admin"
-          ? form.from_store_id
-          : auth.store_id;
+    const fetchManager = async () => {
+      try {
+        const storeId =
+          auth.role === "super admin"
+            ? form.from_store_id
+            : auth.store_id;
 
-      if (!storeId) return;
+        if (!storeId) return;
 
-      const res = await getStoreManager({ store_id: storeId });
+        const res = await getStoreManager({ store_id: storeId });
 
-      setManagerName(res.data.data?.name || res.data.name);
+        setManagerName(res.data.data?.name || res.data.name);
 
-    } catch (err) {
-      console.error(err);
-      setManagerName("Manager Not Found");
-    }
-  };
+      } catch (err) {
+        console.error(err);
+        setManagerName("Manager Not Found");
+      }
+    };
 
-  fetchManager();
-}, [auth.store_id, form.from_store_id, auth.role]);
+    fetchManager();
+  }, [auth.store_id, form.from_store_id, auth.role]);
 
 
   useEffect(() => {
@@ -115,14 +115,15 @@ export default function SubStore() {
   }, [form.from_store_id]);
 
   useEffect(() => {
-  if (auth.store_id && !form.from_store_id) {
-    setForm(prev => ({
-      ...prev,
-      from_store_id: auth.store_id,
-      requested_by_name: auth.username
-    }));
-  }
-}, [auth.store_id, auth.username]);
+    if (auth.store_id && !form.from_store_id) {
+      setForm(prev => ({
+        ...prev,
+        from_store_id: auth.store_id,
+        requested_by_name: auth.username,
+
+      }));
+    }
+  }, [auth.store_id, auth.username]);
 
   const openDetail = async (r) => {
     setDL(true);
@@ -222,14 +223,27 @@ export default function SubStore() {
           </p>
         </div>
         <button
-          onClick={() => {
+          onClick={async () => {
+            const storeId = auth.store_id;
+
             setForm({
-              ...form,
-              from_store_id: auth.store_id || "",
+              from_store_id: storeId || "",
+              to_store_id: "",
               requested_by_name: auth.username || "",
+              notes: "",
               items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
-            })
-            setShowCreate(true)
+            });
+
+            setShowCreate(true);
+
+            if (storeId) {
+              try {
+                const res = await getStoreManager({ store_id: storeId });
+                setManagerName(res.data.data?.name || res.data.name);
+              } catch {
+                setManagerName("Manager Not Found");
+              }
+            }
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
@@ -379,7 +393,10 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={auth.storeName || auth.store_name || "Loading..."}
+                      value={
+                        subStores.find((s) => s.store_id === auth.store_id)?.store_name ||
+                        "Loading..."
+                      }
                       readOnly
                       className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-400 text-sm cursor-not-allowed outline-none"
                     />
@@ -393,7 +410,7 @@ export default function SubStore() {
                   <div className="relative">
                     <input
                       type="text"
-                      value={managerName? managerName : "loading..."}
+                      value={managerName ? managerName : "loading..."}
                       readOnly
                       className="w-full bg-slate-800 border border-emerald-500/50 rounded px-3 py-2 text-emerald-400 text-sm cursor-not-allowed outline-none font-semibold"
                     />

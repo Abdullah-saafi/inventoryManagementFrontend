@@ -7,7 +7,8 @@ const links = [
   { to: "/substore-manager", label: "Sub Store Manager", role: "sub-store-approver",},
   { to: "/mainstore", label: "Main Store", role: "main-store" },
   { to: "/headoffice", label: "Head Office", role: "headoffice" },
-  {to: "/add-user", label: "Add User", role: "super admin"}
+  {to: "/add-user", label: "Add User", role: "super admin"},
+  {to: "/all-staffs", label: "All Staffs", role: "super admin"}
 ];
 
 export default function Navbar() {

@@ -1,18 +1,25 @@
-import { useState } from "react"
-import { useNavigate } from "react-router"
+import { useEffect, useState } from "react"
+import { useLocation, useNavigate } from "react-router"
 import { useAuth } from "../context/authContext.jsx"
 import { login } from "../services/api.js"
 
 const Login = () => {
     const navigate = useNavigate()
     const { auth, setAuth } = useAuth()
+    const location = useLocation()
 
     const [form, setForm] = useState({ email: "", password: "" })
     const [message, setMessage] = useState(null)
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
 
-    // ... (handleSubmit and handleChange stay exactly the same)
+    useEffect(() => {
+        if(location.state?.message){
+            setMessage(location.state.message)
+            window.history.replaceState({}, document.title)
+        }
+    },[location])
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.email) return setMessage("Email is required")
@@ -46,18 +53,19 @@ const Login = () => {
     }
 
     const handleChange = (e) => {
+        // if(message) setMessage(null)
+        // if(auth.message) setAuth({message: null})
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
     const inputWrapperClass = (fieldError) => `
-        flex items-center w-full rounded-lg overflow-hidden border-2 transition-all duration-200
-        ${fieldError ? 'border-red-500 bg-red-50' : 'border-slate-700 bg-slate-800 focus-within:border-emerald-500'}
-    `
-
-    // FIX: This string forces the browser to use your colors even when autofilling
-    // 1. box-shadow: inset creates a fake background that covers the browser's yellow
-    // 2. text-fill-color: forces the text to stay white
+    flex items-center w-full rounded-lg overflow-hidden border-2 transition-all duration-200
+    bg-slate-800 
+    ${fieldError ? 'border-red-500' : 'border-slate-700 focus-within:border-emerald-500'}
+`
     const autofillFix = "autofill:shadow-[inset_0_0_0px_1000px_#1e293b] [-webkit-text-fill-color:white]";
+
+    const hasError = !!(message || auth.message);
 
     return (
         <div className="min-h-screen bg-slate-950 flex items-center justify-start font-sans">
@@ -73,25 +81,25 @@ const Login = () => {
 
                 <form className="w-full max-w-[350px] space-y-4" onSubmit={handleSubmit}>
                     {/* Email Field */}
-                    <div className={inputWrapperClass(message?.includes("Email") || message === "Invalid username or password")}>
-                        <label className="p-3 bg-slate-800 text-slate-400">
+                    <div className={inputWrapperClass(message?.includes("Invalid credentials") || auth.message)}>
+                        <label htmlFor="email" className={`p-3 text-slate-400 ${hasError ? 'bg-red-500/50 text-white' : 'bg-slate-800 text-slate-400'}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280 320-200v-80L480-520 160-720v80l320 200Z" /></svg>
                         </label>
                         <input
                             className={`bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500 ${autofillFix}`}
                             type="email"
+                            id="email"
                             name='email'
                             placeholder='Enter Email'
                             autoComplete="email"
                             value={form.email}
                             onChange={handleChange}
-                            onFocus={() => setMessage(null)}
                         />
                     </div>
 
                     {/* Password Field */}
-                    <div className={inputWrapperClass(message?.includes("Password") || message === "Invalid username or password")}>
-                        <label className="p-3 bg-slate-800 text-slate-400">
+                    <div className={inputWrapperClass(message?.includes("Invalid credentials") || auth.message)}>
+                        <label htmlFor="password" className={`p-3 text-slate-400 ${hasError ? 'bg-red-500/50 text-white' : 'bg-slate-800 text-slate-400'}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor"><path d="M240-80q-33 0-56.5-23.5T160-160v-400q0-33 23.5-56.5T240-640h40v-80q0-83 58.5-141.5T480-920q83 0 141.5 58.5T680-720v80h40q33 0 56.5 23.5T800-560v400q0 33-23.5 56.5T720-80H240Zm296.5-223.5Q560-327 560-360t-23.5-56.5Q513-440 480-440t-56.5 23.5Q400-393 400-360t23.5 56.5Q447-280 480-280t56.5-23.5ZM360-640h240v-80q0-50-35-85t-85-35q-50 0-85 35t-35 85v80Z" /></svg>
                         </label>
                         <div className="flex-grow flex items-center pr-2">
@@ -99,12 +107,12 @@ const Login = () => {
                                 className={`bg-transparent border-none w-full p-3 text-white outline-none text-sm placeholder:text-slate-500 ${autofillFix}`}
                                 type={showPassword ? "text" : "password"}
                                 name='password'
+                                id="password"
                                 placeholder='Enter Password'
                                 autoComplete="current-password"
                                 value={form.password}
                                 onChange={handleChange}
                             />
-                            {/* ... password toggle button stays same */}
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
@@ -129,7 +137,6 @@ const Login = () => {
                     </button>
                 </form>
             </div>
-            {/* Visual filler stays the same */}
             <div className="hidden lg:flex flex-grow h-screen bg-slate-950 items-center justify-center relative overflow-hidden">
                 <div className="text-center z-10">
                     <h2 className="text-slate-200 text-2xl font-light tracking-widest uppercase">Inventory Management System</h2>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { addUser, getStores } from "../services/api";
+import useErrorHandler from "../components/useErrorHandler";
 
 const AddUser = () => {
     const [form, setForm] = useState({
@@ -13,9 +14,9 @@ const AddUser = () => {
     const [message, setMessage] = useState("");
     const [loading, setLoading] = useState(false);
     const [stores, setStores] = useState([]);
-    
     const [showPass, setShowPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
+    const handleError = useErrorHandler()
 
     useEffect(() => {
         async function fetchStores() {
@@ -47,8 +48,10 @@ const AddUser = () => {
             const response = await addUser(form);
             setMessage(response.data.message);
         } catch (error) {
-            const errorMsg = error.response?.data?.message || "Server Error";
-            setMessage(errorMsg);
+            const msg = handleError(error, "Error in add user")
+            setMessage(msg)
+            // console.log("SOMETHING WRONG IN ADD USER",error);
+            
         } finally {
             setLoading(false);
         }
@@ -64,7 +67,6 @@ const AddUser = () => {
     const inputClass = "w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 placeholder:text-slate-500 pr-10";
     const labelClass = "text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1";
 
-    // Reusable Eye Icon Component
     const EyeIcon = ({ visible }) => (
         visible ? (
             <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 -960 960 960" width="20px" fill="currentColor">

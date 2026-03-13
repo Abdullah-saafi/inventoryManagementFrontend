@@ -10,6 +10,7 @@ import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Unauthorized from "./pages/Unauthorized";
 import AddUser from "./pages/AddUser";
+import AllStaffs from "./pages/AllStaffs";
 
 // Add route
 export default function App() {
@@ -28,6 +29,10 @@ export default function App() {
 
             <Route element={<ProtectedRoute allowedRoles={["super admin"]}/>}>
               <Route path="/add-user" element={<AddUser/>}/>
+            </Route>
+
+            <Route element={<ProtectedRoute allowedRoles={["super admin"]}/>}>
+              <Route path="/all-staffs" element={<AllStaffs/>}/>
             </Route>
 
             <Route element={<ProtectedRoute allowedRoles={["sub-store-approver", "super admin"]}/>}>

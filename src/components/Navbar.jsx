@@ -42,10 +42,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
+      <div className="max-w-7xl mx-auto px-2 flex items-center justify-between h-14">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-900 font-bold text-red-500 tracking-wide">
+          <span className="text-gray-900 font-bold text-green-500 tracking-wide text-xl">
             Baitusslam Inventory System
           </span>
         </div>
@@ -76,20 +76,13 @@ export default function Navbar() {
               ))}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 cursor-pointer">
           {auth.accessToken && (
             <>
               <button className="logout" onClick={logoutUser}>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  height="24px"
-                  viewBox="0 -960 960 960"
-                  width="24px"
-                  fill="#374151"
-                >
-                  <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
-                </svg>
-                <span>Logout</span>
+                <span className="text-sm text-red-500 font-bold cursor-pointer">
+                  Logout
+                </span>
               </button>
 
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -98,9 +91,10 @@ export default function Navbar() {
         </div>
 
         {/* Badge */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-500 font-mono">
-            Assalam-oAlaikum
+        <div className="flex items-center ">
+          <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">
+            <span>Assalam-o-Alaikum</span>
+            <span className="font-bold text-md">{auth.username}</span>
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>

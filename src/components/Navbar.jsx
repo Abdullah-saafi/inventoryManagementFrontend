@@ -3,19 +3,20 @@ import { logout } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const links = [
-  { to: "/substore-staff", label: "Sub Store Staff", role: "sub-store" },
+  { to: "/substore-staff", label: "Sub Store Staff", roles: ["sub-store"] },
   {
     to: "/substore-manager",
     label: "Sub Store Manager",
-    role: "sub-store-approver",
+    roles: ["sub-store-approver"],
   },
-  { to: "/mainstore", label: "Main Store", role: "main-store" },
+  { to: "/mainstore", label: "Main Store", roles: ["main-store"] },
   {
     to: "/mainstore-approver",
     label: "Main Store Approver",
-    role: "main-store-approver",
+    roles: ["main-store-approver"],
   },
-  { to: "/headoffice", label: "Head Office", role: "headoffice" },
+  { to: "/headoffice", label: "Head Office", roles: ["headoffice"] },
+  { to: "/admin", label: "Admin Panel", roles: ["admin"] },
 ];
 
 export default function Navbar() {
@@ -40,11 +41,11 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-900 font-bold tracking-wide">
+          <span className="text-gray-900 font-bold text-red-500 tracking-wide">
             Baitusslam Inventory System
           </span>
         </div>
@@ -55,7 +56,7 @@ export default function Navbar() {
             links
               .filter(
                 (link) =>
-                  link.role === auth.role || auth.role === "super admin",
+                  auth.role === "super admin" || link.roles.includes(auth.role),
               )
               .map(({ to, label }) => (
                 <NavLink
@@ -78,21 +79,19 @@ export default function Navbar() {
         <div className="flex items-center gap-2">
           {auth.accessToken && (
             <>
-              <button
-                className="flex items-center gap-1.5 text-gray-500 hover:text-gray-900 text-sm font-medium transition-colors"
-                onClick={logoutUser}
-              >
+              <button className="logout" onClick={logoutUser}>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  height="20px"
+                  height="24px"
                   viewBox="0 -960 960 960"
-                  width="20px"
-                  fill="currentColor"
+                  width="24px"
+                  fill="#374151"
                 >
                   <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h280v80H200Zm440-160-55-58 102-102H360v-80h327L585-622l55-58 200 200-200 200Z" />
                 </svg>
                 <span>Logout</span>
               </button>
+
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </>
           )}
@@ -100,9 +99,8 @@ export default function Navbar() {
 
         {/* Badge */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-500 font-mono text-sm text-right">
-            Assalam-o-Alaikum <br />
-            <span className="text-gray-800 font-semibold">{auth.username}</span>
+          <span className="text-xs text-gray-500 font-mono">
+            Assalam-oAlaikum
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>

@@ -7,6 +7,7 @@ import MainStore from "./pages/MainStore";
 import MainStoreApprover from "./pages/MainStoreApprover";
 import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AddUser from "./pages/AddUser";
 import Unauthorized from "./pages/Unauthorized";
 
 export default function App() {
@@ -69,6 +70,15 @@ export default function App() {
               }
             >
               <Route path="/headoffice" element={<HeadOffice />} />
+            </Route>
+
+            {/* Admin — create users and sub stores */}
+            <Route
+              element={
+                <ProtectedRoute allowedRoles={["admin", "super admin"]} />
+              }
+            >
+              <Route path="/admin" element={<AddUser />} />
             </Route>
 
             {/* Default redirect */}

@@ -4,6 +4,9 @@ import API from "../services/api";
 
 const addUser = (data) => API.post("/users/addUser", data);
 const addStore = (data) => API.post("/stores", data);
+const fetchUsers = (params) => API.get("/users", { params });
+const toggleUser = (id) => API.patch(`/users/${id}/toggle`);
+const toggleStore = (id) => API.patch(`/stores/${id}/toggle`);
 
 const ROLE_STORE_MAP = {
   "sub-store": "SUB_STORE",
@@ -19,12 +22,31 @@ const ROLES = [
   { value: "main-store", label: "Main Store Staff" },
   { value: "main-store-approver", label: "Main Store Manager" },
   { value: "headoffice", label: "Head Office" },
+  { value: "admin", label: "Admin" },
 ];
+
+const ROLE_LABELS = {
+  "sub-store": "Sub Store Staff",
+  "sub-store-approver": "Sub Store Manager",
+  "main-store": "Main Store Staff",
+  "main-store-approver": "Main Store Manager",
+  headoffice: "Head Office",
+  admin: "Admin",
+  "super admin": "Super Admin",
+};
 
 const TABS = [
   { id: "user", label: "Add User" },
   { id: "store", label: "Add Sub Store" },
+  { id: "all-users", label: "All Users" },
+  { id: "all-stores", label: "All Stores" },
 ];
+
+const STORE_TYPE_LABELS = {
+  MAIN_STORE: "Main Store",
+  SUB_STORE: "Sub Store",
+  HEAD_OFFICE: "Head Office",
+};
 
 const EyeOpen = () => (
   <svg
@@ -37,7 +59,6 @@ const EyeOpen = () => (
     <path d="M480-320q75 0 127.5-52.5T660-500q0-75-52.5-127.5T480-680q-75 0-127.5 52.5T300-500q0 75 52.5 127.5T480-320Zm0-72q-45 0-76.5-31.5T372-500q0-45 31.5-76.5T480-608q45 0 76.5 31.5T588-500q0 45-31.5 76.5T480-392Zm0 192q-146 0-266-81.5T40-500q54-137 174-218.5T480-800q146 0 266 81.5T920-500q-54 137-174 218.5T480-200Zm0-300Zm0 220q113 0 207.5-59.5T832-500q-50-101-144.5-160.5T480-720q-113 0-207.5 59.5T128-500q50 101 144.5 160.5T480-280Z" />
   </svg>
 );
-
 const EyeClosed = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -80,14 +101,36 @@ export default function AddUser() {
   });
   const [storeLoading, setStoreLoading] = useState(false);
 
+  const [users, setUsers] = useState([]);
+  const [usersLoading, setUL] = useState(false);
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setURF] = useState("");
+  const [userStoreFilter, setUSF] = useState("");
+  const [togglingUser, setTogglingUser] = useState(null);
+  const [togglingStore, setTogglingStore] = useState(null);
+
+  const [storeSearch, setStoreSearch] = useState("");
+  const [storeTypeFilter, setSTF] = useState("");
+
   const loadStores = () =>
-    getStores()
+    getStores({ all: true })
       .then((r) => setStores(r.data.data || []))
       .catch(() => {});
+
+  const loadUsers = () => {
+    setUL(true);
+    fetchUsers()
+      .then((r) => setUsers(r.data.data || []))
+      .catch(() => {})
+      .finally(() => setUL(false));
+  };
 
   useEffect(() => {
     loadStores();
   }, []);
+  useEffect(() => {
+    if (tab === "all-users") loadUsers();
+  }, [tab]);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -104,7 +147,7 @@ export default function AddUser() {
   };
 
   const filteredStores = stores.filter(
-    (s) => s.store_type === ROLE_STORE_MAP[userForm.role],
+    (s) => s.store_type === ROLE_STORE_MAP[userForm.role] && s.is_active,
   );
 
   const handleUserSubmit = async () => {
@@ -135,6 +178,7 @@ export default function AddUser() {
         password: "",
         confirmPassword: "",
       });
+      loadUsers();
     } catch (e) {
       showToast(e.response?.data?.message || "Failed to create user", "error");
     } finally {
@@ -150,7 +194,6 @@ export default function AddUser() {
   const handleStoreSubmit = async () => {
     if (!storeForm.store_code || !storeForm.store_name)
       return showToast("Store code and store name are required", "error");
-
     setStoreLoading(true);
     try {
       const res = await addStore({ ...storeForm, store_type: "SUB_STORE" });
@@ -164,12 +207,71 @@ export default function AddUser() {
     }
   };
 
+  const handleToggleUser = async (u) => {
+    setTogglingUser(u.id);
+    try {
+      const res = await toggleUser(u.id);
+      showToast(res.data.message);
+      setUsers((prev) =>
+        prev.map((x) =>
+          x.id === u.id ? { ...x, is_active: !x.is_active } : x,
+        ),
+      );
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to update user", "error");
+    } finally {
+      setTogglingUser(null);
+    }
+  };
+
+  const handleToggleStore = async (s) => {
+    setTogglingStore(s.store_id);
+    try {
+      const res = await toggleStore(s.store_id);
+      showToast(res.data.message);
+      setStores((prev) =>
+        prev.map((x) =>
+          x.store_id === s.store_id ? { ...x, is_active: !x.is_active } : x,
+        ),
+      );
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to update store", "error");
+    } finally {
+      setTogglingStore(null);
+    }
+  };
+
+  const displayedUsers = users.filter((u) => {
+    const q = userSearch.toLowerCase();
+    const matchSearch =
+      !q ||
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q);
+    const matchRole = !userRoleFilter || u.role === userRoleFilter;
+    const matchStore = !userStoreFilter || u.store_name === userStoreFilter;
+    return matchSearch && matchRole && matchStore;
+  });
+
+  const displayedStores = stores.filter((s) => {
+    const q = storeSearch.toLowerCase();
+    const matchSearch =
+      !q ||
+      s.store_name.toLowerCase().includes(q) ||
+      s.store_code.toLowerCase().includes(q);
+    const matchType = !storeTypeFilter || s.store_type === storeTypeFilter;
+    return matchSearch && matchType;
+  });
+
+  const uniqueStoreNames = [
+    ...new Set(users.map((u) => u.store_name).filter(Boolean)),
+  ].sort();
+
   return (
     <div>
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">Admin Panel</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          Create user accounts and add sub store branches
+          Manage users, stores and branches
         </p>
       </div>
 
@@ -179,18 +281,14 @@ export default function AddUser() {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`px-3 py-1.5 rounded text-sm font-medium transition-colors
-              ${
-                tab === t.id
-                  ? "bg-emerald-600 text-white"
-                  : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
-              }`}
+              ${tab === t.id ? "bg-emerald-600 text-white" : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"}`}
           >
             {t.label}
           </button>
         ))}
       </nav>
 
-      {/* ── ADD USER ─────────────────────────────────────────────── */}
+      {/* ── ADD USER ─────────────────────────────────────────── */}
       {tab === "user" && (
         <div className="max-w-xl">
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -234,7 +332,6 @@ export default function AddUser() {
                 </select>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Full Name *</label>
@@ -258,7 +355,6 @@ export default function AddUser() {
                 />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className={labelClass}>Password *</label>
@@ -301,7 +397,6 @@ export default function AddUser() {
                 </div>
               </div>
             </div>
-
             <div className="pt-2 border-t border-gray-200">
               <button
                 onClick={handleUserSubmit}
@@ -319,7 +414,7 @@ export default function AddUser() {
         </div>
       )}
 
-      {/* ── ADD SUB STORE ─────────────────────────────────────────── */}
+      {/* ── ADD SUB STORE ─────────────────────────────────────── */}
       {tab === "store" && (
         <div className="max-w-xl">
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm space-y-4">
@@ -345,7 +440,6 @@ export default function AddUser() {
                 />
               </div>
             </div>
-
             <div>
               <label className={labelClass}>Address</label>
               <input
@@ -356,7 +450,6 @@ export default function AddUser() {
                 className={inputClass}
               />
             </div>
-
             <div>
               <label className={labelClass}>Phone</label>
               <input
@@ -367,14 +460,12 @@ export default function AddUser() {
                 className={inputClass}
               />
             </div>
-
             <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-blue-600 text-xs">
               This store will be created as a{" "}
               <span className="font-bold">SUB_STORE</span>. After creating it,
               go to <span className="font-bold">Add User</span> tab to assign
-              staff to this branch.
+              staff.
             </div>
-
             <div className="pt-2 border-t border-gray-200">
               <button
                 onClick={handleStoreSubmit}
@@ -392,14 +483,302 @@ export default function AddUser() {
         </div>
       )}
 
+      {/* ── ALL USERS ─────────────────────────────────────────── */}
+      {tab === "all-users" && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Search by name or email..."
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400 w-56"
+            />
+            <select
+              value={userRoleFilter}
+              onChange={(e) => setURF(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Roles</option>
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            <select
+              value={userStoreFilter}
+              onChange={(e) => setUSF(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Stores</option>
+              {uniqueStoreNames.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+            {(userSearch || userRoleFilter || userStoreFilter) && (
+              <button
+                onClick={() => {
+                  setUserSearch("");
+                  setURF("");
+                  setUSF("");
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={loadUsers}
+              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto"
+            >
+              ↻ Refresh
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {[
+                    "Name",
+                    "Email",
+                    "Role",
+                    "Store",
+                    "Status",
+                    "Created",
+                    "Action",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {usersLoading ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12">
+                      <div className="flex justify-center">
+                        <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                      </div>
+                    </td>
+                  </tr>
+                ) : displayedUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                      No users found.
+                    </td>
+                  </tr>
+                ) : (
+                  displayedUsers.map((u) => (
+                    <tr
+                      key={u.id}
+                      className={`border-b border-gray-100 hover:bg-gray-50 ${!u.is_active ? "opacity-60" : ""}`}
+                    >
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                        {u.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {u.email}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="bg-gray-100 border border-gray-200 text-gray-600 text-xs font-mono px-2 py-0.5 rounded">
+                          {ROLE_LABELS[u.role] || u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-700 text-xs">
+                        {u.store_name || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs font-semibold ${u.is_active ? "text-emerald-600" : "text-red-500"}`}
+                        >
+                          {u.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">
+                        {new Date(u.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleUser(u)}
+                          disabled={togglingUser === u.id}
+                          className={`text-xs font-semibold px-3 py-1 rounded border transition-colors disabled:opacity-40
+                          ${
+                            u.is_active
+                              ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {togglingUser === u.id
+                            ? "..."
+                            : u.is_active
+                              ? "Deactivate"
+                              : "Activate"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-gray-400 text-xs">
+            {displayedUsers.length} user{displayedUsers.length !== 1 ? "s" : ""}{" "}
+            shown
+          </div>
+        </div>
+      )}
+
+      {/* ── ALL STORES ────────────────────────────────────────── */}
+      {tab === "all-stores" && (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input
+              value={storeSearch}
+              onChange={(e) => setStoreSearch(e.target.value)}
+              placeholder="Search by name or code..."
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400 w-56"
+            />
+            <select
+              value={storeTypeFilter}
+              onChange={(e) => setSTF(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Types</option>
+              <option value="HEAD_OFFICE">Head Office</option>
+              <option value="MAIN_STORE">Main Store</option>
+              <option value="SUB_STORE">Sub Store</option>
+            </select>
+            {(storeSearch || storeTypeFilter) && (
+              <button
+                onClick={() => {
+                  setStoreSearch("");
+                  setSTF("");
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              onClick={loadStores}
+              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto"
+            >
+              ↻ Refresh
+            </button>
+          </div>
+
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {[
+                    "Store Code",
+                    "Store Name",
+                    "Type",
+                    "Address",
+                    "Phone",
+                    "Status",
+                    "Action",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {displayedStores.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                      No stores found.
+                    </td>
+                  </tr>
+                ) : (
+                  displayedStores.map((s) => (
+                    <tr
+                      key={s.store_id}
+                      className={`border-b border-gray-100 hover:bg-gray-50 ${!s.is_active ? "opacity-60" : ""}`}
+                    >
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-emerald-600 text-xs font-bold">
+                          {s.store_code}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-800 font-semibold">
+                        {s.store_name}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded border font-mono
+                        ${
+                          s.store_type === "HEAD_OFFICE"
+                            ? "bg-purple-50 border-purple-200 text-purple-600"
+                            : s.store_type === "MAIN_STORE"
+                              ? "bg-blue-50 border-blue-200 text-blue-600"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                        }`}
+                        >
+                          {STORE_TYPE_LABELS[s.store_type] || s.store_type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {s.address || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">
+                        {s.phone || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs font-semibold ${s.is_active ? "text-emerald-600" : "text-red-500"}`}
+                        >
+                          {s.is_active ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleStore(s)}
+                          disabled={togglingStore === s.store_id}
+                          className={`text-xs font-semibold px-3 py-1 rounded border transition-colors disabled:opacity-40
+                          ${
+                            s.is_active
+                              ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {togglingStore === s.store_id
+                            ? "..."
+                            : s.is_active
+                              ? "Deactivate"
+                              : "Activate"}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-gray-400 text-xs">
+            {displayedStores.length} store
+            {displayedStores.length !== 1 ? "s" : ""} shown
+          </div>
+        </div>
+      )}
+
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-          ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : "bg-red-50 border-red-200 text-red-700"
-          }`}
+          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}
         >
           <span>{toast.message}</span>
           <button

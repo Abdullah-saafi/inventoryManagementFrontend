@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5500/api",
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -24,18 +24,6 @@ export const getRequestById = (id) => API.get(`/requests/${id}`);
 export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data);
-
-// These three endpoints work for BOTH flows (SUB_TO_MAIN and MAIN_TO_HO)
-//
-// SUB_TO_MAIN:
-//   approveRequest  → called by sub-store-approver  (Sub Store Manager)
-//   rejectRequest   → called by sub-store-approver
-//   fulfillRequest  → called by main-store staff
-//
-// MAIN_TO_HO:
-//   approveRequest  → called by main-store-approver (Main Store Manager)
-//   rejectRequest   → called by main-store-approver
-//   fulfillRequest  → called by headoffice staff
 
 export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);

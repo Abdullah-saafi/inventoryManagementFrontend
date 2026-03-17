@@ -31,13 +31,14 @@ API.interceptors.request.use((config) => {
   return config;
 }, (error) => Promise.reject(error));
 
-// ── INTERCEPTOR 2:  ───────────────────────
+// ── INTERCEPTOR 2:  ──────────────────────────
 API.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/users/refresh')) {
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/users/refresh') && !originalRequest.url.includes('/users/login')) {
+      
       originalRequest._retry = true;
       if (isRefreshing) {
         return new Promise((resolve) => {
@@ -60,9 +61,11 @@ API.interceptors.response.use(
 
         return API(originalRequest);
       } catch (refreshErr) {
+
         console.log("API ERROR");
         setAccessTokenInApi("");
-        return Promise.reject(refreshErr.response || refreshErr);
+        
+        return Promise.reject(refreshErr);
       } finally{
         isRefreshing = false
       }
@@ -105,6 +108,14 @@ export const refreshToken = () => API.post("/users/refresh")
 export const logout = () => API.post("/users/logout")
 
 export const addUser = (credentials) => API.post("/users/addUser", credentials)
+
+export const getUsers = (params) => API.get("/users/getUsers", {params})
+
+export const userStatus = (credentials) => API.post("/users/action", credentials)
+
+export const getUserById = (id) => API.get(`/users/getUserById/${id}`)
+
+export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, data)
 
 // ── Main Store ────────────────────────────────────────────────
 

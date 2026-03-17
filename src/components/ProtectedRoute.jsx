@@ -1,8 +1,7 @@
 import { Navigate, Outlet, useNavigate } from "react-router-dom"
 import { useAuth } from "../context/authContext"
 
-const ProtectedRoute = ({ allowedRoles }) => {
-
+const ProtectedRoute = ({ allowedRoles }) => {  
   const { auth, loading } = useAuth()
 
   if (loading) return <div className="flex justify-center py-20">

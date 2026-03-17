@@ -6,20 +6,24 @@ const useErrorHandler = () => {
     const {setAuth} = useAuth()
     
     const handleError = (error, customMessage) => {
-        if(error.response?.status === 400){
-            const errorMsg = error.response?.data?.message || "Server Error"
-                setAuth({
-                    accessToken: null,
-                    username: null,
-                    role: null,
-                    storeName: null,
-                    store_id: null,
-                    message: errorMsg
-                })
-                navigate("/login")
+        const errorMsg = error.response?.data?.message || "Server Error"
+        
+        if(error.response?.status === 400 || error.response?.status === 401){
+            console.log("Is it even coming here");
+            setAuth({
+                accessToken: null,
+                username: null,
+                role: null,
+                storeName: null,
+                store_id: null,
+                message: errorMsg
+            })
+            navigate("/login")
             return errorMsg
+        } else if (error.response?.status === 403 && errorMsg.includes("inactive") || error.response?.status === 400 && errorMsg.includes("inactive") ){
+            setAuth(prev => ({...prev, isBlocked: true, message: errorMsg}))
         }
-         else{
+        else{
             console.log(customMessage, error)
             return error.response?.data.message || customMessage
         }

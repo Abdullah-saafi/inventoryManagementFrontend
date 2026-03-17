@@ -3,12 +3,12 @@ import { logout } from "../services/api";
 import { useAuth } from "../context/authContext";
 
 const links = [
-  { to: "/substore-staff", label: "Sub Store Staff", role: "sub-store" },
-  { to: "/substore-manager", label: "Sub Store Manager", role: "sub-store-approver",},
-  { to: "/mainstore", label: "Main Store", role: "main-store" },
-  { to: "/headoffice", label: "Head Office", role: "headoffice" },
-  {to: "/add-user", label: "Add User", role: "super admin"},
-  {to: "/all-staffs", label: "All Staffs", role: "super admin"}
+  { to: "/substore-staff", label: "Sub Store Staff", role: ["super admin", "sub-store"] },
+  { to: "/substore-manager", label: "Sub Store Manager", role: ["super admin", "sub-store-approver"], },
+  { to: "/mainstore", label: "Main Store", role: ["super admin","main-store"] },
+  { to: "/headoffice", label: "Head Office", role: ["super admin","headoffice" ]},
+  { to: "/add-user", label: "Add User", role: ["super admin", "sub-store"] },
+  { to: "/all-staffs", label: "All Staffs", role: ["super admin", "sub-store"] }
 ];
 
 export default function Navbar() {
@@ -23,11 +23,15 @@ export default function Navbar() {
         accessToken: null,
         username: null,
         role: null,
+        storeName: null,
+        store_id: null,
+        message: null,
+        isBlocked: false
       });
       navigate("/login");
     } catch (error) {
       console.error("Logout failed", error);
-      setAuth({ accessToken: null, username: null, role: null });
+      setAuth({ accessToken: null, username: null, role: null,storeName: null, store_id: null, message: null, isBlocked: false });
       navigate("/login");
     }
   };
@@ -45,20 +49,15 @@ export default function Navbar() {
         <div className="flex items-center gap-1">
           {auth.accessToken &&
             links
-              .filter(
-                (link) =>
-                  link.role === auth.role || auth.role === "super admin",
-              )
+              .filter((link) => link.role.includes(auth.role)) // Check if user role is in the list
               .map(({ to, label }) => (
                 <NavLink
                   key={to}
                   to={to}
-                  end={to === "/"}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${isActive
+                      ? "bg-emerald-600 text-white"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800"
                     }`
                   }
                 >

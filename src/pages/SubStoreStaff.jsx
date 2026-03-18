@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -11,22 +11,31 @@ import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
-    PENDING: "border-yellow-500 text-yellow-400",
-    APPROVED: "border-yellow-500 text-yellow-400",
-    REJECTED: "border-yellow-500 text-yellow-400",
-    FULFILLED: "border-yellow-500 text-yellow-400",
+    PENDING: "border-yellow-400 text-yellow-600 bg-yellow-50",
+    APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
+    REJECTED: "border-red-400 text-red-600 bg-red-50",
+    FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || ""}`}
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-gray-300 text-gray-500 bg-gray-50"}`}
     >
       {status}
     </span>
   );
 };
 
-export default function SubStore() {
+const EMPTY_LINE = {
+  selected_item_no: "",
+  item_search: "",
+  _showDropdown: false,
+  item_no: "",
+  item_name: "",
+  item_uom: "",
+  requested_qty: 1,
+};
 
+export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [managerName, setManagerName] = useState("Loading...");
@@ -38,6 +47,7 @@ export default function SubStore() {
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
+  const [fulfilledRequests, setFulfilledRequests] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
@@ -46,7 +56,7 @@ export default function SubStore() {
     to_store_id: "",
     requested_by_name: "",
     notes: "",
-    items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+    items: [{ ...EMPTY_LINE }],
   });
 
   const { auth } = useAuth();
@@ -69,6 +79,11 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
+      const fulfilledParams = { direction: "SUB_TO_MAIN", status: "FULFILLED" };
+      if (auth.role !== "super admin") fulfilledParams.store_id = auth.store_id;
+      else if (filterStore) fulfilledParams.store_id = filterStore;
+      const fRes = await getRequests(fulfilledParams);
+      setFulfilledRequests(fRes.data.data);
     } catch {
       setError("Failed to load data");
     } finally {
@@ -77,42 +92,17 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-  const fetchManager = async () => {
-    try {
-      const storeId =
-        auth.role === "super admin"
-          ? form.from_store_id
-          : auth.store_id;
-
-      if (!storeId) return;
-
-      const res = await getStoreManager({ store_id: storeId });
-
-      setManagerName(res.data.data?.name || res.data.name);
-
-    } catch (err) {
-      console.error(err);
-      setManagerName("Manager Not Found");
-    }
-  };
-
-  fetchManager();
-}, [auth.store_id, form.from_store_id, auth.role]);
-
+    if (auth.store_id || auth.role === "super admin") load();
+  }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") {
-      load();
-    }
-  }, [auth.store_id, auth.role, filterStatus, filterStore]);
-
-  useEffect(() => {
-    if (form.from_store_id)
-      getItems({ store_id: form.from_store_id }).then((r) =>
-        setStoreItems(r.data.data),
-      );
+    const storeToFetch = form.to_store_id || form.from_store_id;
+    if (storeToFetch)
+      getItems({ store_id: storeToFetch })
+        .then((r) => setStoreItems(r.data.data || []))
+        .catch(() => setStoreItems([]));
     else setStoreItems([]);
-  }, [form.from_store_id]);
+  }, [form.from_store_id, form.to_store_id, showCreate]);
 
   useEffect(() => {
   if (auth.store_id && !form.from_store_id) {
@@ -125,6 +115,10 @@ export default function SubStore() {
 }, [auth.store_id, auth.username]);
 
   const openDetail = async (r) => {
+    if (detail && detail.request_id === r.request_id) {
+      setDetail(null);
+      return;
+    }
     setDL(true);
     setDetail({ ...r, items: [] });
     try {
@@ -137,45 +131,56 @@ export default function SubStore() {
   };
 
   const addLine = () =>
-    setForm((f) => ({
-      ...f,
-      items: [
-        ...f.items,
-        { item_no: "", item_name: "", item_uom: "", requested_qty: 1 },
-      ],
-    }));
+    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+
   const removeLine = (idx) =>
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
-      if (field === "item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
+
+      if (field === "selected_item_no") {
+        if (value) {
+          const found = storeItems.find((i) => i.item_no === value);
+          if (found) {
+            items[idx].item_no = found.item_no;
+            items[idx].item_name = found.item_name;
+            items[idx].item_uom = found.item_uom;
+          }
+        } else {
+          items[idx].item_no = "";
+          items[idx].item_name = "";
+          items[idx].item_uom = "";
         }
       }
+
       return { ...f, items };
     });
   };
 
   const handleCreate = async () => {
     const { from_store_id, to_store_id, requested_by_name, items } = form;
-    if (
-      !from_store_id ||
-      !to_store_id ||
-      !requested_by_name ||
-      items.some((i) => !i.item_no || i.requested_qty < 1)
-    )
+    const invalid = items.some(
+      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name || invalid)
       return setToast({
         message: "Please fill all required fields",
         type: "error",
       });
+
     setCreating(true);
     try {
-      await createRequest({ ...form, direction: "SUB_TO_MAIN" });
+      const payload = {
+        ...form,
+        direction: "SUB_TO_MAIN",
+        items: items.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
+      };
+      await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);
       setForm({
@@ -183,7 +188,7 @@ export default function SubStore() {
         to_store_id: "",
         requested_by_name: "",
         notes: "",
-        items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
+        items: [{ ...EMPTY_LINE }],
       });
       load();
     } catch (e) {
@@ -199,12 +204,12 @@ export default function SubStore() {
   if (loading)
     return (
       <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
   if (error)
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
         {error}
       </div>
     );
@@ -213,23 +218,18 @@ export default function SubStore() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-white">
-            Sub Store User {auth.username}
-          </h1>
-
-          <p className="text-slate-400 text-sm mt-0.5">
-            Place item requests and track approval status
-          </p>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
         </div>
         <button
           onClick={() => {
             setForm({
-              ...form,
               from_store_id: auth.store_id || "",
+              to_store_id: "",
               requested_by_name: auth.username || "",
-              items: [{ item_no: "", item_name: "", item_uom: "", requested_qty: 1 }],
-            })
-            setShowCreate(true)
+              notes: "",
+              items: [{ ...EMPTY_LINE }],
+            });
+            setShowCreate(true);
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
@@ -237,11 +237,12 @@ export default function SubStore() {
         </button>
       </div>
 
+      {/* Filters */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">All Status</option>
           <option value="PENDING">Pending</option>
@@ -254,7 +255,7 @@ export default function SubStore() {
           <select
             value={filterStore}
             onChange={(e) => setFilterStore(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
           >
             <option value="">All Sub Stores</option>
             {subStores.map((s) => (
@@ -266,22 +267,15 @@ export default function SubStore() {
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-700">
+      {/* Requests Table */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-800 border-b border-slate-700">
-              {[
-                "Request No",
-                "From",
-                "To",
-                "Requested By",
-                "Date",
-                "Status",
-                "",
-              ].map((h) => (
+            <tr className="bg-gray-50 border-b border-gray-200">
+              {["Request No", "Requested By", "Date", "Status", ""].map((h) => (
                 <th
                   key={h}
-                  className="text-left px-4 py-3 text-slate-400 font-semibold text-xs uppercase tracking-wider"
+                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
                 >
                   {h}
                 </th>
@@ -291,46 +285,150 @@ export default function SubStore() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-slate-500">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
             ) : (
-              requests.map((r) => (
-                <tr
-                  key={r.request_id}
-                  className="border-b border-slate-800 hover:bg-slate-800/50"
-                >
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-emerald-400 text-xs font-bold">
-                      {r.request_no}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">
-                    {r.from_store_name}
-                  </td>
-                  <td className="px-4 py-3 text-slate-300">
-                    {r.to_store_name}
-                  </td>
-                  <td className="px-4 py-3 text-slate-400">
-                    {r.requested_by_name || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-slate-500 text-xs">
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={r.status} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
+              requests.map((r) => {
+                const isExpanded = detail && detail.request_id === r.request_id;
+                return (
+                  <>
+                    <tr
+                      key={r.request_id}
+                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
-                      className="text-xs text-slate-400 hover:text-white border border-slate-600 hover:border-slate-400 rounded px-2 py-1 transition-colors"
                     >
-                      View
-                    </button>
-                  </td>
-                </tr>
-              ))
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-emerald-600 text-xs font-bold">
+                          {r.request_no}
+                        </span>
+                        {r.item_count > 0 && (
+                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
+                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {r.requested_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">
+                        {new Date(r.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <span
+                          className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                        >
+                          {isExpanded ? "▲ Hide" : "▼ View"}
+                        </span>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr
+                        key={r.request_id + "-detail"}
+                        className="bg-gray-50 border-b-2 border-emerald-200"
+                      >
+                        <td colSpan={7} className="px-6 py-4">
+                          {detailLoad ? (
+                            <div className="flex justify-center py-6">
+                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-3 gap-2">
+                                {[,].map(([label, val]) => (
+                                  <div
+                                    key={label}
+                                    className="bg-white rounded p-2 border border-gray-200"
+                                  >
+                                    <div className="text-gray-400 text-xs mb-1">
+                                      {label}
+                                    </div>
+                                    <div className="text-gray-800 text-sm">
+                                      {val}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                              {detail.rejection_reason && (
+                                <div className="bg-red-50 border border-red-200 rounded p-3">
+                                  <div className="text-red-500 text-xs font-semibold mb-1">
+                                    REJECTION REASON
+                                  </div>
+                                  <div className="text-red-600 text-sm">
+                                    {detail.rejection_reason}
+                                  </div>
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
+                                  Items
+                                </div>
+                                <table className="w-full text-sm">
+                                  <thead>
+                                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                                      <th className="text-left pb-2 pr-4">
+                                        Item No
+                                      </th>
+                                      <th className="text-left pb-2 pr-4">
+                                        Item Name
+                                      </th>
+                                      <th className="text-left pb-2 pr-4">
+                                        UOM
+                                      </th>
+                                      <th className="text-center pb-2 pr-4">
+                                        Requested
+                                      </th>
+                                      <th className="text-center pb-2">
+                                        Approved
+                                      </th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(detail.items || []).map((i) => (
+                                      <tr
+                                        key={i.request_item_id}
+                                        className="border-b border-gray-100"
+                                      >
+                                        <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                                          {i.item_no}
+                                        </td>
+                                        <td className="py-2 pr-4 text-gray-800">
+                                          {i.item_name}
+                                        </td>
+                                        <td className="py-2 pr-4 text-gray-400 text-xs">
+                                          {i.item_uom}
+                                        </td>
+                                        <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                                          {i.requested_qty}
+                                        </td>
+                                        <td className="py-2 font-mono text-center">
+                                          <span
+                                            className={
+                                              i.approved_qty != null
+                                                ? "text-emerald-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            {i.approved_qty ?? "—"}
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -340,34 +438,36 @@ export default function SubStore() {
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setShowCreate(false)}
           />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">New Item Request</h2>
+          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h2 className="text-gray-900 font-bold">New Item Request</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                className="text-slate-400 hover:text-white text-xl"
+                className="text-gray-400 hover:text-gray-700 text-xl leading-none"
               >
-                x
+                ×
               </button>
             </div>
+
             <div className="p-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-
                 <div>
-                  <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Sub Store *
                   </label>
-
                   {auth.role === "super admin" ? (
                     <select
                       value={form.from_store_id}
                       onChange={(e) =>
-                        setForm((f) => ({ ...f, from_store_id: e.target.value }))
+                        setForm((f) => ({
+                          ...f,
+                          from_store_id: e.target.value,
+                        }))
                       }
-                      className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                     >
                       <option value="">Select Sub Store</option>
                       {subStores.map((s) => (
@@ -381,27 +481,34 @@ export default function SubStore() {
                       type="text"
                       value={auth.storeName || auth.store_name || "Loading..."}
                       readOnly
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-slate-400 text-sm cursor-not-allowed outline-none"
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />
                   )}
                 </div>
 
                 <div>
-                  <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Sub Store Manager *
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    Main Store *
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={managerName? managerName : "loading..."}
-                      readOnly
-                      className="w-full bg-slate-800 border border-emerald-500/50 rounded px-3 py-2 text-emerald-400 text-sm cursor-not-allowed outline-none font-semibold"
-                    />
-                  </div>
+                  <select
+                    value={form.to_store_id}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, to_store_id: e.target.value }))
+                    }
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="">Select Main Store</option>
+                    {mainStores.map((s) => (
+                      <option key={s.store_id} value={s.store_id}>
+                        {s.store_name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
+
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Requested By *
                 </label>
                 <input
@@ -414,11 +521,12 @@ export default function SubStore() {
                     }))
                   }
                   placeholder="Your name"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
+
               <div>
-                <label className="text-slate-400 text-xs font-semibold uppercase tracking-wider block mb-1">
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Notes
                 </label>
                 <textarea
@@ -428,102 +536,235 @@ export default function SubStore() {
                   }
                   rows={2}
                   placeholder="Optional reason"
-                  className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
+
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-slate-400 text-xs font-semibold uppercase">
+                  <span className="text-gray-500 text-xs font-semibold uppercase">
                     Items
                   </span>
                   <button
                     onClick={addLine}
-                    className="text-xs text-emerald-400 hover:text-emerald-300 border border-slate-600 rounded px-2 py-1"
+                    className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                   >
                     + Add Row
                   </button>
                 </div>
+
                 {!form.from_store_id ? (
-                  <div className="text-slate-500 text-xs text-center py-6 border border-dashed border-slate-700 rounded-lg">
+                  <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
                     Select a Sub Store first
                   </div>
                 ) : (
-                  form.items.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-800 rounded-lg p-3 grid grid-cols-12 gap-2 items-end mb-2"
-                    >
-                      <div className="col-span-5">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Item
-                        </label>
-                        <select
-                          value={item.item_no}
-                          onChange={(e) =>
-                            updateLine(idx, "item_no", e.target.value)
-                          }
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                        >
-                          <option value="">Select item</option>
-                          {storeItems.map((si) => (
-                            <option key={si.item_id} value={si.item_no}>
-                              {si.item_no} — {si.item_name} (Stock:{" "}
-                              {si.item_quantity} {si.item_uom})
-                            </option>
-                          ))}
-                        </select>
+                  <div className="space-y-3">
+                    {form.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-gray-50 rounded-lg p-3 border border-gray-200"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+                            Item {idx + 1}
+                          </span>
+                          <button
+                            onClick={() => removeLine(idx)}
+                            disabled={form.items.length === 1}
+                            className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
+                          >
+                            ×
+                          </button>
+                        </div>
+
+                        <div className="mb-3">
+                          <label className="text-gray-500 text-xs mb-1 flex items-center gap-1.5">
+                            <span>Select from catalogue</span>
+                          </label>
+                          <div className="relative mt-1.5">
+                            <input
+                              value={item.item_search}
+                              onChange={(e) => {
+                                updateLine(idx, "item_search", e.target.value);
+                                updateLine(idx, "_showDropdown", true);
+                              }}
+                              onFocus={() =>
+                                updateLine(idx, "_showDropdown", true)
+                              }
+                              onBlur={() =>
+                                setTimeout(
+                                  () => updateLine(idx, "_showDropdown", false),
+                                  150,
+                                )
+                              }
+                              placeholder="Search by item name or number…"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                            />
+                            {item._showDropdown && (
+                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                <div
+                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer"
+                                  onMouseDown={() => {
+                                    updateLine(idx, "selected_item_no", "");
+                                    updateLine(idx, "item_search", "");
+                                    updateLine(idx, "_showDropdown", false);
+                                  }}
+                                >
+                                  — Not listed / enter manually —
+                                </div>
+                                {storeItems
+                                  .filter((si) => {
+                                    const q = (
+                                      item.item_search || ""
+                                    ).toLowerCase();
+                                    if (!q) return true;
+                                    return (
+                                      si.item_no.toLowerCase().includes(q) ||
+                                      si.item_name.toLowerCase().includes(q)
+                                    );
+                                  })
+                                  .map((si) => (
+                                    <div
+                                      key={si.item_id}
+                                      onMouseDown={() => {
+                                        updateLine(
+                                          idx,
+                                          "selected_item_no",
+                                          si.item_no,
+                                        );
+                                        updateLine(
+                                          idx,
+                                          "item_search",
+                                          si.item_no + " — " + si.item_name,
+                                        );
+                                        updateLine(idx, "_showDropdown", false);
+                                      }}
+                                      className={`px-3 py-2 cursor-pointer hover:bg-gray-50 border-t border-gray-100 ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+                                    >
+                                      <span className="font-mono text-emerald-600 text-xs">
+                                        {si.item_no}
+                                      </span>
+                                      <span className="text-gray-800 text-xs ml-2">
+                                        {si.item_name}
+                                      </span>
+                                    </div>
+                                  ))}
+                                {storeItems.filter((si) => {
+                                  const q = (
+                                    item.item_search || ""
+                                  ).toLowerCase();
+                                  return (
+                                    !q ||
+                                    si.item_no.toLowerCase().includes(q) ||
+                                    si.item_name.toLowerCase().includes(q)
+                                  );
+                                }).length === 0 && (
+                                  <div className="px-3 py-2 text-xs text-gray-400 italic">
+                                    No items match your search
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="flex-1 h-px bg-gray-200" />
+                          <span className="text-gray-400 text-xs">
+                            item details
+                          </span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+
+                        <div className="grid grid-cols-12 gap-2">
+                          <div className="col-span-2">
+                            <label className="text-gray-500 text-xs mb-1 block">
+                              Item No *
+                            </label>
+                            <input
+                              value={item.item_no}
+                              onChange={(e) =>
+                                updateLine(idx, "item_no", e.target.value)
+                              }
+                              placeholder="e.g. ITM-001"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="col-span-4">
+                            <label className="text-gray-500 text-xs mb-1 block">
+                              Item Name *
+                            </label>
+                            <input
+                              value={item.item_name}
+                              onChange={(e) =>
+                                updateLine(idx, "item_name", e.target.value)
+                              }
+                              placeholder="Full item name"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-gray-500 text-xs mb-1 block">
+                              UOM *
+                            </label>
+                            <input
+                              value={item.item_uom}
+                              onChange={(e) =>
+                                updateLine(idx, "item_uom", e.target.value)
+                              }
+                              placeholder="pcs / kg…"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-gray-500 text-xs mb-1 block">
+                              Available
+                            </label>
+                            {(() => {
+                              const found = storeItems.find(
+                                (si) => si.item_no === item.item_no,
+                              );
+                              return found ? (
+                                <div className="w-full bg-gray-100 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
+                                  {parseFloat(found.item_quantity).toFixed(0)}{" "}
+                                  {found.item_uom}
+                                </div>
+                              ) : (
+                                <div className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-400 italic">
+                                  —
+                                </div>
+                              );
+                            })()}
+                          </div>
+                          <div className="col-span-2">
+                            <label className="text-gray-500 text-xs mb-1 block">
+                              Qty *
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.requested_qty}
+                              onChange={(e) =>
+                                updateLine(
+                                  idx,
+                                  "requested_qty",
+                                  +e.target.value,
+                                )
+                              }
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="col-span-3">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Name
-                        </label>
-                        <input
-                          value={item.item_name}
-                          readOnly
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-sm"
-                        />
-                      </div>
-                      <div className="col-span-2">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          Qty
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.requested_qty}
-                          onChange={(e) =>
-                            updateLine(idx, "requested_qty", +e.target.value)
-                          }
-                          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-white text-sm focus:outline-none focus:border-emerald-500"
-                        />
-                      </div>
-                      <div className="col-span-1">
-                        <label className="text-slate-500 text-xs mb-1 block">
-                          UOM
-                        </label>
-                        <input
-                          value={item.item_uom}
-                          readOnly
-                          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-slate-400 text-xs text-center"
-                        />
-                      </div>
-                      <div className="col-span-1 flex justify-center pb-1">
-                        <button
-                          onClick={() => removeLine(idx)}
-                          // disabled={form.items.length === 1}
-                          className="text-red-400 hover:text-red-300 disabled:opacity-30 text-lg font-bold"
-                        >
-                          x
-                        </button>
-                      </div>
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 )}
               </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-slate-700">
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -540,129 +781,21 @@ export default function SubStore() {
         </div>
       )}
 
-      {/* Detail Modal */}
-      {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70"
-            onClick={() => setDetail(null)}
-          />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">
-                Request — {detail.request_no}
-              </h2>
-              <button
-                onClick={() => setDetail(null)}
-                className="text-slate-400 hover:text-white text-xl"
-              >
-                x
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              {detailLoad ? (
-                <div className="flex justify-center py-10">
-                  <div className="w-7 h-7 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      ["Status", <StatusBadge status={detail.status} />],
-                      ["From", detail.from_store_name],
-                      ["To", detail.to_store_name],
-                      ["Requested By", detail.requested_by_name || "—"],
-                      ["Approved By", detail.approved_by_name || "—"],
-                      [
-                        "Date",
-                        new Date(detail.requested_at).toLocaleDateString(),
-                      ],
-                    ].map(([label, val]) => (
-                      <div key={label} className="bg-slate-800 rounded p-2">
-                        <div className="text-slate-500 text-xs mb-1">
-                          {label}
-                        </div>
-                        <div className="text-white text-sm">{val}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {detail.rejection_reason && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                      <div className="text-red-400 text-xs font-semibold mb-1">
-                        REJECTION REASON
-                      </div>
-                      <div className="text-red-300 text-sm">
-                        {detail.rejection_reason}
-                      </div>
-                    </div>
-                  )}
-                  {detail.notes && (
-                    <div className="bg-slate-800 rounded p-3">
-                      <div className="text-slate-500 text-xs mb-1">NOTES</div>
-                      <div className="text-slate-300 text-sm">
-                        {detail.notes}
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
-                      Items
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                          <th className="text-left pb-2">Item</th>
-                          <th className="text-left pb-2">UOM</th>
-                          <th className="text-center pb-2">Requested</th>
-                          <th className="text-center pb-2">Approved</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(detail.items || []).map((i) => (
-                          <tr
-                            key={i.request_item_id}
-                            className="border-b border-slate-800"
-                          >
-                            <td className="py-2 text-white">{i.item_name}</td>
-                            <td className="py-2 text-slate-400 text-xs">
-                              {i.item_uom}
-                            </td>
-                            <td className="py-2 font-mono text-white text-center">
-                              {i.requested_qty}
-                            </td>
-                            <td className="py-2 font-mono text-center">
-                              <span
-                                className={
-                                  i.approved_qty != null
-                                    ? "text-emerald-400"
-                                    : "text-slate-600"
-                                }
-                              >
-                                {i.approved_qty ?? "—"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300" : "bg-red-500/20 border-red-500/40 text-red-300"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}
         >
           <span>{toast.message}</span>
           <button
             onClick={() => setToast(null)}
             className="opacity-60 hover:opacity-100"
           >
-            x
+            ×
           </button>
         </div>
       )}

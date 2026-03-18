@@ -1,45 +1,111 @@
 import { useEffect, useState } from "react";
-import { getItems, getStores } from "../services/api";
+import {
+  getRequests,
+  getRequestById,
+  fulfillRequest,
+  getItems,
+  getStores,
+} from "../services/api";
+
+const BADGE = {
+  PENDING: "bg-yellow-50 text-yellow-600 border-yellow-300",
+  APPROVED: "bg-emerald-50 text-emerald-600 border-emerald-300",
+  REJECTED: "bg-red-50 text-red-600 border-red-300",
+  FULFILLED: "bg-blue-50 text-blue-600 border-blue-300",
+};
+
+const StatusBadge = ({ status }) => (
+  <span
+    className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${BADGE[status] || "border-gray-300 text-gray-500"}`}
+  >
+    {status}
+  </span>
+);
 
 export default function HeadOffice() {
-  const [items, setItems] = useState([]);
-  const [stores, setStores] = useState([]);
+  const [tab, setTab] = useState("requests");
+  const [requests, setRequests] = useState([]);
+  const [filter, setFilter] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [detail, setDetail] = useState(null);
+  const [detailLoad, setDL] = useState(false);
+  const [fulfilling, setFulfilling] = useState(null);
 
+  const [items, setItems] = useState([]);
   const [filterStore, setFilterStore] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [search, setSearch] = useState("");
 
-  const load = async () => {
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  const loadRequests = async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (filterStore) params.store_id = filterStore;
-      if (filterCategory) params.category = filterCategory;
-
-      const [iRes, sRes] = await Promise.all([getItems(params), getStores()]);
-      setItems(iRes.data.data);
-      setStores(sRes.data.data);
+      const params = { direction: "MAIN_TO_HO" };
+      if (filter) params.status = filter;
+      const r = await getRequests(params);
+      setRequests(r.data.data);
     } catch {
-      setError("Failed to load data");
+      showToast("Failed to load requests", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  const loadItems = async () => {
+    try {
+      const params = {};
+      if (filterStore) params.store_id = filterStore;
+      if (filterCategory) params.category = filterCategory;
+      const [iRes, sRes] = await Promise.all([getItems(params), getStores()]);
+      setItems(iRes.data.data);
+    } catch {
+      showToast("Failed to load inventory", "error");
+    }
+  };
+
   useEffect(() => {
-    load();
-  }, [filterStore, filterCategory]);
+    loadRequests();
+  }, [filter]);
+  useEffect(() => {
+    if (tab === "inventory") loadItems();
+  }, [tab, filterStore, filterCategory]);
 
-  if (loading)
-    return <div className="text-center py-10 text-white">Loading...</div>;
+  const openDetail = async (r) => {
+    if (detail && detail.request_id === r.request_id) {
+      setDetail(null);
+      return;
+    }
+    setDL(true);
+    setDetail({ ...r, items: [] });
+    try {
+      const res = await getRequestById(r.request_id);
+      setDetail(res.data.data);
+    } finally {
+      setDL(false);
+    }
+  };
 
-  if (error)
-    return <div className="text-center py-10 text-red-400">{error}</div>;
+  const handleFulfill = async (requestId) => {
+    setFulfilling(requestId);
+    try {
+      await fulfillRequest(requestId);
+      showToast("Request fulfilled — Main Store inventory updated");
+      setDetail(null);
+      loadRequests();
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to fulfill", "error");
+    } finally {
+      setFulfilling(null);
+    }
+  };
 
-  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
-
+  const pendingCount = requests.filter((r) => r.status === "APPROVED").length;
   const displayed = items.filter(
     (i) =>
       !search ||
@@ -47,179 +113,290 @@ export default function HeadOffice() {
       i.item_no.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const totalQty = displayed.reduce(
-    (sum, i) => sum + parseFloat(i.item_quantity || 0),
-    0,
-  );
-
-  const lowCount = displayed.filter(
-    (i) => parseFloat(i.item_quantity) <= parseFloat(i.min_quantity),
-  ).length;
-
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-          <div className="text-slate-400 text-xs uppercase mb-1">
-            Total Items
-          </div>
-          <div className="text-white font-bold text-xl font-mono">
-            {displayed.length}
-          </div>
-        </div>
-
-        <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
-          <div className="text-slate-400 text-xs uppercase mb-1">
-            Total Quantity
-          </div>
-          <div className="text-white font-bold text-xl font-mono">
-            {totalQty.toFixed(0)}
-          </div>
-        </div>
-
-        <div
-          className={`rounded-lg p-3 border ${
-            lowCount > 0
-              ? "bg-red-500/10 border-red-500/30"
-              : "bg-slate-800/50 border-slate-700"
-          }`}
-        >
-          <div className="text-slate-400 text-xs uppercase mb-1">Low Stock</div>
-          <div
-            className={`font-bold text-xl font-mono ${
-              lowCount > 0 ? "text-red-400" : "text-white"
-            }`}
-          >
-            {lowCount}
-          </div>
-        </div>
+      <div className="mb-4">
+        <h1 className="text-xl font-black text-gray-900">Head Office</h1>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search item name or number..."
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm w-56"
-        />
-
-        <select
-          value={filterStore}
-          onChange={(e) => setFilterStore(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
-        >
-          <option value="">All Stores</option>
-          {stores.map((s) => (
-            <option key={s.store_id} value={s.store_id}>
-              {s.store_name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-white text-sm"
-        >
-          <option value="">All Categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-
-        {(filterStore || filterCategory || search) && (
+      <div className="flex gap-1 border-b border-gray-200 mb-5">
+        {[
+          { id: "requests", label: "Fulfill Requests", count: pendingCount },
+        ].map((t) => (
           <button
-            onClick={() => {
-              setFilterStore("");
-              setFilterCategory("");
-              setSearch("");
-            }}
-            className="text-slate-400 hover:text-white text-sm px-3 py-2 border border-slate-700 rounded"
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-2 text-sm font-semibold border-b-2 -mb-px flex items-center gap-2 transition-colors
+              ${tab === t.id ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-400 hover:text-gray-700"}`}
           >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full border border-slate-700">
-          <thead className="bg-slate-800">
-            <tr className="text-left text-slate-300 text-sm">
-              <th className="p-3">Item No</th>
-              <th className="p-3">Name</th>
-              <th className="p-3">Category</th>
-              <th className="p-3">UOM</th>
-              <th className="p-3">Quantity</th>
-              <th className="p-3">Min Qty</th>
-              <th className="p-3">Store</th>
-              <th className="p-3">Stock</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {displayed.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="text-center py-10 text-slate-500">
-                  No items found.
-                </td>
-              </tr>
-            ) : (
-              displayed.map((i) => {
-                const isLow =
-                  parseFloat(i.item_quantity) <= parseFloat(i.min_quantity);
-
-                return (
-                  <tr key={i.item_id} className="border-t border-slate-700">
-                    <td className="p-3 font-mono text-emerald-400 text-xs">
-                      {i.item_no}
-                    </td>
-
-                    <td className="p-3 text-white font-semibold">
-                      {i.item_name}
-                    </td>
-
-                    <td className="p-3 text-slate-400 text-xs">
-                      {i.category || "—"}
-                    </td>
-
-                    <td className="p-3 font-mono text-xs text-slate-300">
-                      {i.item_uom}
-                    </td>
-
-                    <td
-                      className={`p-3 font-mono font-bold ${
-                        isLow ? "text-red-400" : "text-white"
-                      }`}
-                    >
-                      {i.item_quantity}
-                    </td>
-
-                    <td className="p-3 font-mono text-slate-400 text-xs">
-                      {i.min_quantity}
-                    </td>
-
-                    <td className="p-3 text-slate-400 text-xs">
-                      {i.store_name}
-                    </td>
-
-                    <td
-                      className={`p-3 text-xs font-semibold ${
-                        isLow ? "text-red-400" : "text-emerald-400"
-                      }`}
-                    >
-                      {isLow ? "Low Stock" : "OK"}
-                    </td>
-                  </tr>
-                );
-              })
+            {t.label}
+            {t.count > 0 && (
+              <span className="bg-emerald-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+                {t.count}
+              </span>
             )}
-          </tbody>
-        </table>
+          </button>
+        ))}
       </div>
+
+      {tab === "requests" && (
+        <div>
+          {pendingCount > 0 && (
+            <div className="mb-4 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3">
+              <span className="text-emerald-700 text-sm font-semibold">
+                {pendingCount} request{pendingCount > 1 ? "s" : ""} approved by
+                Main Store Manager — waiting for you to fulfill
+              </span>
+            </div>
+          )}
+
+          <div className="mb-4">
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Statuses</option>
+              <option value="PENDING">
+                Pending (awaiting manager approval)
+              </option>
+              <option value="APPROVED">Approved — Ready to Fulfill</option>
+              <option value="FULFILLED">Fulfilled</option>
+              <option value="REJECTED">Rejected</option>
+            </select>
+          </div>
+
+          {loading ? (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 border-b border-gray-200">
+                    {[
+                      "Request No",
+                      "Requested By",
+                      "Approved By",
+                      "Date",
+                      "Status",
+                      "",
+                    ].map((h) => (
+                      <th
+                        key={h}
+                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="text-center py-12 text-gray-400"
+                      >
+                        No requests found.
+                      </td>
+                    </tr>
+                  ) : (
+                    requests.map((r) => {
+                      const isExpanded =
+                        detail && detail.request_id === r.request_id;
+                      return (
+                        <>
+                          <tr
+                            key={r.request_id}
+                            className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
+                            onClick={() => openDetail(r)}
+                          >
+                            <td className="px-4 py-3">
+                              <span className="font-mono text-emerald-600 text-xs font-bold">
+                                {r.request_no}
+                              </span>
+                              {r.item_count > 0 && (
+                                <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
+                                  {r.item_count} item
+                                  {r.item_count > 1 ? "s" : ""}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {r.requested_by_name || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-gray-600">
+                              {r.approved_by_name || "—"}
+                            </td>
+                            <td className="px-4 py-3 text-gray-400 text-xs">
+                              {new Date(r.created_at).toLocaleDateString()}
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusBadge status={r.status} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex gap-1 items-center">
+                                <span
+                                  className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                                >
+                                  {isExpanded ? "▲ Hide" : "▼ Details"}
+                                </span>
+                                {r.status === "APPROVED" && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFulfill(r.request_id);
+                                    }}
+                                    disabled={fulfilling === r.request_id}
+                                    className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 disabled:opacity-40 ml-1"
+                                  >
+                                    {fulfilling === r.request_id
+                                      ? "..."
+                                      : "Fulfill"}
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {isExpanded && (
+                            <tr
+                              key={r.request_id + "-detail"}
+                              className="bg-gray-50 border-b-2 border-emerald-200"
+                            >
+                              <td colSpan={6} className="px-6 py-4">
+                                {detailLoad ? (
+                                  <div className="flex justify-center py-6">
+                                    <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                                  </div>
+                                ) : (
+                                  detail && (
+                                    <div className="space-y-3">
+                                      {detail.notes && (
+                                        <div className="bg-white rounded p-3 border border-gray-200">
+                                          <div className="text-gray-400 text-xs mb-1">
+                                            NOTES
+                                          </div>
+                                          <div className="text-gray-700 text-sm">
+                                            {detail.notes}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {detail.rejection_reason && (
+                                        <div className="bg-red-50 border border-red-200 rounded p-3">
+                                          <div className="text-red-500 text-xs font-semibold mb-1">
+                                            REJECTION REASON
+                                          </div>
+                                          <div className="text-red-600 text-sm">
+                                            {detail.rejection_reason}
+                                          </div>
+                                        </div>
+                                      )}
+                                      <div>
+                                        <table className="w-full text-sm">
+                                          <thead>
+                                            <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                                              <th className="text-left pb-2 pr-4">
+                                                Item No
+                                              </th>
+                                              <th className="text-left pb-2 pr-4">
+                                                Item Name
+                                              </th>
+                                              <th className="text-left pb-2 pr-4">
+                                                UOM
+                                              </th>
+                                              <th className="text-center pb-2 pr-4">
+                                                Requested
+                                              </th>
+                                              <th className="text-center pb-2">
+                                                Fulfilled
+                                              </th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {(detail.items || []).map((i) => (
+                                              <tr
+                                                key={i.request_item_id}
+                                                className="border-b border-gray-100"
+                                              >
+                                                <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                                                  {i.item_no}
+                                                </td>
+                                                <td className="py-2 pr-4 text-gray-800">
+                                                  {i.item_name}
+                                                </td>
+                                                <td className="py-2 pr-4 text-gray-400 text-xs">
+                                                  {i.item_uom}
+                                                </td>
+                                                <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                                                  {i.requested_qty}
+                                                </td>
+                                                <td className="py-2 font-mono text-center">
+                                                  <span
+                                                    className={
+                                                      i.fulfilled_qty != null
+                                                        ? "text-blue-600"
+                                                        : "text-gray-300"
+                                                    }
+                                                  >
+                                                    {i.fulfilled_qty ?? "—"}
+                                                  </span>
+                                                </td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                      {detail.status === "APPROVED" && (
+                                        <div className="pt-2 border-t border-gray-200">
+                                          <button
+                                            onClick={() =>
+                                              handleFulfill(detail.request_id)
+                                            }
+                                            disabled={
+                                              fulfilling === detail.request_id
+                                            }
+                                            className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
+                                          >
+                                            {fulfilling === detail.request_id
+                                              ? "Processing..."
+                                              : "Fulfill Request"}
+                                          </button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )
+                                )}
+                              </td>
+                            </tr>
+                          )}
+                        </>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {toast && (
+        <div
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
+          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}
+        >
+          <span>{toast.message}</span>
+          <button
+            onClick={() => setToast(null)}
+            className="opacity-60 hover:opacity-100"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -92,7 +92,6 @@ export default function Navbar() {
             </>
           )}
         </div>
-
         {/* Badge */}
         <div className="flex items-center ">
           <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">

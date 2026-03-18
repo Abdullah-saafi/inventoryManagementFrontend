@@ -9,9 +9,9 @@ import MainStore from "./pages/MainStore";
 import MainStoreApprover from "./pages/MainStoreApprover";
 import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
-import AddUser from "./pages/AddUser";
+import AddUser from "./pages/Admin.jsx";
 import Unauthorized from "./pages/Unauthorized";
-import AddUser from "./pages/AddUser";
+import AddUser from "./pages/Admin.jsx";
 import AllStaffs from "./pages/AllStaffs";
 import EditUser from "./pages/EditUser.jsx";
 

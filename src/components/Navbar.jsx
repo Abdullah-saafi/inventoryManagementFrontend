@@ -17,6 +17,7 @@ const links = [
   },
   { to: "/headoffice", label: "Head Office", roles: ["headoffice"] },
   { to: "/admin", label: "Admin Panel", roles: ["admin"] },
+
 ];
 
 export default function Navbar() {
@@ -31,11 +32,15 @@ export default function Navbar() {
         accessToken: null,
         username: null,
         role: null,
+        storeName: null,
+        store_id: null,
+        message: null,
+        isBlocked: false
       });
       navigate("/login");
     } catch (error) {
       console.error("Logout failed", error);
-      setAuth({ accessToken: null, username: null, role: null });
+      setAuth({ accessToken: null, username: null, role: null,storeName: null, store_id: null, message: null, isBlocked: false });
       navigate("/login");
     }
   };
@@ -62,7 +67,6 @@ export default function Navbar() {
                 <NavLink
                   key={to}
                   to={to}
-                  end={to === "/"}
                   className={({ isActive }) =>
                     `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                       isActive

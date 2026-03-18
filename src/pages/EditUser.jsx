@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { addUser, getStores } from "../services/api";
+import { editUserById, getStores, getUserById } from "../services/api";
 import useErrorHandler from "../components/useErrorHandler";
-import BlockedUI from "../components/BlockedUI";
+// import BlockedUI from "../components/BlockedUI";
+import { useParams } from "react-router-dom";
 import { useAuth } from "../context/authContext";
-
-const AddUser = () => {
+const EditUser = () => {
+    const {id} = useParams()
     const [form, setForm] = useState({
         username: "",
         email: "",
@@ -14,50 +15,73 @@ const AddUser = () => {
         confirmPassword: "",
     });
     const [message, setMessage] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [pageLoading, setPageLoading] = useState(false);
     const [stores, setStores] = useState([]);
     const [showPass, setShowPass] = useState(false);
     const [showConfirmPass, setShowConfirmPass] = useState(false);
-
+    
+    const {loading} = useAuth()
     const handleError = useErrorHandler()
-    const {auth} = useAuth()
+
+    async function fetchStores() {
+        try {
+            const response = await getStores();
+            setStores(response.data.data || []);
+        } catch (error) {
+            const msg = handleError(error, "Failed to fetch stores" )
+            setMessage(msg)
+        }
+    }
+
+    async function fetchUserById() {
+        try {
+            const response = await getUserById(id)
+            const data = response.data.user
+            setForm({
+                username: data.name,
+                email: data.email,
+                role: data.role,
+                store_id: data.store_id,
+            })       
+        } catch (error) {
+            const msg = handleError(error, "Failed to fetch user by id")
+            setMessage(msg)   
+        }
+    }
 
     useEffect(() => {
-        async function fetchStores() {
-            try {
-                const response = await getStores();
-                setStores(response.data.data || []);
-            } catch (error) {
-                handleError(error, "Failed to fetch stores" )
-            }
-        }
-        fetchStores();
-    }, []);
-
-    const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setMessage("");
-        setLoading(true);
-
-        if (form.password !== form.confirmPassword) {
-            setLoading(false);
-            return setMessage("Password do not match");
-        }
+    const initialize = async () => {
+        if (loading) return; 
 
         try {
-            const response = await addUser(form);
-            setMessage(response.data.message);
+            setPageLoading(true);
+            await Promise.all([fetchStores(), fetchUserById()]);
         } catch (error) {
-            const msg = handleError(error, "Error in add user")
-            setMessage(msg)            
+            handleError(error);
         } finally {
-            setLoading(false);
+            setPageLoading(false);
         }
     };
+    initialize();
+}, [id, loading]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+        try {
+            setPageLoading(true)
+            const response = await editUserById(id,form)
+            setMessage(response.data.message)
+        } catch (error) {
+            const msg = handleError(error, "Failed to edit user" )
+            setMessage(msg)
+        } finally{
+            setPageLoading(false)
+        }
+    }
+
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value })
+    }
 
     const roleStoreMapping = {
         "sub-store-approver": "SUB_STORE",
@@ -81,23 +105,15 @@ const AddUser = () => {
         )
     );
 
-    if(auth.isBlocked){
-        return <BlockedUI message={auth.message}/>
-    }
-
     return (
-        <div className="max-w-2xl mx-auto p-6">
-            <div className="mb-8">
-                <h1 className="text-2xl font-black text-white">Add New User</h1>
-                <p className="text-slate-400 text-sm mt-1">Create internal staff accounts and assign store branches</p>
-            </div>
-
+        <div>
+            <h1>Edit Staff</h1>
             <form onSubmit={handleSubmit} autoComplete="off" className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-xl space-y-5">
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className={labelClass}>Role <span title="This field is required." className="text-red-400">*</span></label>
-                        <select name="role" onChange={handleChange} className={inputClass} required>
+                        <label className={labelClass}>Role</label>
+                        <select name="role" value={form.role} onChange={handleChange} className={inputClass}>
                             <option value="">Select Role</option>
                             <option value="sub-store-approver">Sub Store Manager</option>
                             <option value="sub-store">Sub Store Staff</option>
@@ -107,8 +123,8 @@ const AddUser = () => {
                     </div>
 
                     <div>
-                        <label className={labelClass}>Branch / Store <span title="This field is required." className="text-red-400">*</span></label>
-                        <select name="store_id" onChange={handleChange} required className={inputClass}>
+                        <label className={labelClass}>Branch / Store</label>
+                        <select name="store_id" value={form.store_id?.toString() || ""} onChange={handleChange} className={inputClass}>
                             <option value="">Select Store</option>
                             {stores
                                 .filter((s) => s.store_type === roleStoreMapping[form.role])
@@ -121,28 +137,28 @@ const AddUser = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className={labelClass}>Username <span title="This field is required." className="text-red-400">*</span></label>
-                        <input name="username" autoComplete="off" onChange={handleChange} className={inputClass} required />
+                        <label className={labelClass}>Username</label>
+                        <input name="username" autoComplete="off" value={form.username} onChange={handleChange} className={inputClass}  />
                     </div>
 
                     <div>
-                        <label className={labelClass}>Email Address <span title="This field is required." className="text-red-400">*</span></label>
-                        <input type="email" name="email" autoComplete="off" onChange={handleChange} className={inputClass} required />
+                        <label className={labelClass}>Email Address</label>
+                        <input type="email" name="email" autoComplete="off" value={form.email} onChange={handleChange} className={inputClass}  />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Password Field */}
                     <div className="relative">
-                        <label className={labelClass}>Password <span title="This field is required." className="text-red-400">*</span></label>
+                        <label className={labelClass}>Password</label>
                         <div className="relative">
-                            <input 
-                                type={showPass ? "text" : "password"} 
+                            <input
+                                type={showPass ? "text" : "password"}
                                 name="password"
                                 autoComplete="new-password"
-                                onChange={handleChange} 
-                                className={inputClass} 
-                                required 
+                                onChange={handleChange}
+                                className={inputClass}
+                                
                             />
                             <button
                                 type="button"
@@ -156,15 +172,15 @@ const AddUser = () => {
 
                     {/* Confirm Password Field */}
                     <div className="relative">
-                        <label className={labelClass}>Confirm Password <span title="This field is required." className="text-red-400">*</span></label>
+                        <label className={labelClass}>Confirm Password</label>
                         <div className="relative">
-                            <input 
-                                type={showConfirmPass ? "text" : "password"} 
+                            <input
+                                type={showConfirmPass ? "text" : "password"}
                                 name="confirmPassword"
                                 autoComplete="new-password"
-                                onChange={handleChange} 
-                                className={inputClass} 
-                                required 
+                                onChange={handleChange}
+                                className={inputClass}
+                                
                             />
                             <button
                                 type="button"
@@ -180,26 +196,26 @@ const AddUser = () => {
                 <div className="pt-4 border-t border-slate-800">
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={loading || pageLoading}
                         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {loading ? (
+                        {loading || pageLoading ? (
                             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : "Create User Account"}
+                        ) : "Edit"}
                     </button>
                 </div>
 
                 {message && (
                     <div className={`mt-4 p-3 rounded text-center text-sm font-medium border ${message.includes("Success") || message.includes("registered")
-                            ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
-                            : "bg-red-500/10 border-red-500/40 text-red-400"
+                        ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-400"
+                        : "bg-red-500/10 border-red-500/40 text-red-400"
                         }`}>
                         {message}
                     </div>
                 )}
             </form>
         </div>
-    );
-};
+    )
+}
 
-export default AddUser;
+export default EditUser

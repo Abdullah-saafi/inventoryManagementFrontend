@@ -5,7 +5,6 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-  getStoreManager,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 
@@ -38,7 +37,6 @@ const EMPTY_LINE = {
 export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
-  const [managerName, setManagerName] = useState("Loading...");
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -103,16 +101,6 @@ export default function SubStore() {
         .catch(() => setStoreItems([]));
     else setStoreItems([]);
   }, [form.from_store_id, form.to_store_id, showCreate]);
-
-  useEffect(() => {
-  if (auth.store_id && !form.from_store_id) {
-    setForm(prev => ({
-      ...prev,
-      from_store_id: auth.store_id,
-      requested_by_name: auth.username
-    }));
-  }
-}, [auth.store_id, auth.username]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -479,7 +467,7 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={auth.storeName || auth.store_name || "Loading..."}
+                      value={auth.storeName || "Loading..."}
                       readOnly
                       className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />
@@ -513,7 +501,6 @@ export default function SubStore() {
                 </label>
                 <input
                   value={form.requested_by_name}
-                  readOnly
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,

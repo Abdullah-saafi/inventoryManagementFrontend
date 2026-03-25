@@ -1,0 +1,14 @@
+Separte Features 
+Hijri Date Feature
+Implementation of Tags in the System to track consumption sites
+
+Minor Fixes ■ Main Branch
+When User logs in it should show his Role 
+Requested by Should not be changeable this should only show the user who is logged in
+for example if Usman then system should show Usman (not changeable)
+Requested quantity can be + - by Sub store approver
+show dates with Status ( to easily track when the order status changes)
+■■■■■■ this would be shown on all tables
+shows not found when i refresh any particular page
+Super admin shouldn't have rights to edit any item fields
+available stock is not updating now ( sent to sub store does update)

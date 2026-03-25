@@ -9,7 +9,6 @@ const useErrorHandler = () => {
         const errorMsg = error.response?.data?.message || "Server Error"
         
         if(error.response?.status === 400 || error.response?.status === 401){
-            console.log("Is it even coming here");
             setAuth({
                 accessToken: null,
                 username: null,

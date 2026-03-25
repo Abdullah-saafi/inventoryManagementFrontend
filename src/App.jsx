@@ -100,7 +100,6 @@ export default function App() {
           </main>
         </div>
       </ContextProvider>
-
     </BrowserRouter>
   );
 }

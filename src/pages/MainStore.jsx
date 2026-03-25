@@ -7,6 +7,7 @@ import {
   getItems,
   createRequest,
   getItemSummary,
+  createItem, // ← make sure this exists in your api.js
 } from "../services/api";
 
 const StatusBadge = ({ status }) => {
@@ -43,31 +44,65 @@ const EMPTY_HO_ITEM = {
   _showDropdown: false,
 };
 
+// ── Generates a random unique item number like ITM-A3F9 ──────────────────────
+const generateRandomItemNo = () => {
+  const num = Math.floor(Math.random() * 900) + 100; // always 3 digits: 100–999
+  return `ITM-${num}`;
+};
+
+// ── Empty state for the Add Item form ────────────────────────────────────────
+const EMPTY_NEW_ITEM = {
+  item_no: generateRandomItemNo(),
+  item_name: "",
+  item_uom: "",
+  category: "",
+  item_quantity: "",
+  min_quantity: "",
+  store_id: "",
+};
+
 export default function MainStore() {
   const [tab, setTab] = useState("items");
 
+  // ── Data ────────────────────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
-  const [reqFilter, setReqFilter] = useState("APPROVED");
-  const [detail, setDetail] = useState(null);
-  const [detailLoad, setDL] = useState(false);
-  const [fulfilling, setFulfilling] = useState(null);
   const [items, setItems] = useState([]);
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [storeItems, setStoreItems] = useState([]);
-  const [creating, setCreating] = useState(false);
+  const [hoRequests, setHoRequests] = useState([]);
   const [itemSummaryReceived, setItemSummaryReceived] = useState([]);
   const [itemSummaryGiven, setItemSummaryGiven] = useState([]);
-  const [hoRequests, setHoRequests] = useState([]);
-  const [hoDetail, setHoDetail] = useState(null);
-  const [hoDetailLoad, setHoDL] = useState(false);
-  const [hoFilter, setHoFilter] = useState("");
+
+  // ── UI state ─────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
+  // ── Sub-store requests tab ───────────────────────────────────────────────────
+  const [reqFilter, setReqFilter] = useState("APPROVED");
+  const [detail, setDetail] = useState(null);
+  const [detailLoad, setDL] = useState(false);
+  const [fulfilling, setFulfilling] = useState(null);
+
+  // ── All items tab ────────────────────────────────────────────────────────────
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // ── Add Item modal ────────────────────────────────────────────────────────────
+  const [showAddItem, setShowAddItem] = useState(false);
+  const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
+  const [savingItem, setSavingItem] = useState(false);
+
+  // ── HO requests tab ──────────────────────────────────────────────────────────
+  const [hoFilter, setHoFilter] = useState("");
+  const [hoDetail, setHoDetail] = useState(null);
+  const [hoDetailLoad, setHoDL] = useState(false);
+
+  // ── New HO request form ──────────────────────────────────────────────────────
+  const [creating, setCreating] = useState(false);
   const [hoForm, setHoForm] = useState({
     from_store_id: "",
     to_store_id: "",
@@ -76,32 +111,38 @@ export default function MainStore() {
     items: [{ ...EMPTY_HO_ITEM }],
   });
 
+  // ── Helpers ──────────────────────────────────────────────────────────────────
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
+  // ── Data loading ─────────────────────────────────────────────────────────────
   const load = async () => {
     setLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (reqFilter) params.status = reqFilter;
+
       const [rRes, sRes, iRes] = await Promise.all([
         getRequests(params),
         getStores(),
         getItems(),
       ]);
+
       setRequests(rRes.data.data);
+      setItems(iRes.data.data);
+
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
       setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-      setItems(iRes.data.data);
 
       const [recvSummary, givenSummary, hoReqRes] = await Promise.all([
         getItemSummary({ direction: "MAIN_TO_HO" }),
         getItemSummary({ direction: "SUB_TO_MAIN" }),
         getRequests({ direction: "MAIN_TO_HO" }),
       ]);
+
       setItemSummaryReceived(recvSummary.data.data);
       setItemSummaryGiven(givenSummary.data.data);
       setHoRequests(hoReqRes.data.data);
@@ -116,14 +157,18 @@ export default function MainStore() {
     load();
   }, [reqFilter]);
 
+  // Load items for the selected main store (used in New HO Request form)
   useEffect(() => {
-    if (hoForm.from_store_id)
+    if (hoForm.from_store_id) {
       getItems({ store_id: hoForm.from_store_id })
         .then((r) => setStoreItems(r.data.data || []))
         .catch(() => setStoreItems([]));
-    else setStoreItems([]);
+    } else {
+      setStoreItems([]);
+    }
   }, [hoForm.from_store_id]);
 
+  // ── Sub-store requests: open/close inline detail ──────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
@@ -140,6 +185,7 @@ export default function MainStore() {
     }
   };
 
+  // ── HO requests: open/close inline detail ────────────────────────────────────
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {
       setHoDetail(null);
@@ -156,6 +202,7 @@ export default function MainStore() {
     }
   };
 
+  // ── Fulfill a sub-store request ───────────────────────────────────────────────
   const handleFulfill = async (requestId) => {
     setFulfilling(requestId);
     try {
@@ -170,10 +217,46 @@ export default function MainStore() {
     }
   };
 
+  // ── Add Item: open modal with a fresh random item number ──────────────────────
+  const openAddItem = () => {
+    setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
+    setShowAddItem(true);
+  };
+
+  // ── Add Item: regenerate the item number on demand ────────────────────────────
+  const regenerateItemNo = () =>
+    setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
+
+  // ── Add Item: save ────────────────────────────────────────────────────────────
+  const handleSaveItem = async () => {
+    if (
+      !newItem.item_no ||
+      !newItem.item_name ||
+      !newItem.item_uom ||
+      !newItem.store_id
+    ) {
+      return showToast("Item No, Name, UOM and Store are required", "error");
+    }
+    setSavingItem(true);
+    try {
+      await createItem(newItem);
+      showToast("Item added successfully");
+      setShowAddItem(false);
+      load();
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to add item", "error");
+    } finally {
+      setSavingItem(false);
+    }
+  };
+
+  // ── New HO request form helpers ───────────────────────────────────────────────
   const addLine = () =>
     setHoForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_HO_ITEM }] }));
+
   const removeLine = (idx) =>
     setHoForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
   const updateLine = (idx, field, value) => {
     setHoForm((f) => {
       const items = [...f.items];
@@ -188,26 +271,22 @@ export default function MainStore() {
             items[idx].item_search = found.item_no + " — " + found.item_name;
           }
         } else {
-          items[idx].item_no = "";
-          items[idx].item_name = "";
-          items[idx].item_uom = "";
+          items[idx].item_no = items[idx].item_name = items[idx].item_uom = "";
         }
       }
       return { ...f, items };
     });
   };
 
+  // ── Submit new HO request ─────────────────────────────────────────────────────
   const handleHoRequest = async () => {
     const { from_store_id, to_store_id, requested_by_name, items } = hoForm;
-    if (
-      !from_store_id ||
-      !to_store_id ||
-      !requested_by_name ||
-      items.some(
-        (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
-      )
-    )
+    const hasEmptyItem = items.some(
+      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name || hasEmptyItem) {
       return showToast("Please fill all required fields", "error");
+    }
     setCreating(true);
     try {
       await createRequest({
@@ -234,7 +313,9 @@ export default function MainStore() {
     }
   };
 
+  // ── Derived data ──────────────────────────────────────────────────────────────
   const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
+
   const groupedItems = Object.values(
     items.reduce((acc, i) => {
       const qty = parseFloat(i.item_quantity || 0);
@@ -253,7 +334,8 @@ export default function MainStore() {
       return acc;
     }, {}),
   );
-  const displayedItems = groupedItems.filter((i) => {
+
+  const filteredItems = groupedItems.filter((i) => {
     const matchSearch =
       !search ||
       i.item_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -261,6 +343,13 @@ export default function MainStore() {
     const matchCat = !filterCategory || i.category === filterCategory;
     return matchSearch && matchCat;
   });
+
+  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const paginatedItems = filteredItems.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
   const filteredHoRequests = hoFilter
     ? hoRequests.filter((r) => r.status === hoFilter)
     : hoRequests;
@@ -268,6 +357,7 @@ export default function MainStore() {
     (r) => r.status === "APPROVED",
   ).length;
 
+  // ── Shared inline detail renderer ─────────────────────────────────────────────
   const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId) => (
     <div className="space-y-3">
       {d.notes && (
@@ -284,58 +374,52 @@ export default function MainStore() {
           <div className="text-red-600 text-sm">{d.rejection_reason}</div>
         </div>
       )}
-      <div>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 text-gray-400 text-xs">
-              <th className="text-left pb-2 pr-4">Item No</th>
-              <th className="text-left pb-2 pr-4">Item Name</th>
-              <th className="text-left pb-2 pr-4">UOM</th>
-              <th className="text-center pb-2 pr-4">Requested</th>
-              <th className="text-center pb-2 pr-4">Approved</th>
-              <th className="text-center pb-2">Fulfilled</th>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 text-gray-400 text-xs">
+            <th className="text-left pb-2 pr-4">Item No</th>
+            <th className="text-left pb-2 pr-4">Item Name</th>
+            <th className="text-left pb-2 pr-4">UOM</th>
+            <th className="text-center pb-2 pr-4">Requested</th>
+            <th className="text-center pb-2 pr-4">Approved</th>
+            <th className="text-center pb-2">Fulfilled</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(d.items || []).map((i) => (
+            <tr key={i.request_item_id} className="border-b border-gray-100">
+              <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                {i.item_no}
+              </td>
+              <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
+              <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
+              <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                {i.requested_qty}
+              </td>
+              <td className="py-2 pr-4 font-mono text-center">
+                <span
+                  className={
+                    i.approved_qty != null
+                      ? "text-emerald-600"
+                      : "text-gray-300"
+                  }
+                >
+                  {i.approved_qty ?? "—"}
+                </span>
+              </td>
+              <td className="py-2 font-mono text-center">
+                <span
+                  className={
+                    i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
+                  }
+                >
+                  {i.fulfilled_qty ?? "—"}
+                </span>
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {(d.items || []).map((i) => (
-              <tr key={i.request_item_id} className="border-b border-gray-100">
-                <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                  {i.item_no}
-                </td>
-                <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-                <td className="py-2 pr-4 text-gray-400 text-xs">
-                  {i.item_uom}
-                </td>
-                <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                  {i.requested_qty}
-                </td>
-                <td className="py-2 pr-4 font-mono text-center">
-                  <span
-                    className={
-                      i.approved_qty != null
-                        ? "text-emerald-600"
-                        : "text-gray-300"
-                    }
-                  >
-                    {i.approved_qty ?? "—"}
-                  </span>
-                </td>
-                <td className="py-2 font-mono text-center">
-                  <span
-                    className={
-                      i.fulfilled_qty != null
-                        ? "text-blue-600"
-                        : "text-gray-300"
-                    }
-                  >
-                    {i.fulfilled_qty ?? "—"}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+          ))}
+        </tbody>
+      </table>
       {d.status === "APPROVED" && onFulfill && (
         <div className="pt-2 border-t border-gray-200">
           <button
@@ -352,12 +436,14 @@ export default function MainStore() {
     </div>
   );
 
+  // ── Early returns ─────────────────────────────────────────────────────────────
   if (loading)
     return (
       <div className="flex justify-center py-20">
         <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
+
   if (error)
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
@@ -365,8 +451,10 @@ export default function MainStore() {
       </div>
     );
 
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div>
+      {/* Page header */}
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">Main Store</h1>
         <p className="text-gray-500 text-sm mt-0.5">
@@ -375,6 +463,7 @@ export default function MainStore() {
         </p>
       </div>
 
+      {/* Tab navigation */}
       <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 flex-wrap shadow-sm">
         {TABS.map((t) => {
           const badge =
@@ -405,7 +494,216 @@ export default function MainStore() {
         })}
       </nav>
 
-      {/* TAB: SUB STORE REQUESTS */}
+      {/* ── TAB: ALL ITEMS ───────────────────────────────────────────────────── */}
+      {tab === "items" && (
+        <div>
+          {/* Filters row + Add Item button */}
+          <div className="flex flex-wrap items-center gap-2 mb-4">
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by name or item number..."
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
+            />
+            <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {(search || filterCategory) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterCategory("");
+                  setCurrentPage(1);
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
+              >
+                Clear
+              </button>
+            )}
+            {/* ── Add Item button ── */}
+            <button
+              onClick={openAddItem}
+              className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+            >
+              <span className="text-base leading-none">+</span> Add Item
+            </button>
+          </div>
+
+          {/* Table */}
+          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-200">
+                  {[
+                    "Item No",
+                    "Name",
+                    "Category",
+                    "UOM",
+                    "Total Stock",
+                    "Sent to Sub-Stores",
+                    "Available Stock",
+                    "Min Stock",
+                    "Status",
+                  ].map((h) => (
+                    <th
+                      key={h}
+                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedItems.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="text-center py-12 text-gray-400">
+                      No items found.
+                    </td>
+                  </tr>
+                ) : (
+                  paginatedItems.map((i) => {
+                    const isLow =
+                      parseFloat(i.item_quantity) <= parseFloat(i.min_quantity);
+                    return (
+                      <tr
+                        key={i.item_id}
+                        className="border-b border-gray-100 hover:bg-gray-50"
+                      >
+                        <td className="px-4 py-3">
+                          <span className="font-mono text-emerald-600 text-xs">
+                            {i.item_no}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-800 font-semibold">
+                          {i.item_name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500 text-xs">
+                          {i.category || "—"}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-gray-600">
+                          {i.item_uom}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`font-mono font-bold ${isLow ? "text-red-500" : "text-gray-800"}`}
+                          >
+                            {Number(i.item_quantity).toFixed(0)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
+                          {Number(i.sub_qty).toFixed(0)}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-xs text-emerald-600 font-bold">
+                          {Number(i.main_qty).toFixed(0)}
+                        </td>
+                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
+                          {i.min_quantity}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
+                          >
+                            {isLow ? "Low" : "OK"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 px-1">
+              <span className="text-gray-400 text-xs">
+                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+                {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}{" "}
+                of {filteredItems.length} items
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                >
+                  «
+                </button>
+                <button
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                  disabled={currentPage === 1}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                >
+                  ‹ Prev
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(
+                    (p) =>
+                      p === 1 ||
+                      p === totalPages ||
+                      Math.abs(p - currentPage) <= 2,
+                  )
+                  .reduce((acc, p, i, arr) => {
+                    if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
+                    acc.push(p);
+                    return acc;
+                  }, [])
+                  .map((p, i) =>
+                    p === "..." ? (
+                      <span
+                        key={`e-${i}`}
+                        className="px-2 py-1 text-xs text-gray-400"
+                      >
+                        …
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setCurrentPage(p)}
+                        className={`px-2.5 py-1 text-xs rounded border font-mono ${currentPage === p ? "bg-emerald-600 border-emerald-600 text-white font-bold" : "border-gray-300 text-gray-500 hover:bg-gray-100"}`}
+                      >
+                        {p}
+                      </button>
+                    ),
+                  )}
+                <button
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                >
+                  Next ›
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
+                >
+                  »
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── TAB: SUB STORE REQUESTS ──────────────────────────────────────────── */}
       {tab === "requests" && (
         <div>
           <div className="mb-4">
@@ -546,128 +844,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* TAB: ALL ITEMS */}
-      {tab === "items" && (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or item number..."
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {(search || filterCategory) && (
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setFilterCategory("");
-                }}
-                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  {[
-                    "Item No",
-                    "Name",
-                    "Category",
-                    "UOM",
-                    "Total Stock",
-                    "Sent to Sub-Stores",
-                    "Available Stock",
-                    "Min Stock",
-                    "Status",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {displayedItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-12 text-gray-400">
-                      No items found.
-                    </td>
-                  </tr>
-                ) : (
-                  displayedItems.map((i) => {
-                    const isLow =
-                      parseFloat(i.item_quantity) <= parseFloat(i.min_quantity);
-                    return (
-                      <tr
-                        key={i.item_id}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-3">
-                          <span className="font-mono text-emerald-600 text-xs">
-                            {i.item_no}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-800 font-semibold">
-                          {i.item_name}
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">
-                          {i.category || "—"}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                          {i.item_uom}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`font-mono font-bold ${isLow ? "text-red-500" : "text-gray-800"}`}
-                          >
-                            {Number(i.item_quantity).toFixed(0)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                          {Number(i.sub_qty).toFixed(0)}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-emerald-600 font-bold">
-                          {Number(i.main_qty).toFixed(0)}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                          {i.min_quantity}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
-                          >
-                            {isLow ? "Low" : "OK"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* TAB: HO REQUESTS STATUS */}
+      {/* ── TAB: HO REQUESTS STATUS ──────────────────────────────────────────── */}
       {tab === "ho-status" && (
         <div>
           <div className="mb-4 flex items-center justify-between">
@@ -796,7 +973,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* TAB: NEW HO REQUEST */}
+      {/* ── TAB: NEW HO REQUEST ──────────────────────────────────────────────── */}
       {tab === "ho-create" && (
         <div className="max-w-2xl">
           <div className="mb-4">
@@ -875,7 +1052,6 @@ export default function MainStore() {
                 className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
               />
             </div>
-
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-500 text-xs font-semibold uppercase">
@@ -906,10 +1082,9 @@ export default function MainStore() {
                         ×
                       </button>
                     </div>
-
                     <div className="mb-3">
-                      <label className="text-gray-500 text-xs mb-1 flex items-center gap-1.5">
-                        <span>Select from catalogue</span>
+                      <label className="text-gray-500 text-xs mb-1 block">
+                        Select from catalogue
                       </label>
                       <div className="relative mt-1.5">
                         <input
@@ -998,7 +1173,6 @@ export default function MainStore() {
                         )}
                       </div>
                     </div>
-
                     <div className="flex items-center gap-2 mb-3">
                       <div className="flex-1 h-px bg-gray-200" />
                       <span className="text-gray-400 text-xs">
@@ -1006,7 +1180,6 @@ export default function MainStore() {
                       </span>
                       <div className="flex-1 h-px bg-gray-200" />
                     </div>
-
                     <div className="grid grid-cols-12 gap-2">
                       <div className="col-span-2">
                         <label className="text-gray-500 text-xs mb-1 block">
@@ -1047,7 +1220,6 @@ export default function MainStore() {
                           className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                         />
                       </div>
-
                       <div className="col-span-2">
                         <label className="text-gray-500 text-xs mb-1 block">
                           Qty *
@@ -1067,7 +1239,6 @@ export default function MainStore() {
                 ))}
               </div>
             </div>
-
             <div className="flex justify-end pt-2 border-t border-gray-200">
               <button
                 onClick={handleHoRequest}
@@ -1081,10 +1252,190 @@ export default function MainStore() {
         </div>
       )}
 
+      {/* ── ADD ITEM MODAL ───────────────────────────────────────────────────── */}
+      {showAddItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+              <h3 className="text-gray-900 font-bold text-base">
+                Add New Item
+              </h3>
+              <button
+                onClick={() => setShowAddItem(false)}
+                className="text-gray-400 hover:text-gray-600 text-xl font-bold leading-none"
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-5 py-4 space-y-4">
+              {/* Item No — auto-generated, with a regenerate button */}
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Item No{" "}
+                  <span className="text-gray-400 font-normal normal-case">
+                    (auto-generated, editable)
+                  </span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={newItem.item_no}
+                    onChange={(e) =>
+                      setNewItem((f) => ({ ...f, item_no: e.target.value }))
+                    }
+                    className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                  {/* Regenerate button */}
+                  <button
+                    onClick={regenerateItemNo}
+                    title="Generate a new random number"
+                    className="px-3 py-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 text-sm"
+                  >
+                    ↻
+                  </button>
+                </div>
+              </div>
+
+              {/* Item Name */}
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Item Name *
+                </label>
+                <input
+                  value={newItem.item_name}
+                  onChange={(e) =>
+                    setNewItem((f) => ({ ...f, item_name: e.target.value }))
+                  }
+                  placeholder="e.g. Surgical Gloves"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              {/* UOM + Category */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    UOM *
+                  </label>
+                  <input
+                    value={newItem.item_uom}
+                    onChange={(e) =>
+                      setNewItem((f) => ({ ...f, item_uom: e.target.value }))
+                    }
+                    placeholder="pcs / kg / box…"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    Category
+                  </label>
+                  <input
+                    value={newItem.category}
+                    onChange={(e) =>
+                      setNewItem((f) => ({ ...f, category: e.target.value }))
+                    }
+                    placeholder="e.g. Medical"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Initial Qty + Min Stock */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    Initial Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newItem.item_quantity}
+                    onChange={(e) =>
+                      setNewItem((f) => ({
+                        ...f,
+                        item_quantity: e.target.value,
+                      }))
+                    }
+                    placeholder="0"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    Min Stock
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={newItem.min_quantity}
+                    onChange={(e) =>
+                      setNewItem((f) => ({
+                        ...f,
+                        min_quantity: e.target.value,
+                      }))
+                    }
+                    placeholder="0"
+                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Store */}
+              <div>
+                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                  Store *
+                </label>
+                <select
+                  value={newItem.store_id}
+                  onChange={(e) =>
+                    setNewItem((f) => ({ ...f, store_id: e.target.value }))
+                  }
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">Select store</option>
+                  {mainStores.map((s) => (
+                    <option key={s.store_id} value={s.store_id}>
+                      {s.store_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
+              <button
+                onClick={() => setShowAddItem(false)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveItem}
+                disabled={savingItem}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40"
+              >
+                {savingItem ? "Saving..." : "Save Item"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast notification */}
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : toast.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-blue-50 border-blue-200 text-blue-700"}`}
+          ${
+            toast.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : toast.type === "error"
+                ? "bg-red-50 border-red-200 text-red-700"
+                : "bg-blue-50 border-blue-200 text-blue-700"
+          }`}
         >
           <span>{toast.message}</span>
           <button

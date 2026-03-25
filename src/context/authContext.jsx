@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { refreshToken } from "../services/api";
+import { refreshToken, setAccessTokenInApi } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
 
@@ -10,36 +11,44 @@ export const ContextProvider = ({ children }) => {
     role: null,
     storeName: null,
     store_id: null,
+    message: null,
+    isBlocked: false,
   });
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setAccessTokenInApi(auth.accessToken);
+  }, [auth.accessToken]);
 
   useEffect(() => {
     const restoreSession = async () => {
-      try {
-        const response = await refreshToken();
-        const data = response.data;
-        if (data) {
-          setAuth({
-            accessToken: data.accessToken,
-            username: data.username,
-            role: data.role,
-            storeName: data.storeName,
-            store_id: data.storeId,
-          });
+      if (window.location.pathname !== "/login") {
+        try {
+          const response = await refreshToken();
+
+          const data = response.data;
+          if (data?.accessToken) {
+            setAuth({
+              accessToken: data.accessToken,
+              username: data.username,
+              role: data.role,
+              storeName: data.storeName,
+              store_id: data.storeId,
+            });
+          }
+        } catch (error) {
+          if (window.location.pathname !== "/login") {
+            navigate("/login", { replace: true });
+            return;
+          }
         }
-      } catch (error) {
-        if (error.response?.status !== 401 && error.response?.status !== 403) {
-          console.log("Something wrong in context", error);
-        }
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
     restoreSession();
   }, []);
 
-  // Use a div wrapper instead of nothing — avoids React's <p> nesting warning
-  // that occurs when this Provider is rendered inside a <p> element upstream
   return (
     <AuthContext.Provider value={{ auth, setAuth, loading }}>
       {children}

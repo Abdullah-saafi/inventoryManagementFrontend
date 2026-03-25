@@ -24,8 +24,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-<<<<<<< HEAD
-=======
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -36,21 +34,18 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
->>>>>>> phase-01
 export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
-<<<<<<< HEAD
-=======
   const [detailLoad, setDL] = useState(false);
   const [fulfilledRequests, setFulfilledRequests] = useState([]);
->>>>>>> phase-01
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
@@ -95,13 +90,7 @@ export default function SubStore() {
   };
 
   useEffect(() => {
-<<<<<<< HEAD
-    if (auth.store_id || auth.role === "super admin") {
-      load();
-    }
-=======
     if (auth.store_id || auth.role === "super admin") load();
->>>>>>> phase-01
   }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
@@ -161,19 +150,6 @@ export default function SubStore() {
 
   const handleCreate = async () => {
     const { from_store_id, to_store_id, requested_by_name, items } = form;
-<<<<<<< HEAD
-    if (
-      !from_store_id ||
-      !to_store_id ||
-      !requested_by_name ||
-      items.some((i) => !i.item_no || i.requested_qty < 1)
-    )
-      return;
-    setCreating(true);
-    try {
-      await createRequest({ ...form, direction: "SUB_TO_MAIN" });
-
-=======
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
@@ -194,7 +170,6 @@ export default function SubStore() {
       };
       await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
->>>>>>> phase-01
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -205,6 +180,10 @@ export default function SubStore() {
       });
       load();
     } catch (e) {
+      setToast({
+        message: e.response?.data?.message || "Failed to submit",
+        type: "error",
+      });
     } finally {
       setCreating(false);
     }
@@ -235,14 +214,8 @@ export default function SubStore() {
               from_store_id: auth.store_id || "",
               to_store_id: "",
               requested_by_name: auth.username || "",
-<<<<<<< HEAD
-              items: [
-                { item_no: "", item_name: "", item_uom: "", requested_qty: 1 },
-              ],
-=======
               notes: "",
               items: [{ ...EMPTY_LINE }],
->>>>>>> phase-01
             });
             setShowCreate(true);
           }}
@@ -795,118 +768,6 @@ export default function SubStore() {
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* Detail Modal */}
-      {detail && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70"
-            onClick={() => setDetail(null)}
-          />
-          <div className="relative bg-slate-900 border border-slate-700 rounded-xl w-full max-w-xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-white font-bold">
-                Request — {detail.request_no}
-              </h2>
-              <button
-                onClick={() => setDetail(null)}
-                className="text-slate-400 hover:text-white text-xl"
-              >
-                x
-              </button>
-            </div>
-            <div className="p-5 space-y-3">
-              {detailLoad ? (
-                <div className="flex justify-center py-10">
-                  <div className="w-7 h-7 border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin" />
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-2">
-                    {[
-                      ["Status", <StatusBadge status={detail.status} />],
-                      ["From", detail.from_store_name],
-                      ["To", detail.to_store_name],
-                      ["Requested By", detail.requested_by_name || "—"],
-                      ["Approved By", detail.approved_by_name || "—"],
-                      [
-                        "Date",
-                        new Date(detail.requested_at).toLocaleDateString(),
-                      ],
-                    ].map(([label, val]) => (
-                      <div key={label} className="bg-slate-800 rounded p-2">
-                        <div className="text-slate-500 text-xs mb-1">
-                          {label}
-                        </div>
-                        <div className="text-white text-sm">{val}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {detail.rejection_reason && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
-                      <div className="text-red-400 text-xs font-semibold mb-1">
-                        REJECTION REASON
-                      </div>
-                      <div className="text-red-300 text-sm">
-                        {detail.rejection_reason}
-                      </div>
-                    </div>
-                  )}
-                  {detail.notes && (
-                    <div className="bg-slate-800 rounded p-3">
-                      <div className="text-slate-500 text-xs mb-1">NOTES</div>
-                      <div className="text-slate-300 text-sm">
-                        {detail.notes}
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <div className="text-slate-400 text-xs uppercase font-semibold mb-2">
-                      Items
-                    </div>
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-slate-700 text-slate-400 text-xs">
-                          <th className="text-left pb-2">Item</th>
-                          <th className="text-left pb-2">UOM</th>
-                          <th className="text-center pb-2">Requested</th>
-                          <th className="text-center pb-2">Approved</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(detail.items || []).map((i) => (
-                          <tr
-                            key={i.request_item_id}
-                            className="border-b border-slate-800"
-                          >
-                            <td className="py-2 text-white">{i.item_name}</td>
-                            <td className="py-2 text-slate-400 text-xs">
-                              {i.item_uom}
-                            </td>
-                            <td className="py-2 font-mono text-white text-center">
-                              {i.requested_qty}
-                            </td>
-                            <td className="py-2 font-mono text-center">
-                              <span
-                                className={
-                                  i.approved_qty != null
-                                    ? "text-emerald-400"
-                                    : "text-slate-600"
-                                }
-                              >
-                                {i.approved_qty ?? "—"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-=======
       {/* Toast */}
       {toast && (
         <div
@@ -923,7 +784,6 @@ export default function SubStore() {
           >
             ×
           </button>
->>>>>>> phase-01
         </div>
       )}
     </div>

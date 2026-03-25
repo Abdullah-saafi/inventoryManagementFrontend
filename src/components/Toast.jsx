@@ -1,0 +1,21 @@
+export default function Toast({ toast, onClose }) {
+  if (!toast) return null;
+
+  return (
+    <div
+      className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
+        ${toast.type === "success"
+          ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+          : "bg-red-50 border-red-200 text-red-700"
+        }`}
+    >
+      <span>{toast.message}</span>
+      <button
+        onClick={onClose}
+        className="opacity-60 hover:opacity-100 text-lg leading-none"
+      >
+        ×
+      </button>
+    </div>
+  );
+}

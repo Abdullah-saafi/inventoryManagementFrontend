@@ -6,10 +6,86 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+let memoryToken = "";
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+export const setAccessTokenInApi = (token) => {
+  memoryToken = token;
+};
+
+function addRefreshSubscriber(callback) {
+  refreshSubscribers.push(callback);
+}
+
+function onRefreshed(token) {
+  refreshSubscribers.forEach((callback) => callback(token));
+  refreshSubscribers = [];
+}
+
+// ── INTERCEPTOR 1:  ──────────────────────────
+API.interceptors.request.use(
+  (config) => {
+    if (memoryToken) {
+      config.headers.Authorization = `Bearer ${memoryToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
+
+// ── INTERCEPTOR 2:  ──────────────────────────
+API.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/users/refresh") &&
+      !originalRequest.url.includes("/users/login")
+    ) {
+      originalRequest._retry = true;
+      if (isRefreshing) {
+        return new Promise((resolve) => {
+          addRefreshSubscriber((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            resolve(API(originalRequest));
+          });
+        });
+      }
+      isRefreshing = true;
+
+      try {
+        const res = await API.post("/users/refresh");
+        const { accessToken } = res.data;
+
+        setAccessTokenInApi(accessToken);
+        onRefreshed(accessToken);
+
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+        return API(originalRequest);
+      } catch (refreshErr) {
+        console.log("API ERROR");
+        setAccessTokenInApi("");
+
+        return Promise.reject(refreshErr);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 // ── Stores ──────────────────────────────────────────────────
 export const getStores = (params) => API.get("/stores", { params });
 export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
+export const storeStatus = (data) => API.put(`/stores/action`, data);
+export const addStore = (data) => API.post("/stores", data);
 
 // ── Items ────────────────────────────────────────────────────
 export const getItems = (params) => API.get("/items", { params });
@@ -25,59 +101,34 @@ export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data);
 
-<<<<<<< HEAD
-// Sub Store Manager (1st level): PENDING → APPROVED
-=======
-// These three endpoints work for BOTH flows (SUB_TO_MAIN and MAIN_TO_HO)
-//
-// SUB_TO_MAIN:
-//   approveRequest  → called by sub-store-approver  (Sub Store Manager)
-//   rejectRequest   → called by sub-store-approver
-//   fulfillRequest  → called by main-store staff
-//
-// MAIN_TO_HO:
-//   approveRequest  → called by main-store-approver (Main Store Manager)
-//   rejectRequest   → called by main-store-approver
-//   fulfillRequest  → called by headoffice staff
-
->>>>>>> phase-01
 export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
-
-// Sub Store Manager (1st level): PENDING → REJECTED
 export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
-
-// Main Store Manager (2nd level / final): APPROVED → MANAGER_APPROVED
-export const managerApproveRequest = (id, data) =>
-  API.patch(`/requests/${id}/manager-approve`, data);
-
-// Main Store Manager (2nd level): APPROVED → REJECTED
-export const managerRejectRequest = (id, data) =>
-  API.patch(`/requests/${id}/manager-reject`, data);
-
-// Main Store Staff: MANAGER_APPROVED → FULFILLED
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 
-<<<<<<< HEAD
-// Main Store Manager: HO_PENDING → HO_APPROVED
-export const hoApproveRequest = (id, data) =>
-  API.patch(`/requests/${id}/ho-approve`, data);
-
-// Main Store Manager: HO_PENDING → REJECTED
-export const hoRejectRequest = (id, data) =>
-  API.patch(`/requests/${id}/ho-reject`, data);
-
-// Head Office: HO_APPROVED → HO_FULFILLED
-export const hoFulfillRequest = (id) =>
-  API.patch(`/requests/${id}/ho-fulfill`, {});
-
 // ── Users ────────────────────────────────────────────────
-=======
-// ── Users ────────────────────────────────────────────────────
->>>>>>> phase-01
+
 export const login = (credentials) => API.post("/users/login", credentials);
+
 export const refreshToken = () => API.post("/users/refresh");
+
 export const logout = () => API.post("/users/logout");
+
+export const addUser = (credentials) => API.post("/users/addUser", credentials);
+
+export const getUsers = (params) => API.get("/users/getUsers", { params });
+
+export const userStatus = (data) => API.post("/users/action", data);
+
+export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
+
+export const editUserById = (id, data) =>
+  API.put(`/users/editUserById/${id}`, data);
+
+// ── Main Store ────────────────────────────────────────────────
+
+export const getStoreManager = (params) =>
+  API.get("/users/getManager", { params });
 
 export default API;

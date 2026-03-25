@@ -9,7 +9,6 @@ const useErrorHandler = () => {
         const errorMsg = error.response?.data?.message || "Server Error"
         
         if(error.response?.status === 400 || error.response?.status === 401){
-            console.log("Is it even coming here");
             setAuth({
                 accessToken: null,
                 username: null,
@@ -22,6 +21,7 @@ const useErrorHandler = () => {
             return errorMsg
         } else if (error.response?.status === 403 && errorMsg.includes("inactive") || error.response?.status === 400 && errorMsg.includes("inactive") ){
             setAuth(prev => ({...prev, isBlocked: true, message: errorMsg}))
+            return errorMsg
         }
         else{
             console.log(customMessage, error)

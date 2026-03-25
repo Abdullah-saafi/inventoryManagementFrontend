@@ -17,7 +17,6 @@ const links = [
   },
   { to: "/headoffice", label: "Head Office", roles: ["headoffice"] },
   { to: "/admin", label: "Admin Panel", roles: ["admin"] },
-
 ];
 
 export default function Navbar() {
@@ -93,7 +92,6 @@ export default function Navbar() {
             </>
           )}
         </div>
-
         {/* Badge */}
         <div className="flex items-center ">
           <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">

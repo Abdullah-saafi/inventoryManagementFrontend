@@ -38,7 +38,7 @@ export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
@@ -60,7 +60,7 @@ export default function SubStore() {
   const { auth } = useAuth();
 
   const load = async () => {
-    setLoading(true);
+    setPageLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
@@ -85,7 +85,7 @@ export default function SubStore() {
     } catch {
       setError("Failed to load data");
     } finally {
-      setLoading(false);
+      setPageLoading(false);
     }
   };
 
@@ -189,7 +189,7 @@ export default function SubStore() {
     }
   };
 
-  if (loading)
+  if (pageLoading)
     return (
       <div className="flex justify-center py-20">
         <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -467,7 +467,7 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={auth.storeName || "Loading..."}
+                      value={subStores.find((s) => s.store_id === auth.store_id)?.store_name ?? "Loading..."}
                       readOnly
                       className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />
@@ -501,6 +501,7 @@ export default function SubStore() {
                 </label>
                 <input
                   value={form.requested_by_name}
+                  readOnly
                   onChange={(e) =>
                     setForm((f) => ({
                       ...f,

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useOutletContext } from "react-router-dom"; // 1. Import this
 import API from "../services/api";
 import { EyeOpen, EyeClosed } from "./EyeIcons";
 import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../services/constants";
@@ -6,7 +7,9 @@ import useErrorHandler from "./useErrorHandler";
 
 const addUser = (data) => API.post("/users/addUser", data);
 
-export default function AddUserTab({ stores, onUserCreated }) {
+export default function AddUserTab() {
+  const { stores } = useOutletContext(); 
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -20,7 +23,7 @@ export default function AddUserTab({ stores, onUserCreated }) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleError = useErrorHandler()
+  const handleError = useErrorHandler();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -29,8 +32,7 @@ export default function AddUserTab({ stores, onUserCreated }) {
       [name]: value,
       ...(name === "role" ? { store_id: "" } : {}),
     }));
-    // Clear message when user starts typing again
-    setMessage("")
+    setMessage("");
   };
 
   const filteredStores = stores.filter(
@@ -52,12 +54,11 @@ export default function AddUserTab({ stores, onUserCreated }) {
 
     try {
       const res = await addUser(form);
-      setMessage(res.data.message);
+      setMessage(res.data.message || "User created successfully");
       setForm({ name: "", email: "", role: "", store_id: "", password: "", confirmPassword: "" });
-      onUserCreated?.();
     } catch (e) {
-      const msg = handleError(e,"Failed to add user")
-      setMessage(msg)
+      const msg = handleError(e, "Failed to add user");
+      setMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -65,8 +66,11 @@ export default function AddUserTab({ stores, onUserCreated }) {
 
   return (
     <div className="max-w-xl">
+      {/* HACK: Fake hidden inputs to trick browser auto-fill */}
+      <input type="text" style={{ display: 'none' }} />
+      <input type="password" style={{ display: 'none' }} />
+
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-        {/* Form Fields... (Keep your existing grid layouts) */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Role *</label>
@@ -94,11 +98,10 @@ export default function AddUserTab({ stores, onUserCreated }) {
           </div>
         </div>
 
-        {/* Name and Email Rows */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className={labelClass}>Full Name *</label>
-            <input name="name" value={form.name} onChange={handleChange} placeholder="Ahmed Khan" className={inputClass} />
+            <input name="name" value={form.name} onChange={handleChange} autoComplete="off" placeholder="Ahmed Khan" className={inputClass} />
           </div>
           <div>
             <label className={labelClass}>Email Address *</label>
@@ -106,7 +109,6 @@ export default function AddUserTab({ stores, onUserCreated }) {
           </div>
         </div>
 
-        {/* Password Rows */}
         <div className="grid grid-cols-2 gap-3">
           <div className="relative">
             <label className={labelClass}>Password *</label>
@@ -115,7 +117,7 @@ export default function AddUserTab({ stores, onUserCreated }) {
           </div>
           <div className="relative">
             <label className={labelClass}>Confirm Password *</label>
-            <input type={showConfirm ? "text" : "password"} name="confirmPassword" value={form.confirmPassword} onChange={handleChange} className={inputClass + " pr-10"} />
+            <input type={showConfirm ? "text" : "password"} name="confirmPassword" autoComplete="new-password" value={form.confirmPassword} onChange={handleChange} className={inputClass + " pr-10"} />
             <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute bottom-2.5 right-3 text-gray-400 hover:text-emerald-500">{showConfirm ? <EyeOpen /> : <EyeClosed />}</button>
           </div>
         </div>
@@ -129,10 +131,9 @@ export default function AddUserTab({ stores, onUserCreated }) {
             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Create User Account"}
           </button>
 
-          {/* STATUS MESSAGE BOX */}
           {message && (
             <div className={`p-3 rounded-lg text-xs font-bold border animate-in fade-in slide-in-from-top-1 duration-300 text-center
-              ${message.includes("Successfully")
+              ${message.toLowerCase().includes("success")
                 ? "bg-emerald-100 border-emerald-200 text-emerald-700" 
                 : "bg-red-50 border-red-100 text-red-700"}`}
             >

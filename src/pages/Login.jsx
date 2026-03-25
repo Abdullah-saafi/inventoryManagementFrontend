@@ -15,13 +15,6 @@ const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (location.state?.message) {
-            setMessage(location.state.message)
-            window.history.replaceState({}, document.title)
-        }
-    }, [location])
-
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!form.email) return setMessage("Email is required")

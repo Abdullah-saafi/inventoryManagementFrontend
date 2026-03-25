@@ -4,7 +4,7 @@ export const ROLE_STORE_MAP = {
   "main-store": "MAIN_STORE",
   "main-store-approver": "MAIN_STORE",
   headoffice: "HEAD_OFFICE",
-};
+}
 
 export const ROLES = [
   { value: "sub-store", label: "Sub Store Staff" },
@@ -13,7 +13,7 @@ export const ROLES = [
   { value: "main-store-approver", label: "Main Store Manager" },
   { value: "headoffice", label: "Head Office" },
   { value: "admin", label: "Admin" },
-];
+]
 
 export const ROLE_LABELS = {
   "sub-store": "Sub Store Staff",
@@ -23,20 +23,20 @@ export const ROLE_LABELS = {
   headoffice: "Head Office",
   admin: "Admin",
   "super admin": "Super Admin",
-};
+}
 
 export const TABS = [
   { id: "user", label: "Add User" },
   { id: "store", label: "Add Sub Store" },
   { id: "all-users", label: "All Users" },
   { id: "all-stores", label: "All Stores" },
-];
+]
 
 export const STORE_TYPE_LABELS = {
   MAIN_STORE: "Main Store",
   SUB_STORE: "Sub Store",
   HEAD_OFFICE: "Head Office",
-};
+}
 
 export const inputClass =
   "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400";

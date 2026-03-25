@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useLocation, Outlet } from "react-router-dom"
 import { getStores } from "../services/api";
 import { TABS } from "../services/constants.js";
-import AddUserTab from "../components/AddUserTab";
-import AddStoreTab from "../components/AddStoreTab";
-import AllUsersTab from "../components/AllUsersTab";
-import AllStoresTab from "../components/AllStoresTab";
-import Toast from "../components/Toast";
+import { useAuth } from "../context/authContext.jsx";
+import BlockedUI from "../components/BlockedUI.jsx";
 
 export default function Admin() {
-  const [tab, setTab] = useState("user");
+  const navigate = useNavigate();
+  const location = useLocation();
   const [stores, setStores] = useState([]);
-  const [toast, setToast] = useState(null);
-
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3500);
-  };
+  
+  const {auth} = useAuth()
+  const currentTab = location.pathname.split("/").pop() || "user";
 
   const loadStores = () =>
     getStores({ all: true })
@@ -24,24 +20,29 @@ export default function Admin() {
 
   useEffect(() => {
     loadStores();
-  }, []);
+    if (location.pathname === "/admin") {
+      navigate("/admin/user", { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  if(auth.isBlocked){
+    return <BlockedUI message={auth.message}/>
+  }
 
   return (
     <div>
       <div className="mb-4">
         <h1 className="text-xl font-black text-gray-900">Admin Panel</h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          Manage users, stores and branches
-        </p>
+        <p className="text-gray-500 text-sm mt-0.5">Manage users, stores and branches</p>
       </div>
 
       <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 shadow-sm w-fit">
         {TABS.map((t) => (
           <button
             key={t.id}
-            onClick={() => setTab(t.id)}
+            onClick={() => navigate(`/admin/${t.id}`)}
             className={`px-3 py-1.5 rounded text-sm font-medium transition-colors
-              ${tab === t.id
+              ${currentTab === t.id
                 ? "bg-emerald-600 text-white"
                 : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
               }`}
@@ -50,32 +51,9 @@ export default function Admin() {
           </button>
         ))}
       </nav>
-      {tab === "user" && (
-        <AddUserTab
-          stores={stores}
-          showToast={showToast}
-          onUserCreated={() => {}}
-        />
-      )}
-
-      {tab === "store" && (
-        <AddStoreTab
-          showToast={showToast}
-          onStoreCreated={loadStores}
-        />
-      )}
-
-      {tab === "all-users" && (
-        <AllUsersTab/>
-      )}
-
-      {tab === "all-stores" && (
-        <AllStoresTab
-          onRefresh={loadStores}
-        />
-      )}
-
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      <div className="mt-4">
+        <Outlet context={{ stores, loadStores }} />
+      </div>
     </div>
   );
 }

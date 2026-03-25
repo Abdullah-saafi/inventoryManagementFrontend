@@ -10,6 +10,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
 import Unauthorized from "./pages/Unauthorized";
 import { ContextProvider } from "./context/authContext";
+import AddUserTab from "./components/AddUserTab";
+import AllUsersTab from "./components/AllUsersTab";
+import AllStoresTab from "./components/AllStoresTab";
+import AddStoreTab from "./components/AddStoreTab"
+import NotFound from "./pages/NotFound";
+import EditUser from "./components/EditUser";
 
 export default function App() {
   return (
@@ -75,17 +81,21 @@ export default function App() {
               </Route>
 
               {/* Admin — create users and sub stores */}
-              <Route
-                element={
-                  <ProtectedRoute allowedRoles={["admin", "super admin"]} />
-                }
-              >
-                <Route path="/admin" element={<Admin />} />
+
+              <Route element={<ProtectedRoute allowedRoles={["admin", "super admin"]} />}>
+                <Route path="/admin" element={<Admin />}>
+                  <Route path="user" element={<AddUserTab />} />
+                  <Route path="user/:id" element={<EditUser/>}/>
+                  <Route path="store" element={<AddStoreTab />} />
+                  <Route path="all-users" element={<AllUsersTab />} />
+                  <Route path="all-stores" element={<AllStoresTab />} />
+                </Route>
               </Route>
 
+
               {/* Default redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              <Route path="*" element={<Navigate to="/login" replace />} />
+              {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
+              <Route path="*" element={<NotFound/>} />
             </Routes>
           </main>
         </div>

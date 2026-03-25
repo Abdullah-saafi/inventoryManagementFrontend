@@ -102,7 +102,7 @@ export default function App() {
 
               {/* Default redirect */}
               {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<NotFound/>} />
             </Routes>
           </main>
         </div>

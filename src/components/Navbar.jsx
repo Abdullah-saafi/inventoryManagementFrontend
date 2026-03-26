@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from "react-router-dom";
+import React from "react";
 import { logout } from "../services/api";
 import { useAuth } from "../context/authContext";
 import DatePicker from "react-multi-date-picker";
@@ -96,7 +97,7 @@ export default function Navbar() {
 
         <div className="flex items-center gap-1 cursor-pointer">
           {auth.accessToken && (
-            <>
+            <React.Fragment>
               <button className="logout" onClick={logoutUser}>
                 <span className="text-sm text-red-500 font-bold cursor-pointer">
                   Logout
@@ -104,7 +105,7 @@ export default function Navbar() {
               </button>
 
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </>
+            </React.Fragment>
           )}
         </div>
         {/* Badge */}

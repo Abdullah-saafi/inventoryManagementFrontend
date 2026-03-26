@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
@@ -207,7 +207,7 @@ export default function HeadOffice() {
                       const isExpanded =
                         detail && detail.request_id === r.request_id;
                       return (
-                        <>
+                        <React.Fragment key={r.request_id}>
                           <tr
                             key={r.request_id}
                             className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -372,7 +372,7 @@ export default function HeadOffice() {
                               </td>
                             </tr>
                           )}
-                        </>
+                        </React.Fragment>
                       );
                     })
                   )}

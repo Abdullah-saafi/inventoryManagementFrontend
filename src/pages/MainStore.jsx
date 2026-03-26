@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
@@ -8,6 +8,7 @@ import {
   createRequest,
   createItem,
 } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -108,6 +109,9 @@ export default function MainStore() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+  
+  const {auth} = useAuth()
+  const isAdmin = auth?.role === "super admin" 
 
   // ── Load all data ─────────────────────────────────────────────────────────
   // KEY FIX: fetch items for ALL stores so we can split main_qty vs sub_qty
@@ -131,7 +135,11 @@ export default function MainStore() {
 
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-      setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
+      setHeadOffices(
+        allStores.filter(
+          (s) => s.store_type && s.store_type.toUpperCase().includes("HEAD"),
+        ),
+      );
     } catch {
       setError("Failed to load data");
     } finally {
@@ -751,7 +759,7 @@ export default function MainStore() {
                     const isExpanded =
                       detail && detail.request_id === r.request_id;
                     return (
-                      <>
+                      <React.Fragment key={r.request_id}>
                         <tr
                           key={r.request_id}
                           className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -826,7 +834,7 @@ export default function MainStore() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -884,7 +892,7 @@ export default function MainStore() {
                     const isExpanded =
                       hoDetail && hoDetail.request_id === r.request_id;
                     return (
-                      <>
+                      <React.Fragment key={r.request_id}>
                         <tr
                           key={r.request_id}
                           className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -932,7 +940,7 @@ export default function MainStore() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -1061,8 +1069,16 @@ export default function MainStore() {
                         <input
                           value={item.item_search}
                           onChange={(e) => {
-                            updateLine(idx, "item_search", e.target.value);
-                            updateLine(idx, "_showDropdown", true);
+                            const val = e.target.value;
+                            setHoForm((f) => {
+                              const items = [...f.items];
+                              items[idx] = {
+                                ...items[idx],
+                                item_search: val,
+                                _showDropdown: true,
+                              };
+                              return { ...f, items };
+                            });
                           }}
                           onFocus={() => updateLine(idx, "_showDropdown", true)}
                           onBlur={() =>
@@ -1079,9 +1095,19 @@ export default function MainStore() {
                             <div
                               className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer"
                               onMouseDown={() => {
-                                updateLine(idx, "selected_item_no", "");
-                                updateLine(idx, "item_search", "");
-                                updateLine(idx, "_showDropdown", false);
+                                setHoForm((f) => {
+                                  const items = [...f.items];
+                                  items[idx] = {
+                                    ...items[idx],
+                                    selected_item_no: "",
+                                    item_search: "",
+                                    item_no: "",
+                                    item_name: "",
+                                    item_uom: "",
+                                    _showDropdown: false,
+                                  };
+                                  return { ...f, items };
+                                });
                               }}
                             >
                               — Not listed / enter manually —
@@ -1101,17 +1127,20 @@ export default function MainStore() {
                                 <div
                                   key={si.item_id}
                                   onMouseDown={() => {
-                                    updateLine(
-                                      idx,
-                                      "selected_item_no",
-                                      si.item_no,
-                                    );
-                                    updateLine(
-                                      idx,
-                                      "item_search",
-                                      si.item_no + " — " + si.item_name,
-                                    );
-                                    updateLine(idx, "_showDropdown", false);
+                                    setHoForm((f) => {
+                                      const items = [...f.items];
+                                      items[idx] = {
+                                        ...items[idx],
+                                        selected_item_no: si.item_no,
+                                        item_no: si.item_no,
+                                        item_name: si.item_name,
+                                        item_uom: si.item_uom,
+                                        item_search:
+                                          si.item_no + " — " + si.item_name,
+                                        _showDropdown: false,
+                                      };
+                                      return { ...f, items };
+                                    });
                                   }}
                                   className={`px-3 py-2 cursor-pointer hover:bg-gray-50 border-t border-gray-100 ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                 >
@@ -1238,6 +1267,7 @@ export default function MainStore() {
                 <div className="flex gap-2">
                   <input
                     value={newItem.item_no}
+                    readOnly
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, item_no: e.target.value }))
                     }
@@ -1257,6 +1287,7 @@ export default function MainStore() {
                   Item Name *
                 </label>
                 <input
+                  readOnly={isAdmin}
                   value={newItem.item_name}
                   onChange={(e) =>
                     setNewItem((f) => ({ ...f, item_name: e.target.value }))
@@ -1272,6 +1303,7 @@ export default function MainStore() {
                   </label>
                   <input
                     value={newItem.item_uom}
+                    readOnly={isAdmin}
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, item_uom: e.target.value }))
                     }
@@ -1285,6 +1317,7 @@ export default function MainStore() {
                   </label>
                   <input
                     value={newItem.category}
+                    readOnly={isAdmin}
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, category: e.target.value }))
                     }
@@ -1300,6 +1333,7 @@ export default function MainStore() {
                   </label>
                   <input
                     type="number"
+                    readOnly={isAdmin}
                     min="0"
                     value={newItem.item_quantity}
                     onChange={(e) =>
@@ -1318,6 +1352,7 @@ export default function MainStore() {
                   </label>
                   <input
                     type="number"
+                    readOnly={isAdmin}
                     min="0"
                     value={newItem.min_quantity}
                     onChange={(e) =>
@@ -1337,6 +1372,7 @@ export default function MainStore() {
                 </label>
                 <select
                   value={newItem.store_id}
+                  readOnly={isAdmin}
                   onChange={(e) =>
                     setNewItem((f) => ({ ...f, store_id: e.target.value }))
                   }

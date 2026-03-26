@@ -8,7 +8,7 @@ import useErrorHandler from "./useErrorHandler";
 const addUser = (data) => API.post("/users/addUser", data);
 
 export default function AddUserTab() {
-  const { stores } = useOutletContext(); 
+  const { stores } = useOutletContext();
 
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +41,7 @@ export default function AddUserTab() {
 
   const handleSubmit = async () => {
     const { name, email, role, store_id, password, confirmPassword } = form;
-    
+
     if (!name || !email || !role || !store_id || !password || !confirmPassword)
       return setMessage("Please fill all required fields");
     if (password !== confirmPassword)
@@ -65,11 +65,10 @@ export default function AddUserTab() {
   };
 
   return (
-    <div className="max-w-xl">
-      {/* HACK: Fake hidden inputs to trick browser auto-fill */}
-      <input type="text" style={{ display: 'none' }} />
-      <input type="password" style={{ display: 'none' }} />
-
+    <form className="max-w-xl" onSubmit={(e) => {
+      e.preventDefault()
+      handleSubmit()
+      }}>
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -134,7 +133,7 @@ export default function AddUserTab() {
           {message && (
             <div className={`p-3 rounded-lg text-xs font-bold border animate-in fade-in slide-in-from-top-1 duration-300 text-center
               ${message.toLowerCase().includes("success")
-                ? "bg-emerald-100 border-emerald-200 text-emerald-700" 
+                ? "bg-emerald-100 border-emerald-200 text-emerald-700"
                 : "bg-red-50 border-red-100 text-red-700"}`}
             >
               {message}
@@ -142,6 +141,6 @@ export default function AddUserTab() {
           )}
         </div>
       </div>
-    </div>
+    </form>
   );
 }

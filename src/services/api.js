@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  baseURL: "http://localhost:5500/api",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -24,12 +24,15 @@ function onRefreshed(token) {
 }
 
 // ── INTERCEPTOR 1:  ──────────────────────────
-API.interceptors.request.use((config) => {
-  if (memoryToken) {
-    config.headers.Authorization = `Bearer ${memoryToken}`;
-  }
-  return config;
-}, (error) => Promise.reject(error));
+API.interceptors.request.use(
+  (config) => {
+    if (memoryToken) {
+      config.headers.Authorization = `Bearer ${memoryToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error),
+);
 
 // ── INTERCEPTOR 2:  ──────────────────────────
 API.interceptors.response.use(
@@ -37,8 +40,12 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url.includes('/users/refresh') && !originalRequest.url.includes('/users/login')) {
-      
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url.includes("/users/refresh") &&
+      !originalRequest.url.includes("/users/login")
+    ) {
       originalRequest._retry = true;
       if (isRefreshing) {
         return new Promise((resolve) => {
@@ -51,7 +58,7 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await API.post("/users/refresh")
+        const res = await API.post("/users/refresh");
         const { accessToken } = res.data;
 
         setAccessTokenInApi(accessToken);
@@ -61,17 +68,16 @@ API.interceptors.response.use(
 
         return API(originalRequest);
       } catch (refreshErr) {
-
         console.log("API ERROR");
         setAccessTokenInApi("");
-        
+
         return Promise.reject(refreshErr);
-      } finally{
-        isRefreshing = false
+      } finally {
+        isRefreshing = false;
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // ── Stores ──────────────────────────────────────────────────
@@ -102,27 +108,28 @@ export const rejectRequest = (id, data) =>
   API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 
-
 // ── Users ────────────────────────────────────────────────
 
-export const login = (credentials) => API.post("/users/login", credentials)
+export const login = (credentials) => API.post("/users/login", credentials);
 
-export const refreshToken = () => API.post("/users/refresh")
+export const refreshToken = () => API.post("/users/refresh");
 
-export const logout = () => API.post("/users/logout")
+export const logout = () => API.post("/users/logout");
 
-export const addUser = (credentials) => API.post("/users/addUser", credentials)
+export const addUser = (credentials) => API.post("/users/addUser", credentials);
 
-export const getUsers = (params) => API.get("/users/getUsers", {params})
+export const getUsers = (params) => API.get("/users/getUsers", { params });
 
 export const userStatus = (data) => API.put("/users/action", data)
 
-export const getUserById = (id) => API.get(`/users/getUserById/${id}`)
+export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 
-export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, data)
+export const editUserById = (id, data) =>
+  API.put(`/users/editUserById/${id}`, data);
 
 // ── Main Store ────────────────────────────────────────────────
 
-export const getStoreManager = (params) => API.get("/users/getManager", { params })
+export const getStoreManager = (params) =>
+  API.get("/users/getManager", { params });
 
 export default API;

@@ -24,6 +24,29 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const getStatusTimestamp = (r) => {
+  if (r.status === "FULFILLED") return r.fulfilled_at;
+  if (r.status === "APPROVED") return r.approved_at;
+  if (r.status === "REJECTED") return r.approved_at;
+  return null;
+};
+
+const UpdatedAtCell = ({ r }) => {
+  const ts = getStatusTimestamp(r);
+  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  const d = new Date(ts);
+  return (
+    <div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
+      <div className="text-gray-400 text-xs font-mono">
+        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </div>
+    </div>
+  );
+};
+
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -128,7 +151,6 @@ export default function SubStore() {
     setForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
-
       if (field === "selected_item_no") {
         if (value) {
           const found = storeItems.find((i) => i.item_no === value);
@@ -143,7 +165,6 @@ export default function SubStore() {
           items[idx].item_uom = "";
         }
       }
-
       return { ...f, items };
     });
   };
@@ -260,7 +281,14 @@ export default function SubStore() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Request No", "Requested By", "Date", "Status", ""].map((h) => (
+              {[
+                "Request No",
+                "Requested By",
+                "Date",
+                "Status",
+                "Updated At",
+                "",
+              ].map((h) => (
                 <th
                   key={h}
                   className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
@@ -273,7 +301,7 @@ export default function SubStore() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
+                <td colSpan={6} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
@@ -306,6 +334,9 @@ export default function SubStore() {
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
+                      <td className="px-4 py-3">
+                        <UpdatedAtCell r={r} />
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <span
                           className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
@@ -319,7 +350,7 @@ export default function SubStore() {
                         key={r.request_id + "-detail"}
                         className="bg-gray-50 border-b-2 border-emerald-200"
                       >
-                        <td colSpan={7} className="px-6 py-4">
+                        <td colSpan={6} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -473,7 +504,6 @@ export default function SubStore() {
                     />
                   )}
                 </div>
-
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                     Main Store *
@@ -772,11 +802,7 @@ export default function SubStore() {
       {/* Toast */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : "bg-red-50 border-red-200 text-red-700"
-          }`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}
         >
           <span>{toast.message}</span>
           <button

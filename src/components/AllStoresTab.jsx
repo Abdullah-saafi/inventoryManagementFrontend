@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { STORE_TYPE_LABELS } from "../services/constants";
 import useErrorHandler from "./useErrorHandler";
 import { getStores, storeStatus } from "../services/api";
-import { useOutletContext } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 
 export default function AllStoresTab() {
 
@@ -15,6 +15,7 @@ export default function AllStoresTab() {
   const [loading, setLoading] = useState(false);
 
   const handleError = useErrorHandler();
+  const navigate = useNavigate()
 
   const loadStores = async () => {
     try {
@@ -37,7 +38,7 @@ export default function AllStoresTab() {
     try {
       setLoading(true);
       const status = !currentStatus;
-      const response = await storeStatus({ id, status });
+      const response = await storeStatus(id, {status} );
       
       if (response.status === 200) {
         await loadStores();
@@ -166,7 +167,7 @@ export default function AllStoresTab() {
                     >
                       {s.is_active ? "Deactivate" : "Activate"}
                     </button>
-                    <button className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300" onClick={() => {navigate(`/admin/user/${u.id}`)}}>Edit</button>
+                    <button className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300" onClick={() => {navigate(`/admin/store/${s.store_id}`)}}>Edit</button>
                   </td>
                 </tr>
               ))

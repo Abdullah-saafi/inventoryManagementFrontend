@@ -24,17 +24,11 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const getStatusTimestamp = (r) => {
-  if (r.status === "FULFILLED") return r.fulfilled_at;
-  if (r.status === "APPROVED") return r.approved_at;
-  if (r.status === "REJECTED") return r.approved_at;
-  return null;
-};
-
-const UpdatedAtCell = ({ r }) => {
-  const ts = getStatusTimestamp(r);
+const UpdatedAtCell = ({ ts }) => {
   if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+
   const d = new Date(ts);
+
   return (
     <div>
       <div className="text-gray-600 text-xs font-mono">
@@ -46,7 +40,6 @@ const UpdatedAtCell = ({ r }) => {
     </div>
   );
 };
-
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -284,9 +277,11 @@ export default function SubStore() {
               {[
                 "Request No",
                 "Requested By",
-                "Date",
+                "Requested At",
                 "Status",
-                "Updated At",
+                "Approved At",
+                "Fulfilled At",
+                "Rejected At",
                 "",
               ].map((h) => (
                 <th
@@ -335,7 +330,13 @@ export default function SubStore() {
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <UpdatedAtCell r={r} />
+                        <UpdatedAtCell ts={r.approved_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <UpdatedAtCell ts={r.fulfilled_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <UpdatedAtCell ts={r.rejected_at} />
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span
@@ -498,7 +499,10 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={subStores.find((s) => s.store_id === auth.store_id)?.store_name ?? "Loading..."}
+                      value={
+                        subStores.find((s) => s.store_id === auth.store_id)
+                          ?.store_name ?? "Loading..."
+                      }
                       readOnly
                       className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />

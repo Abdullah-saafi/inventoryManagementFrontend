@@ -498,10 +498,7 @@ export default function SubStore() {
                   ) : (
                     <input
                       type="text"
-                      value={
-                        subStores.find((s) => s.store_id === auth.store_id)
-                          ?.store_name ?? "Loading..."
-                      }
+                      value={subStores.find((s) => s.store_id === auth.store_id)?.store_name ?? "Loading..."}
                       readOnly
                       className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                     />

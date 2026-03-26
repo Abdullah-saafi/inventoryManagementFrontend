@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getRequestById, fulfillRequest } from "../services/api";
-import StatusBadge from "../components/BlockedUI";
+import StatusBadge from "../components/Statusbadge";
 
 const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId) => (
   <div className="space-y-3">

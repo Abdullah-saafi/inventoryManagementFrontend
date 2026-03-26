@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
@@ -6,9 +6,9 @@ import {
   getStores,
   getItems,
   createRequest,
-  getItemSummary,
-  createItem, // ← make sure this exists in your api.js
+  createItem,
 } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -37,20 +37,15 @@ const EMPTY_HO_ITEM = {
   item_no: "",
   item_name: "",
   item_uom: "",
-  item_category: "",
   requested_qty: 1,
   selected_item_no: "",
   item_search: "",
   _showDropdown: false,
 };
 
-// ── Generates a random unique item number like ITM-A3F9 ──────────────────────
-const generateRandomItemNo = () => {
-  const num = Math.floor(Math.random() * 900) + 100; // always 3 digits: 100–999
-  return `ITM-${num}`;
-};
+const generateRandomItemNo = () =>
+  `ITM-${Math.floor(Math.random() * 900) + 100}`;
 
-// ── Empty state for the Add Item form ────────────────────────────────────────
 const EMPTY_NEW_ITEM = {
   item_no: generateRandomItemNo(),
   item_name: "",
@@ -64,44 +59,42 @@ const EMPTY_NEW_ITEM = {
 export default function MainStore() {
   const [tab, setTab] = useState("items");
 
-  // ── Data ────────────────────────────────────────────────────────────────────
+  // ── Data ─────────────────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
-  const [items, setItems] = useState([]);
+  const [allItems, setAllItems] = useState([]); // all stores combined
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [storeItems, setStoreItems] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
-  const [itemSummaryReceived, setItemSummaryReceived] = useState([]);
-  const [itemSummaryGiven, setItemSummaryGiven] = useState([]);
 
-  // ── UI state ─────────────────────────────────────────────────────────────────
+  // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // ── Sub-store requests tab ───────────────────────────────────────────────────
+  // Sub-store requests tab
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
 
-  // ── All items tab ────────────────────────────────────────────────────────────
+  // All items tab
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  // ── Add Item modal ────────────────────────────────────────────────────────────
+  // Add Item modal
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
 
-  // ── HO requests tab ──────────────────────────────────────────────────────────
+  // HO requests tab
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
 
-  // ── New HO request form ──────────────────────────────────────────────────────
+  // New HO request form
   const [creating, setCreating] = useState(false);
   const [hoForm, setHoForm] = useState({
     from_store_id: "",
@@ -111,41 +104,42 @@ export default function MainStore() {
     items: [{ ...EMPTY_HO_ITEM }],
   });
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  // ── Data loading ─────────────────────────────────────────────────────────────
+  const {auth} = useAuth()
+  const isAdmin = auth?.role === "super admin" 
+
+  // ── Load all data ─────────────────────────────────────────────────────────
+  // KEY FIX: fetch items for ALL stores so we can split main_qty vs sub_qty
+  // correctly. Each item row has store_type from the JOIN in the items API.
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
-      if (reqFilter) params.status = reqFilter;
+      const subParams = { direction: "SUB_TO_MAIN" };
+      if (reqFilter) subParams.status = reqFilter;
 
-      const [rRes, sRes, iRes] = await Promise.all([
-        getRequests(params),
+      const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
+        getRequests(subParams),
         getStores(),
-        getItems(),
-      ]);
-
-      setRequests(rRes.data.data);
-      setItems(iRes.data.data);
-
-      const allStores = sRes.data.data;
-      setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-      setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-
-      const [recvSummary, givenSummary, hoReqRes] = await Promise.all([
-        getItemSummary({ direction: "MAIN_TO_HO" }),
-        getItemSummary({ direction: "SUB_TO_MAIN" }),
+        getItems(), // all items, all stores
         getRequests({ direction: "MAIN_TO_HO" }),
       ]);
 
-      setItemSummaryReceived(recvSummary.data.data);
-      setItemSummaryGiven(givenSummary.data.data);
+      setRequests(rRes.data.data);
       setHoRequests(hoReqRes.data.data);
+      setAllItems(iRes.data.data); // ← store raw rows
+
+      const allStores = sRes.data.data;
+      setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
+      setHeadOffices(
+        allStores.filter(
+          (s) => s.store_type && s.store_type.toUpperCase().includes("HEAD"),
+        ),
+      );
     } catch {
       setError("Failed to load data");
     } finally {
@@ -157,7 +151,6 @@ export default function MainStore() {
     load();
   }, [reqFilter]);
 
-  // Load items for the selected main store (used in New HO Request form)
   useEffect(() => {
     if (hoForm.from_store_id) {
       getItems({ store_id: hoForm.from_store_id })
@@ -168,7 +161,7 @@ export default function MainStore() {
     }
   }, [hoForm.from_store_id]);
 
-  // ── Sub-store requests: open/close inline detail ──────────────────────────────
+  // ── Open/close inline details ─────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
@@ -185,7 +178,6 @@ export default function MainStore() {
     }
   };
 
-  // ── HO requests: open/close inline detail ────────────────────────────────────
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {
       setHoDetail(null);
@@ -202,41 +194,38 @@ export default function MainStore() {
     }
   };
 
-  // ── Fulfill a sub-store request ───────────────────────────────────────────────
+  // ── Fulfill ───────────────────────────────────────────────────────────────
   const handleFulfill = async (requestId) => {
     setFulfilling(requestId);
     try {
       await fulfillRequest(requestId);
       showToast("Request fulfilled and inventory updated");
       setDetail(null);
-      load();
+      load(); // ← re-fetch all items so quantities update immediately
     } catch (e) {
+      console.log("FULFILL ERROR:", e.response?.data);
       showToast(e.response?.data?.message || "Failed to fulfill", "error");
     } finally {
       setFulfilling(null);
     }
   };
 
-  // ── Add Item: open modal with a fresh random item number ──────────────────────
+  // ── Add Item ──────────────────────────────────────────────────────────────
   const openAddItem = () => {
     setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
     setShowAddItem(true);
   };
-
-  // ── Add Item: regenerate the item number on demand ────────────────────────────
   const regenerateItemNo = () =>
     setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
 
-  // ── Add Item: save ────────────────────────────────────────────────────────────
   const handleSaveItem = async () => {
     if (
       !newItem.item_no ||
       !newItem.item_name ||
       !newItem.item_uom ||
       !newItem.store_id
-    ) {
+    )
       return showToast("Item No, Name, UOM and Store are required", "error");
-    }
     setSavingItem(true);
     try {
       await createItem(newItem);
@@ -250,13 +239,11 @@ export default function MainStore() {
     }
   };
 
-  // ── New HO request form helpers ───────────────────────────────────────────────
+  // ── HO form helpers ───────────────────────────────────────────────────────
   const addLine = () =>
     setHoForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_HO_ITEM }] }));
-
   const removeLine = (idx) =>
     setHoForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
-
   const updateLine = (idx, field, value) => {
     setHoForm((f) => {
       const items = [...f.items];
@@ -278,15 +265,17 @@ export default function MainStore() {
     });
   };
 
-  // ── Submit new HO request ─────────────────────────────────────────────────────
   const handleHoRequest = async () => {
     const { from_store_id, to_store_id, requested_by_name, items } = hoForm;
-    const hasEmptyItem = items.some(
-      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
-    );
-    if (!from_store_id || !to_store_id || !requested_by_name || hasEmptyItem) {
+    if (
+      !from_store_id ||
+      !to_store_id ||
+      !requested_by_name ||
+      items.some(
+        (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+      )
+    )
       return showToast("Please fill all required fields", "error");
-    }
     setCreating(true);
     try {
       await createRequest({
@@ -313,37 +302,46 @@ export default function MainStore() {
     }
   };
 
-  // ── Derived data ──────────────────────────────────────────────────────────────
-  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
-
+  // ── Derived: group items by item_no, split main vs sub qty ───────────────
+  // FIX: group raw rows by item_no. For each item_no, track:
+  //   main_qty  = sum of item_quantity where store_type === 'MAIN_STORE'
+  //   sub_qty   = sum of item_quantity where store_type === 'SUB_STORE'
+  //   total_qty = main_qty + sub_qty
+  // This updates correctly after every load() call.
   const groupedItems = Object.values(
-    items.reduce((acc, i) => {
-      const qty = parseFloat(i.item_quantity || 0);
-      if (!acc[i.item_no]) {
-        acc[i.item_no] = {
-          ...i,
-          item_quantity: qty,
-          main_qty: i.store_type === "MAIN_STORE" ? qty : 0,
-          sub_qty: i.store_type === "SUB_STORE" ? qty : 0,
+    allItems.reduce((acc, row) => {
+      const qty = parseFloat(row.item_quantity || 0);
+      const isMain = row.store_type === "MAIN_STORE";
+      const isSub = row.store_type === "SUB_STORE";
+
+      if (!acc[row.item_no]) {
+        acc[row.item_no] = {
+          ...row,
+          total_qty: qty,
+          main_qty: isMain ? qty : 0,
+          sub_qty: isSub ? qty : 0,
         };
       } else {
-        acc[i.item_no].item_quantity += qty;
-        if (i.store_type === "MAIN_STORE") acc[i.item_no].main_qty += qty;
-        if (i.store_type === "SUB_STORE") acc[i.item_no].sub_qty += qty;
+        acc[row.item_no].total_qty += qty;
+        if (isMain) acc[row.item_no].main_qty += qty;
+        if (isSub) acc[row.item_no].sub_qty += qty;
       }
       return acc;
     }, {}),
   );
 
+  const categories = [
+    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
+  ];
   const filteredItems = groupedItems.filter((i) => {
-    const matchSearch =
-      !search ||
-      i.item_name.toLowerCase().includes(search.toLowerCase()) ||
-      i.item_no.toLowerCase().includes(search.toLowerCase());
-    const matchCat = !filterCategory || i.category === filterCategory;
-    return matchSearch && matchCat;
+    const q = search.toLowerCase();
+    return (
+      (!search ||
+        i.item_name.toLowerCase().includes(q) ||
+        i.item_no.toLowerCase().includes(q)) &&
+      (!filterCategory || i.category === filterCategory)
+    );
   });
-
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = filteredItems.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -357,7 +355,7 @@ export default function MainStore() {
     (r) => r.status === "APPROVED",
   ).length;
 
-  // ── Shared inline detail renderer ─────────────────────────────────────────────
+  // ── Inline detail renderer ────────────────────────────────────────────────
   const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId) => (
     <div className="space-y-3">
       {d.notes && (
@@ -436,14 +434,13 @@ export default function MainStore() {
     </div>
   );
 
-  // ── Early returns ─────────────────────────────────────────────────────────────
+  // ── Early returns ─────────────────────────────────────────────────────────
   if (loading)
     return (
       <div className="flex justify-center py-20">
         <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
       </div>
     );
-
   if (error)
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
@@ -451,7 +448,7 @@ export default function MainStore() {
       </div>
     );
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div>
       {/* Page header */}
@@ -494,10 +491,9 @@ export default function MainStore() {
         })}
       </nav>
 
-      {/* ── TAB: ALL ITEMS ───────────────────────────────────────────────────── */}
+      {/* ── TAB: ALL ITEMS ─────────────────────────────────────────────────── */}
       {tab === "items" && (
         <div>
-          {/* Filters row + Add Item button */}
           <div className="flex flex-wrap items-center gap-2 mb-4">
             <input
               value={search}
@@ -535,7 +531,6 @@ export default function MainStore() {
                 Clear
               </button>
             )}
-            {/* ── Add Item button ── */}
             <button
               onClick={openAddItem}
               className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
@@ -544,7 +539,6 @@ export default function MainStore() {
             </button>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
@@ -554,9 +548,9 @@ export default function MainStore() {
                     "Name",
                     "Category",
                     "UOM",
-                    "Total Stock",
-                    "Sent to Sub-Stores",
-                    "Available Stock",
+                    "Main Store Stock", // ← qty in main store only
+                    "Sent to Sub-Stores", // ← qty in all sub stores
+                    "Remaining Stock", // ← main_qty - sub_qty
                     "Min Stock",
                     "Status",
                   ].map((h) => (
@@ -578,11 +572,10 @@ export default function MainStore() {
                   </tr>
                 ) : (
                   paginatedItems.map((i) => {
-                    const isLow =
-                      parseFloat(i.item_quantity) <= parseFloat(i.min_quantity);
+                    const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
                     return (
                       <tr
-                        key={i.item_id}
+                        key={i.item_no}
                         className="border-b border-gray-100 hover:bg-gray-50"
                       >
                         <td className="px-4 py-3">
@@ -599,21 +592,32 @@ export default function MainStore() {
                         <td className="px-4 py-3 font-mono text-xs text-gray-600">
                           {i.item_uom}
                         </td>
+
+                        {/* Main Store stock — this is what decreases after fulfill */}
                         <td className="px-4 py-3">
                           <span
-                            className={`font-mono font-bold ${isLow ? "text-red-500" : "text-gray-800"}`}
+                            className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
                           >
-                            {Number(i.item_quantity).toFixed(0)}
+                            {Number(i.main_qty).toFixed(0)}
                           </span>
                         </td>
+
+                        {/* Sent to Sub Stores */}
                         <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
                           {Number(i.sub_qty).toFixed(0)}
                         </td>
-                        <td className="px-4 py-3 font-mono text-xs text-emerald-600 font-bold">
-                          {Number(i.main_qty).toFixed(0)}
+
+                        {/* Remaining Stock = Main Store − Sent to Sub Stores */}
+                        <td className="px-4 py-3">
+                          <span
+                            className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
+                          >
+                            {Number(i.main_qty - i.sub_qty).toFixed(0)}
+                          </span>
                         </td>
+
                         <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                          {i.min_quantity}
+                          {i.min_quantity ?? "—"}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -630,7 +634,7 @@ export default function MainStore() {
             </table>
           </div>
 
-          {/* Pagination controls */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 px-1">
               <span className="text-gray-400 text-xs">
@@ -703,7 +707,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: SUB STORE REQUESTS ──────────────────────────────────────────── */}
+      {/* ── TAB: SUB STORE REQUESTS ──────────────────────────────────────── */}
       {tab === "requests" && (
         <div>
           <div className="mb-4">
@@ -719,6 +723,7 @@ export default function MainStore() {
               <option value="FULFILLED">Fulfilled</option>
             </select>
           </div>
+
           <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
@@ -754,7 +759,7 @@ export default function MainStore() {
                     const isExpanded =
                       detail && detail.request_id === r.request_id;
                     return (
-                      <>
+                      <React.Fragment key={r.request_id}>
                         <tr
                           key={r.request_id}
                           className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -764,11 +769,6 @@ export default function MainStore() {
                             <span className="font-mono text-emerald-600 text-xs font-bold">
                               {r.request_no}
                             </span>
-                            {r.item_count > 0 && (
-                              <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                                {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                              </span>
-                            )}
                           </td>
                           <td className="px-4 py-3 text-gray-700">
                             {r.from_store_name}
@@ -834,7 +834,7 @@ export default function MainStore() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -844,12 +844,12 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: HO REQUESTS STATUS ──────────────────────────────────────────── */}
+      {/* ── TAB: HO REQUESTS STATUS ──────────────────────────────────────── */}
       {tab === "ho-status" && (
         <div>
           <div className="mb-4 flex items-center justify-between">
             <p className="text-gray-500 text-sm">
-              All requests submitted by Main Store to Head Office
+              All requests submitted to Head Office
             </p>
             <select
               value={hoFilter}
@@ -857,42 +857,33 @@ export default function MainStore() {
               className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
             >
               <option value="">All Statuses</option>
-              <option value="PENDING">
-                Pending (awaiting manager approval)
-              </option>
-              <option value="APPROVED">
-                Approved (waiting HO fulfillment)
-              </option>
+              <option value="PENDING">Pending</option>
+              <option value="APPROVED">Approved</option>
               <option value="FULFILLED">Fulfilled</option>
               <option value="REJECTED">Rejected</option>
             </select>
           </div>
+
           <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {[
-                    "Request No",
-                    "Requested By",
-                    "Date",
-                    "Items",
-                    "Total Qty",
-                    "Status",
-                    "",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
+                  {["Request No", "Requested By", "Date", "Status", ""].map(
+                    (h) => (
+                      <th
+                        key={h}
+                        className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                      >
+                        {h}
+                      </th>
+                    ),
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {filteredHoRequests.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-12 text-gray-400">
+                    <td colSpan={5} className="text-center py-12 text-gray-400">
                       No HO requests found.
                     </td>
                   </tr>
@@ -901,7 +892,7 @@ export default function MainStore() {
                     const isExpanded =
                       hoDetail && hoDetail.request_id === r.request_id;
                     return (
-                      <>
+                      <React.Fragment key={r.request_id}>
                         <tr
                           key={r.request_id}
                           className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -915,20 +906,6 @@ export default function MainStore() {
                           </td>
                           <td className="px-4 py-3 text-gray-400 text-xs">
                             {new Date(r.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 text-gray-700 font-mono text-xs">
-                            {r.item_count}
-                          </td>
-                          <td className="px-4 py-3 font-mono text-xs">
-                            {r.status === "FULFILLED" ? (
-                              <span className="text-emerald-600 font-bold">
-                                {parseFloat(r.total_fulfilled || 0).toFixed(0)}
-                              </span>
-                            ) : (
-                              <span className="text-gray-500">
-                                {parseFloat(r.total_requested || 0).toFixed(0)}
-                              </span>
-                            )}
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={r.status} />
@@ -946,7 +923,7 @@ export default function MainStore() {
                             key={r.request_id + "-detail"}
                             className="bg-gray-50 border-b-2 border-yellow-200"
                           >
-                            <td colSpan={7} className="px-6 py-4">
+                            <td colSpan={5} className="px-6 py-4">
                               {hoDetailLoad ? (
                                 <div className="flex justify-center py-6">
                                   <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -963,7 +940,7 @@ export default function MainStore() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })
                 )}
@@ -973,7 +950,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── TAB: NEW HO REQUEST ──────────────────────────────────────────────── */}
+      {/* ── TAB: NEW HO REQUEST ──────────────────────────────────────────── */}
       {tab === "ho-create" && (
         <div className="max-w-2xl">
           <div className="mb-4">
@@ -1052,6 +1029,8 @@ export default function MainStore() {
                 className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
               />
             </div>
+
+            {/* Items */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-gray-500 text-xs font-semibold uppercase">
@@ -1090,8 +1069,16 @@ export default function MainStore() {
                         <input
                           value={item.item_search}
                           onChange={(e) => {
-                            updateLine(idx, "item_search", e.target.value);
-                            updateLine(idx, "_showDropdown", true);
+                            const val = e.target.value;
+                            setHoForm((f) => {
+                              const items = [...f.items];
+                              items[idx] = {
+                                ...items[idx],
+                                item_search: val,
+                                _showDropdown: true,
+                              };
+                              return { ...f, items };
+                            });
                           }}
                           onFocus={() => updateLine(idx, "_showDropdown", true)}
                           onBlur={() =>
@@ -1108,9 +1095,19 @@ export default function MainStore() {
                             <div
                               className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer"
                               onMouseDown={() => {
-                                updateLine(idx, "selected_item_no", "");
-                                updateLine(idx, "item_search", "");
-                                updateLine(idx, "_showDropdown", false);
+                                setHoForm((f) => {
+                                  const items = [...f.items];
+                                  items[idx] = {
+                                    ...items[idx],
+                                    selected_item_no: "",
+                                    item_search: "",
+                                    item_no: "",
+                                    item_name: "",
+                                    item_uom: "",
+                                    _showDropdown: false,
+                                  };
+                                  return { ...f, items };
+                                });
                               }}
                             >
                               — Not listed / enter manually —
@@ -1130,17 +1127,20 @@ export default function MainStore() {
                                 <div
                                   key={si.item_id}
                                   onMouseDown={() => {
-                                    updateLine(
-                                      idx,
-                                      "selected_item_no",
-                                      si.item_no,
-                                    );
-                                    updateLine(
-                                      idx,
-                                      "item_search",
-                                      si.item_no + " — " + si.item_name,
-                                    );
-                                    updateLine(idx, "_showDropdown", false);
+                                    setHoForm((f) => {
+                                      const items = [...f.items];
+                                      items[idx] = {
+                                        ...items[idx],
+                                        selected_item_no: si.item_no,
+                                        item_no: si.item_no,
+                                        item_name: si.item_name,
+                                        item_uom: si.item_uom,
+                                        item_search:
+                                          si.item_no + " — " + si.item_name,
+                                        _showDropdown: false,
+                                      };
+                                      return { ...f, items };
+                                    });
                                   }}
                                   className={`px-3 py-2 cursor-pointer hover:bg-gray-50 border-t border-gray-100 ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                 >
@@ -1157,18 +1157,6 @@ export default function MainStore() {
                                   </span>
                                 </div>
                               ))}
-                            {storeItems.filter((si) => {
-                              const q = (item.item_search || "").toLowerCase();
-                              return (
-                                !q ||
-                                si.item_no.toLowerCase().includes(q) ||
-                                si.item_name.toLowerCase().includes(q)
-                              );
-                            }).length === 0 && (
-                              <div className="px-3 py-2 text-xs text-gray-400 italic">
-                                No items match your search
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -1190,7 +1178,7 @@ export default function MainStore() {
                           onChange={(e) =>
                             updateLine(idx, "item_no", e.target.value)
                           }
-                          placeholder="e.g. ITM-001"
+                          placeholder="ITM-001"
                           className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
                         />
                       </div>
@@ -1239,6 +1227,7 @@ export default function MainStore() {
                 ))}
               </div>
             </div>
+
             <div className="flex justify-end pt-2 border-t border-gray-200">
               <button
                 onClick={handleHoRequest}
@@ -1252,11 +1241,10 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* ── ADD ITEM MODAL ───────────────────────────────────────────────────── */}
+      {/* ── ADD ITEM MODAL ────────────────────────────────────────────────── */}
       {showAddItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4">
-            {/* Modal header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <h3 className="text-gray-900 font-bold text-base">
                 Add New Item
@@ -1268,10 +1256,7 @@ export default function MainStore() {
                 ×
               </button>
             </div>
-
-            {/* Modal body */}
             <div className="px-5 py-4 space-y-4">
-              {/* Item No — auto-generated, with a regenerate button */}
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Item No{" "}
@@ -1282,28 +1267,27 @@ export default function MainStore() {
                 <div className="flex gap-2">
                   <input
                     value={newItem.item_no}
+                    readOnly
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, item_no: e.target.value }))
                     }
                     className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500"
                   />
-                  {/* Regenerate button */}
                   <button
                     onClick={regenerateItemNo}
-                    title="Generate a new random number"
+                    title="Generate new number"
                     className="px-3 py-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 text-sm"
                   >
                     ↻
                   </button>
                 </div>
               </div>
-
-              {/* Item Name */}
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Item Name *
                 </label>
                 <input
+                  readOnly={isAdmin}
                   value={newItem.item_name}
                   onChange={(e) =>
                     setNewItem((f) => ({ ...f, item_name: e.target.value }))
@@ -1312,8 +1296,6 @@ export default function MainStore() {
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
-
-              {/* UOM + Category */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -1321,6 +1303,7 @@ export default function MainStore() {
                   </label>
                   <input
                     value={newItem.item_uom}
+                    readOnly={isAdmin}
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, item_uom: e.target.value }))
                     }
@@ -1334,6 +1317,7 @@ export default function MainStore() {
                   </label>
                   <input
                     value={newItem.category}
+                    readOnly={isAdmin}
                     onChange={(e) =>
                       setNewItem((f) => ({ ...f, category: e.target.value }))
                     }
@@ -1342,8 +1326,6 @@ export default function MainStore() {
                   />
                 </div>
               </div>
-
-              {/* Initial Qty + Min Stock */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -1351,6 +1333,7 @@ export default function MainStore() {
                   </label>
                   <input
                     type="number"
+                    readOnly={isAdmin}
                     min="0"
                     value={newItem.item_quantity}
                     onChange={(e) =>
@@ -1369,6 +1352,7 @@ export default function MainStore() {
                   </label>
                   <input
                     type="number"
+                    readOnly={isAdmin}
                     min="0"
                     value={newItem.min_quantity}
                     onChange={(e) =>
@@ -1382,14 +1366,13 @@ export default function MainStore() {
                   />
                 </div>
               </div>
-
-              {/* Store */}
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                   Store *
                 </label>
                 <select
                   value={newItem.store_id}
+                  readOnly={isAdmin}
                   onChange={(e) =>
                     setNewItem((f) => ({ ...f, store_id: e.target.value }))
                   }
@@ -1404,8 +1387,6 @@ export default function MainStore() {
                 </select>
               </div>
             </div>
-
-            {/* Modal footer */}
             <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
               <button
                 onClick={() => setShowAddItem(false)}
@@ -1425,7 +1406,7 @@ export default function MainStore() {
         </div>
       )}
 
-      {/* Toast notification */}
+      {/* Toast */}
       {toast && (
         <div
           className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium

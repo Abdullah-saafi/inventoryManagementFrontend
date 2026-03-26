@@ -3,12 +3,11 @@ Hijri Date Feature
 Implementation of Tags in the System to track consumption sites
 
 Minor Fixes ■ Main Branch
-When User logs in it should show his Role 
-Requested by Should not be changeable this should only show the user who is logged in
-for example if Usman then system should show Usman (not changeable)
-Requested quantity can be + - by Sub store approver
-show dates with Status ( to easily track when the order status changes)
-■■■■■■ this would be shown on all tables
-shows not found when i refresh any particular page
-Super admin shouldn't have rights to edit any item fields
-available stock is not updating now ( sent to sub store does update)
+1.(rafay) When User logs in it should show his Role 
+2.(rafay) Requested by Should not be changeable this should only show the user who is logged in
+ for example if Usman then system should show Usman (not changeable)
+3. (Saafi) DONE Requested quantity can be + - by Sub store approver
+4. (Saafi) DONE show dates with Status ( to easily track when the order status changes)
+5.(already DONE) when refresh page not found when i refresh any particular page
+6.(rafay) Super admin shouldn't have rights to edit any item fields
+7.(saafi) available stock is not updating now ( sent to sub store does update)

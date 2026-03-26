@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
@@ -224,7 +224,7 @@ export default function SubStoreManager() {
               requests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 return (
-                  <>
+                  <React.Fragment key={r.request_id}>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -257,7 +257,7 @@ export default function SubStoreManager() {
                             {isExpanded ? "▲ Hide" : "▼ Details"}
                           </span>
                           {r.status === "PENDING" && (
-                            <>
+                            <React.Fragment>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -278,7 +278,7 @@ export default function SubStoreManager() {
                               >
                                 Reject
                               </button>
-                            </>
+                            </React.Fragment>
                           )}
                         </div>
                       </td>
@@ -406,7 +406,7 @@ export default function SubStoreManager() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

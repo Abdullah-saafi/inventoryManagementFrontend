@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useState } from "react";
 import {
   getRequests,
@@ -25,6 +26,14 @@ const StatusBadge = ({ status }) => {
     </span>
   );
 };
+=======
+import { useEffect, useState } from "react";
+import { getRequests, getStores, getItems } from "../services/api";
+import MainAllItems from "../components/Mainallitems";
+import MainSubStoreReqs from "../components/Mainsubstorereqs";
+import MainReqStatus from "../components/Mainreqstatus";
+import MainReqToHO from "../components/Mainreqtoho";
+>>>>>>> phase-01
 
 const TABS = [
   { id: "items", label: "All Items" },
@@ -33,38 +42,14 @@ const TABS = [
   { id: "ho-create", label: "New HO Request" },
 ];
 
-const EMPTY_HO_ITEM = {
-  item_no: "",
-  item_name: "",
-  item_uom: "",
-  requested_qty: 1,
-  selected_item_no: "",
-  item_search: "",
-  _showDropdown: false,
-};
-
-const generateRandomItemNo = () =>
-  `ITM-${Math.floor(Math.random() * 900) + 100}`;
-
-const EMPTY_NEW_ITEM = {
-  item_no: generateRandomItemNo(),
-  item_name: "",
-  item_uom: "",
-  category: "",
-  item_quantity: "",
-  min_quantity: "",
-  store_id: "",
-};
-
 export default function MainStore() {
   const [tab, setTab] = useState("items");
 
-  // ── Data ─────────────────────────────────────────────────────────────────
+  // ── Data ──────────────────────────────────────────────────────────────────
   const [requests, setRequests] = useState([]);
-  const [allItems, setAllItems] = useState([]); // all stores combined
+  const [allItems, setAllItems] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
-  const [storeItems, setStoreItems] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
 
   // ── UI ────────────────────────────────────────────────────────────────────
@@ -72,39 +57,7 @@ export default function MainStore() {
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // Sub-store requests tab
-  const [reqFilter, setReqFilter] = useState("APPROVED");
-  const [detail, setDetail] = useState(null);
-  const [detailLoad, setDL] = useState(false);
-  const [fulfilling, setFulfilling] = useState(null);
-
-  // All items tab
-  const [search, setSearch] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-
-  // Add Item modal
-  const [showAddItem, setShowAddItem] = useState(false);
-  const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
-  const [savingItem, setSavingItem] = useState(false);
-
-  // HO requests tab
-  const [hoFilter, setHoFilter] = useState("");
-  const [hoDetail, setHoDetail] = useState(null);
-  const [hoDetailLoad, setHoDL] = useState(false);
-
-  // New HO request form
-  const [creating, setCreating] = useState(false);
-  const [hoForm, setHoForm] = useState({
-    from_store_id: "",
-    to_store_id: "",
-    requested_by_name: "",
-    notes: "",
-    items: [{ ...EMPTY_HO_ITEM }],
-  });
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Toast helper ──────────────────────────────────────────────────────────
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -114,24 +67,19 @@ export default function MainStore() {
   const isAdmin = auth?.role === "super admin" 
 
   // ── Load all data ─────────────────────────────────────────────────────────
-  // KEY FIX: fetch items for ALL stores so we can split main_qty vs sub_qty
-  // correctly. Each item row has store_type from the JOIN in the items API.
   const load = async () => {
     setLoading(true);
     try {
-      const subParams = { direction: "SUB_TO_MAIN" };
-      if (reqFilter) subParams.status = reqFilter;
-
       const [rRes, sRes, iRes, hoReqRes] = await Promise.all([
-        getRequests(subParams),
+        getRequests({ direction: "SUB_TO_MAIN" }),
         getStores(),
-        getItems(), // all items, all stores
+        getItems(),
         getRequests({ direction: "MAIN_TO_HO" }),
       ]);
 
       setRequests(rRes.data.data);
       setHoRequests(hoReqRes.data.data);
-      setAllItems(iRes.data.data); // ← store raw rows
+      setAllItems(iRes.data.data);
 
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
@@ -149,290 +97,13 @@ export default function MainStore() {
 
   useEffect(() => {
     load();
-  }, [reqFilter]);
+  }, []);
 
-  useEffect(() => {
-    if (hoForm.from_store_id) {
-      getItems({ store_id: hoForm.from_store_id })
-        .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
-    } else {
-      setStoreItems([]);
-    }
-  }, [hoForm.from_store_id]);
-
-  // ── Open/close inline details ─────────────────────────────────────────────
-  const openDetail = async (r) => {
-    if (detail && detail.request_id === r.request_id) {
-      setDetail(null);
-      return;
-    }
-    setDL(true);
-    setDetail({ ...r, items: [] });
-    try {
-      const res = await getRequestById(r.request_id);
-      setDetail(res.data.data);
-    } catch {
-    } finally {
-      setDL(false);
-    }
-  };
-
-  const openHoDetail = async (r) => {
-    if (hoDetail && hoDetail.request_id === r.request_id) {
-      setHoDetail(null);
-      return;
-    }
-    setHoDL(true);
-    setHoDetail({ ...r, items: [] });
-    try {
-      const res = await getRequestById(r.request_id);
-      setHoDetail(res.data.data);
-    } catch {
-    } finally {
-      setHoDL(false);
-    }
-  };
-
-  // ── Fulfill ───────────────────────────────────────────────────────────────
-  const handleFulfill = async (requestId) => {
-    setFulfilling(requestId);
-    try {
-      await fulfillRequest(requestId);
-      showToast("Request fulfilled and inventory updated");
-      setDetail(null);
-      load(); // ← re-fetch all items so quantities update immediately
-    } catch (e) {
-      console.log("FULFILL ERROR:", e.response?.data);
-      showToast(e.response?.data?.message || "Failed to fulfill", "error");
-    } finally {
-      setFulfilling(null);
-    }
-  };
-
-  // ── Add Item ──────────────────────────────────────────────────────────────
-  const openAddItem = () => {
-    setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
-    setShowAddItem(true);
-  };
-  const regenerateItemNo = () =>
-    setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
-
-  const handleSaveItem = async () => {
-    if (
-      !newItem.item_no ||
-      !newItem.item_name ||
-      !newItem.item_uom ||
-      !newItem.store_id
-    )
-      return showToast("Item No, Name, UOM and Store are required", "error");
-    setSavingItem(true);
-    try {
-      await createItem(newItem);
-      showToast("Item added successfully");
-      setShowAddItem(false);
-      load();
-    } catch (e) {
-      showToast(e.response?.data?.message || "Failed to add item", "error");
-    } finally {
-      setSavingItem(false);
-    }
-  };
-
-  // ── HO form helpers ───────────────────────────────────────────────────────
-  const addLine = () =>
-    setHoForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_HO_ITEM }] }));
-  const removeLine = (idx) =>
-    setHoForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
-  const updateLine = (idx, field, value) => {
-    setHoForm((f) => {
-      const items = [...f.items];
-      items[idx] = { ...items[idx], [field]: value };
-      if (field === "selected_item_no") {
-        if (value) {
-          const found = storeItems.find((i) => i.item_no === value);
-          if (found) {
-            items[idx].item_no = found.item_no;
-            items[idx].item_name = found.item_name;
-            items[idx].item_uom = found.item_uom;
-            items[idx].item_search = found.item_no + " — " + found.item_name;
-          }
-        } else {
-          items[idx].item_no = items[idx].item_name = items[idx].item_uom = "";
-        }
-      }
-      return { ...f, items };
-    });
-  };
-
-  const handleHoRequest = async () => {
-    const { from_store_id, to_store_id, requested_by_name, items } = hoForm;
-    if (
-      !from_store_id ||
-      !to_store_id ||
-      !requested_by_name ||
-      items.some(
-        (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
-      )
-    )
-      return showToast("Please fill all required fields", "error");
-    setCreating(true);
-    try {
-      await createRequest({
-        ...hoForm,
-        direction: "MAIN_TO_HO",
-        items: items.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
-      });
-      showToast("Request submitted to Head Office");
-      setHoForm({
-        from_store_id: "",
-        to_store_id: "",
-        requested_by_name: "",
-        notes: "",
-        items: [{ ...EMPTY_HO_ITEM }],
-      });
-      setTab("ho-status");
-      load();
-    } catch (e) {
-      showToast(e.response?.data?.message || "Failed to submit", "error");
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // ── Derived: group items by item_no, split main vs sub qty ───────────────
-  // FIX: group raw rows by item_no. For each item_no, track:
-  //   main_qty  = sum of item_quantity where store_type === 'MAIN_STORE'
-  //   sub_qty   = sum of item_quantity where store_type === 'SUB_STORE'
-  //   total_qty = main_qty + sub_qty
-  // This updates correctly after every load() call.
-  const groupedItems = Object.values(
-    allItems.reduce((acc, row) => {
-      const qty = parseFloat(row.item_quantity || 0);
-      const isMain = row.store_type === "MAIN_STORE";
-      const isSub = row.store_type === "SUB_STORE";
-
-      if (!acc[row.item_no]) {
-        acc[row.item_no] = {
-          ...row,
-          total_qty: qty,
-          main_qty: isMain ? qty : 0,
-          sub_qty: isSub ? qty : 0,
-        };
-      } else {
-        acc[row.item_no].total_qty += qty;
-        if (isMain) acc[row.item_no].main_qty += qty;
-        if (isSub) acc[row.item_no].sub_qty += qty;
-      }
-      return acc;
-    }, {}),
-  );
-
-  const categories = [
-    ...new Set(allItems.map((i) => i.category).filter(Boolean)),
-  ];
-  const filteredItems = groupedItems.filter((i) => {
-    const q = search.toLowerCase();
-    return (
-      (!search ||
-        i.item_name.toLowerCase().includes(q) ||
-        i.item_no.toLowerCase().includes(q)) &&
-      (!filterCategory || i.category === filterCategory)
-    );
-  });
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
-  const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
-  );
-
-  const filteredHoRequests = hoFilter
-    ? hoRequests.filter((r) => r.status === hoFilter)
-    : hoRequests;
+  // ── Badge counts ──────────────────────────────────────────────────────────
   const pendingApproved = requests.filter(
     (r) => r.status === "APPROVED",
   ).length;
-
-  // ── Inline detail renderer ────────────────────────────────────────────────
-  const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId) => (
-    <div className="space-y-3">
-      {d.notes && (
-        <div className="bg-white rounded p-3 border border-gray-200">
-          <div className="text-gray-400 text-xs mb-1">NOTES</div>
-          <div className="text-gray-700 text-sm">{d.notes}</div>
-        </div>
-      )}
-      {d.rejection_reason && (
-        <div className="bg-red-50 border border-red-200 rounded p-3">
-          <div className="text-red-500 text-xs font-semibold mb-1">
-            REJECTION REASON
-          </div>
-          <div className="text-red-600 text-sm">{d.rejection_reason}</div>
-        </div>
-      )}
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-gray-400 text-xs">
-            <th className="text-left pb-2 pr-4">Item No</th>
-            <th className="text-left pb-2 pr-4">Item Name</th>
-            <th className="text-left pb-2 pr-4">UOM</th>
-            <th className="text-center pb-2 pr-4">Requested</th>
-            <th className="text-center pb-2 pr-4">Approved</th>
-            <th className="text-center pb-2">Fulfilled</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(d.items || []).map((i) => (
-            <tr key={i.request_item_id} className="border-b border-gray-100">
-              <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                {i.item_no}
-              </td>
-              <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-              <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
-              <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                {i.requested_qty}
-              </td>
-              <td className="py-2 pr-4 font-mono text-center">
-                <span
-                  className={
-                    i.approved_qty != null
-                      ? "text-emerald-600"
-                      : "text-gray-300"
-                  }
-                >
-                  {i.approved_qty ?? "—"}
-                </span>
-              </td>
-              <td className="py-2 font-mono text-center">
-                <span
-                  className={
-                    i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
-                  }
-                >
-                  {i.fulfilled_qty ?? "—"}
-                </span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {d.status === "APPROVED" && onFulfill && (
-        <div className="pt-2 border-t border-gray-200">
-          <button
-            onClick={() => onFulfill(d.request_id)}
-            disabled={fulfillingId === d.request_id}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-          >
-            {fulfillingId === d.request_id
-              ? "Processing..."
-              : "Mark as Fulfilled"}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+  const pendingHo = hoRequests.filter((r) => r.status === "PENDING").length;
 
   // ── Early returns ─────────────────────────────────────────────────────────
   if (loading)
@@ -448,7 +119,6 @@ export default function MainStore() {
       </div>
     );
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div>
       {/* Page header */}
@@ -466,9 +136,8 @@ export default function MainStore() {
           const badge =
             t.id === "requests" && pendingApproved > 0
               ? pendingApproved
-              : t.id === "ho-status" &&
-                  hoRequests.filter((r) => r.status === "PENDING").length > 0
-                ? hoRequests.filter((r) => r.status === "PENDING").length
+              : t.id === "ho-status" && pendingHo > 0
+                ? pendingHo
                 : null;
           return (
             <button
@@ -491,224 +160,18 @@ export default function MainStore() {
         })}
       </nav>
 
-      {/* ── TAB: ALL ITEMS ─────────────────────────────────────────────────── */}
+      {/* ── TAB CONTENT ──────────────────────────────────────────────────── */}
       {tab === "items" && (
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-4">
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search by name or item number..."
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => {
-                setFilterCategory(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {(search || filterCategory) && (
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setFilterCategory("");
-                  setCurrentPage(1);
-                }}
-                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-              >
-                Clear
-              </button>
-            )}
-            <button
-              onClick={openAddItem}
-              className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
-            >
-              <span className="text-base leading-none">+</span> Add Item
-            </button>
-          </div>
-
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  {[
-                    "Item No",
-                    "Name",
-                    "Category",
-                    "UOM",
-                    "Main Store Stock", // ← qty in main store only
-                    "Sent to Sub-Stores", // ← qty in all sub stores
-                    "Remaining Stock", // ← main_qty - sub_qty
-                    "Min Stock",
-                    "Status",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="text-center py-12 text-gray-400">
-                      No items found.
-                    </td>
-                  </tr>
-                ) : (
-                  paginatedItems.map((i) => {
-                    const isLow = i.main_qty <= parseFloat(i.min_quantity || 0);
-                    return (
-                      <tr
-                        key={i.item_no}
-                        className="border-b border-gray-100 hover:bg-gray-50"
-                      >
-                        <td className="px-4 py-3">
-                          <span className="font-mono text-emerald-600 text-xs">
-                            {i.item_no}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-gray-800 font-semibold">
-                          {i.item_name}
-                        </td>
-                        <td className="px-4 py-3 text-gray-500 text-xs">
-                          {i.category || "—"}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                          {i.item_uom}
-                        </td>
-
-                        {/* Main Store stock — this is what decreases after fulfill */}
-                        <td className="px-4 py-3">
-                          <span
-                            className={`font-mono font-bold ${isLow ? "text-red-500" : "text-emerald-600"}`}
-                          >
-                            {Number(i.main_qty).toFixed(0)}
-                          </span>
-                        </td>
-
-                        {/* Sent to Sub Stores */}
-                        <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
-                          {Number(i.sub_qty).toFixed(0)}
-                        </td>
-
-                        {/* Remaining Stock = Main Store − Sent to Sub Stores */}
-                        <td className="px-4 py-3">
-                          <span
-                            className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
-                          >
-                            {Number(i.main_qty - i.sub_qty).toFixed(0)}
-                          </span>
-                        </td>
-
-                        <td className="px-4 py-3 font-mono text-gray-400 text-xs">
-                          {i.min_quantity ?? "—"}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`text-xs font-semibold ${isLow ? "text-red-500" : "text-emerald-600"}`}
-                          >
-                            {isLow ? "Low" : "OK"}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 px-1">
-              <span className="text-gray-400 text-xs">
-                Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-                {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)}{" "}
-                of {filteredItems.length} items
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setCurrentPage(1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-                >
-                  «
-                </button>
-                <button
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                  disabled={currentPage === 1}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-                >
-                  ‹ Prev
-                </button>
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter(
-                    (p) =>
-                      p === 1 ||
-                      p === totalPages ||
-                      Math.abs(p - currentPage) <= 2,
-                  )
-                  .reduce((acc, p, i, arr) => {
-                    if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
-                    acc.push(p);
-                    return acc;
-                  }, [])
-                  .map((p, i) =>
-                    p === "..." ? (
-                      <span
-                        key={`e-${i}`}
-                        className="px-2 py-1 text-xs text-gray-400"
-                      >
-                        …
-                      </span>
-                    ) : (
-                      <button
-                        key={p}
-                        onClick={() => setCurrentPage(p)}
-                        className={`px-2.5 py-1 text-xs rounded border font-mono ${currentPage === p ? "bg-emerald-600 border-emerald-600 text-white font-bold" : "border-gray-300 text-gray-500 hover:bg-gray-100"}`}
-                      >
-                        {p}
-                      </button>
-                    ),
-                  )}
-                <button
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-                >
-                  Next ›
-                </button>
-                <button
-                  onClick={() => setCurrentPage(totalPages)}
-                  disabled={currentPage === totalPages}
-                  className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-                >
-                  »
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <MainAllItems
+          allItems={allItems}
+          mainStores={mainStores}
+          onRefresh={load}
+          showToast={showToast}
+        />
       )}
 
-      {/* ── TAB: SUB STORE REQUESTS ──────────────────────────────────────── */}
       {tab === "requests" && (
+<<<<<<< HEAD
         <div>
           <div className="mb-4">
             <select
@@ -842,28 +305,18 @@ export default function MainStore() {
             </table>
           </div>
         </div>
+=======
+        <MainSubStoreReqs
+          requests={requests}
+          onRefresh={load}
+          showToast={showToast}
+        />
+>>>>>>> phase-01
       )}
 
-      {/* ── TAB: HO REQUESTS STATUS ──────────────────────────────────────── */}
-      {tab === "ho-status" && (
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-gray-500 text-sm">
-              All requests submitted to Head Office
-            </p>
-            <select
-              value={hoFilter}
-              onChange={(e) => setHoFilter(e.target.value)}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Statuses</option>
-              <option value="PENDING">Pending</option>
-              <option value="APPROVED">Approved</option>
-              <option value="FULFILLED">Fulfilled</option>
-              <option value="REJECTED">Rejected</option>
-            </select>
-          </div>
+      {tab === "ho-status" && <MainReqStatus hoRequests={hoRequests} />}
 
+<<<<<<< HEAD
           <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
             <table className="w-full text-sm">
               <thead>
@@ -1404,6 +857,18 @@ export default function MainStore() {
             </div>
           </div>
         </div>
+=======
+      {tab === "ho-create" && (
+        <MainReqToHO
+          mainStores={mainStores}
+          headOffices={headOffices}
+          onSubmitted={() => {
+            setTab("ho-status");
+            load();
+          }}
+          showToast={showToast}
+        />
+>>>>>>> phase-01
       )}
 
       {/* Toast */}

@@ -5,6 +5,7 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/api";
+import Toast from "../components/Toast";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -227,9 +228,9 @@ export default function SubStoreManager() {
               {[
                 "Request No",
                 "Requested By",
-                "Date",
+                "Requested At",
                 "Status",
-                "Updated At",
+                "Updated At ",
                 "Actions",
               ].map((h) => (
                 <th
@@ -611,19 +612,7 @@ export default function SubStoreManager() {
         </div>
       )}
 
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : toast.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-blue-50 border-blue-200 text-blue-700"}`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ✕
-          </button>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

@@ -86,6 +86,7 @@ export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
 export const storeStatus = (data) => API.put(`/stores/action`, data);
 export const addStore = (data) => API.post("/stores", data);
+export const editStore = (id) => API.put(`/editStoreById/${id}`,data)
 
 // ── Items ────────────────────────────────────────────────────
 export const getItems = (params) => API.get("/items", { params });

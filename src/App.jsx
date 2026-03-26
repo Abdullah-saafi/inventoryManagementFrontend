@@ -16,6 +16,7 @@ import AllStoresTab from "./components/AllStoresTab";
 import AddStoreTab from "./components/AddStoreTab";
 import NotFound from "./pages/NotFound";
 import EditUser from "./components/EditUser";
+import EditStore from "./components/EditStore";
 
 export default function App() {
   return (
@@ -95,6 +96,7 @@ export default function App() {
                   <Route path="user" element={<AddUserTab />} />
                   <Route path="user/:id" element={<EditUser />} />
                   <Route path="store" element={<AddStoreTab />} />
+                  <Route path="store/:id" element={<EditStore/>} />
                   <Route path="all-users" element={<AllUsersTab />} />
                   <Route path="all-stores" element={<AllStoresTab />} />
                 </Route>

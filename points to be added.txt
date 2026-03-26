@@ -3,8 +3,8 @@ Hijri Date Feature
 Implementation of Tags in the System to track consumption sites
 
 Minor Fixes ■ Main Branch
-1.(rafay) When User logs in it should show his Role 
-2.(rafay) Requested by Should not be changeable this should only show the user who is logged in
+1.(rafay) (Done) When User logs in it should show his Role 
+2.(rafay) (Done) Requested by Should not be changeable this should only show the user who is logged in
  for example if Usman then system should show Usman (not changeable)
 3. (Saafi) DONE Requested quantity can be + - by Sub store approver
 4. (Saafi) DONE show dates with Status ( to easily track when the order status changes)

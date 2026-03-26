@@ -84,9 +84,9 @@ API.interceptors.response.use(
 export const getStores = (params) => API.get("/stores", { params });
 export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
-export const storeStatus = (data) => API.put(`/stores/action`, data);
+export const storeStatus = (id, data) => API.put(`/stores/${id}/toggle`, data);
 export const addStore = (data) => API.post("/stores", data);
-export const editStore = (id) => API.put(`/editStoreById/${id}`,data)
+export const editStoreById = (id, data) => API.put(`/stores/editStoreById/${id}`,data)
 
 // ── Items ────────────────────────────────────────────────────
 export const getItems = (params) => API.get("/items", { params });
@@ -120,7 +120,7 @@ export const addUser = (credentials) => API.post("/users/addUser", credentials);
 
 export const getUsers = (params) => API.get("/users/getUsers", { params });
 
-export const userStatus = (data) => API.post("/users/action", data);
+export const userStatus = (data) => API.put("/users/action", data)
 
 export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { getRequestById, fulfillRequest } from "../services/api";
 import StatusBadge from "./StatusBadge";
 
@@ -168,7 +168,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
               filtered.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 return (
-                  <>
+                  <React.Fragment key={r.request_id}>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
@@ -241,7 +241,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

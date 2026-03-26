@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getItems, createRequest } from "../services/api";
+import { useAuth } from "../context/authContext";
 
 const EMPTY_HO_ITEM = {
   item_no: "",
@@ -17,12 +18,15 @@ export default function MainReqToHO({
   onSubmitted,
   showToast,
 }) {
+
+  const {auth} = useAuth()
+
   const [creating, setCreating] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [hoForm, setHoForm] = useState({
     from_store_id: "",
     to_store_id: "",
-    requested_by_name: "",
+    requested_by_name: auth.username,
     notes: "",
     items: [{ ...EMPTY_HO_ITEM }],
   });
@@ -158,6 +162,7 @@ export default function MainReqToHO({
           </label>
           <input
             value={hoForm.requested_by_name}
+            readOnly
             onChange={(e) =>
               setHoForm((f) => ({ ...f, requested_by_name: e.target.value }))
             }

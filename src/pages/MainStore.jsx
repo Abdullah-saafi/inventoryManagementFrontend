@@ -1,30 +1,9 @@
-import React, { useEffect, useState } from "react";
-import {
-  getRequests,
-  getRequestById,
-  fulfillRequest,
-  getStores,
-  getItems,
-  createRequest,
-  createItem,
-} from "../services/api";
-import { useAuth } from "../context/authContext";
-
-const StatusBadge = ({ status }) => {
-  const s = {
-    PENDING: "bg-yellow-50 text-yellow-600 border-yellow-300",
-    APPROVED: "bg-emerald-50 text-emerald-600 border-emerald-300",
-    REJECTED: "bg-red-50 text-red-600 border-red-300",
-    FULFILLED: "bg-blue-50 text-blue-600 border-blue-300",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || ""}`}
-    >
-      {status}
-    </span>
-  );
-};
+import { useEffect, useState } from "react";
+import { getRequests, getStores, getItems } from "../services/api";
+import MainAllItems from "../components/Mainallitems";
+import MainSubStoreReqs from "../components/Mainsubstorereqs";
+import MainReqStatus from "../components/Mainreqstatus";
+import MainReqToHO from "../components/Mainreqtoho";
 
 const TABS = [
   { id: "items", label: "All Items" },
@@ -53,9 +32,6 @@ export default function MainStore() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
-  
-  const {auth} = useAuth()
-  const isAdmin = auth?.role === "super admin" 
 
   // ── Load all data ─────────────────────────────────────────────────────────
   const load = async () => {
@@ -74,11 +50,7 @@ export default function MainStore() {
 
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
-      setHeadOffices(
-        allStores.filter(
-          (s) => s.store_type && s.store_type.toUpperCase().includes("HEAD"),
-        ),
-      );
+      setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
     } catch {
       setError("Failed to load data");
     } finally {

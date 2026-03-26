@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getRequestById } from "../services/api";
-import StatusBadge from "../components/Statusbadge";
+import StatusBadge from "./StatusBadge";
 
 // Helper: format a date string or return "—" if falsy
 const fmt = (dateStr) =>

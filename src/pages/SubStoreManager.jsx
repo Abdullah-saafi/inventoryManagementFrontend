@@ -22,6 +22,29 @@ const StatusBadge = ({ status }) => {
   );
 };
 
+const getStatusTimestamp = (r) => {
+  if (r.status === "FULFILLED") return r.fulfilled_at;
+  if (r.status === "APPROVED") return r.approved_at;
+  if (r.status === "REJECTED") return r.approved_at;
+  return null;
+};
+
+const UpdatedAtCell = ({ r }) => {
+  const ts = getStatusTimestamp(r);
+  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  const d = new Date(ts);
+  return (
+    <div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
+      <div className="text-gray-400 text-xs font-mono">
+        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </div>
+    </div>
+  );
+};
+
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -201,22 +224,27 @@ export default function SubStoreManager() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Request No", "Requested By", "Date", "Status", "Actions"].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
+              {[
+                "Request No",
+                "Requested By",
+                "Date",
+                "Status",
+                "Updated At",
+                "Actions",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
+                <td colSpan={6} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
@@ -248,6 +276,9 @@ export default function SubStoreManager() {
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <UpdatedAtCell r={r} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
@@ -288,7 +319,7 @@ export default function SubStoreManager() {
                         key={r.request_id + "-detail"}
                         className="bg-gray-50 border-b-2 border-emerald-200"
                       >
-                        <td colSpan={7} className="px-6 py-4">
+                        <td colSpan={6} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -430,7 +461,7 @@ export default function SubStoreManager() {
                 onClick={() => setApproveModal(null)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
               >
-                x
+                ✕
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -478,7 +509,6 @@ export default function SubStoreManager() {
                           <input
                             type="number"
                             min="0"
-                            max={i.requested_qty}
                             value={i.approved_qty}
                             onChange={(e) => {
                               const u = [...editedItems];
@@ -532,7 +562,7 @@ export default function SubStoreManager() {
                 onClick={() => setRejectModal(null)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
               >
-                x
+                ✕
               </button>
             </div>
             <div className="p-5 space-y-4">
@@ -590,7 +620,7 @@ export default function SubStoreManager() {
             onClick={() => setToast(null)}
             className="opacity-60 hover:opacity-100"
           >
-            x
+            ✕
           </button>
         </div>
       )}

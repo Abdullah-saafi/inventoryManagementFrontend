@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { getRequestById } from "../services/api";
 import StatusBadge from "./StatusBadge";
 

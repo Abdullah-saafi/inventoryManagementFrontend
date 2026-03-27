@@ -70,12 +70,15 @@ API.interceptors.response.use(
       } catch (refreshErr) {
         console.log("API ERROR");
         setAccessTokenInApi("");
-
+        console.log("refreshError",refreshErr);
+        
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
     }
+    console.log("error",error);
+    
     return Promise.reject(error);
   },
 );

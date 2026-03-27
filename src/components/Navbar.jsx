@@ -25,6 +25,7 @@ const links = [
 
 export default function Navbar() {
   const [date, setDate] = useState(new Date());
+  const [logoutLoading, setLogoutLoading] = useState(false)
 
   const hijriDate = moment(date).format("iYYYY/iD/iMMMM");
 
@@ -33,6 +34,7 @@ export default function Navbar() {
 
   const logoutUser = async () => {
     try {
+      setLogoutLoading(true)
       const response = await logout();
       if (response.data.message) console.log("successfully logout");
       setAuth({
@@ -57,6 +59,8 @@ export default function Navbar() {
         isBlocked: false,
       });
       navigate("/login");
+    } finally {
+      setLogoutLoading(false)
     }
   };
 
@@ -83,10 +87,9 @@ export default function Navbar() {
                   key={to}
                   to={to}
                   className={({ isActive }) =>
-                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      isActive
-                        ? "bg-emerald-600 text-white"
-                        : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+                    `px-3 py-1.5 rounded text-sm font-medium transition-colors ${isActive
+                      ? "bg-emerald-600 text-white"
+                      : "text-gray-500 hover:text-gray-900 hover:bg-gray-100"
                     }`
                   }
                 >
@@ -98,10 +101,11 @@ export default function Navbar() {
         <div className="flex items-center gap-1 cursor-pointer">
           {auth.accessToken && (
             <React.Fragment>
-              <button className="logout" onClick={logoutUser}>
-                <span className="text-sm text-red-500 font-bold cursor-pointer">
-                  Logout
-                </span>
+              <button className="logout" disabled={logoutLoading} onClick={logoutUser}>
+                {logoutLoading ? <div className="w-6 h-6 border-2 border-gray-200 border-t-red-500 rounded-full animate-spin" /> :
+                  <span className="text-sm text-red-500 font-bold cursor-pointer">
+                    Logout
+                  </span>}
               </button>
 
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

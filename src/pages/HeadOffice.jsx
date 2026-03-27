@@ -132,7 +132,7 @@ export default function HeadOffice() {
           >
             {t.label}
             {t.count > 0 && (
-              <span className="bg-emerald-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
+              <span className="bg-emerald-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 min-w-5 text-center">
                 {t.count}
               </span>
             )}

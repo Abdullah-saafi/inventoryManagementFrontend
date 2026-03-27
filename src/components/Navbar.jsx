@@ -69,7 +69,7 @@ export default function Navbar() {
       <div className="  px-5 flex items-center justify-between h-15">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-900 font-bold text-green-500 tracking-wide text-xl">
+          <span className="font-bold text-green-500 tracking-wide text-xl">
             Baitusslam Inventory System
           </span>
         </div>

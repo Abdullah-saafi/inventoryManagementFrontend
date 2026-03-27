@@ -543,7 +543,7 @@ export default function SubStore() {
                     }))
                   }
                   placeholder="Your name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                 />
               </div>
 
@@ -705,11 +705,12 @@ export default function SubStore() {
                             </label>
                             <input
                               value={item.item_no}
+                              readOnly
                               onChange={(e) =>
                                 updateLine(idx, "item_no", e.target.value)
                               }
-                              placeholder="e.g. ITM-001"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                              placeholder="e.g. ITM-001" 
+                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                             />
                           </div>
                           <div className="col-span-4">
@@ -718,11 +719,12 @@ export default function SubStore() {
                             </label>
                             <input
                               value={item.item_name}
+                              readOnly
                               onChange={(e) =>
                                 updateLine(idx, "item_name", e.target.value)
                               }
                               placeholder="Full item name"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                             />
                           </div>
                           <div className="col-span-2">
@@ -731,11 +733,12 @@ export default function SubStore() {
                             </label>
                             <input
                               value={item.item_uom}
+                              readOnly
                               onChange={(e) =>
                                 updateLine(idx, "item_uom", e.target.value)
                               }
                               placeholder="pcs / kg…"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                             />
                           </div>
                           <div className="col-span-2">
@@ -747,7 +750,7 @@ export default function SubStore() {
                                 (si) => si.item_no === item.item_no,
                               );
                               return found ? (
-                                <div className="w-full bg-gray-100 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
+                                <div className="w-full bg-gray-200 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
                                   {parseFloat(found.item_quantity).toFixed(0)}{" "}
                                   {found.item_uom}
                                 </div>

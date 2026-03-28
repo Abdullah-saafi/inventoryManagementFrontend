@@ -396,29 +396,6 @@ export default function MainStoreApprover() {
                                       </tbody>
                                     </table>
                                   </div>
-                                  {detail.status === "PENDING" && (
-                                    <div className="flex gap-2 pt-2 border-t border-gray-200">
-                                      <button
-                                        onClick={() => {
-                                          setDetail(null);
-                                          setApproveModal(detail);
-                                        }}
-                                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
-                                      >
-                                        Approve
-                                      </button>
-                                      <button
-                                        onClick={() => {
-                                          setDetail(null);
-                                          setRejectModal(detail);
-                                          setRejectReason("");
-                                        }}
-                                        className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded"
-                                      >
-                                        Reject
-                                      </button>
-                                    </div>
-                                  )}
                                   {detail.status === "APPROVED" && (
                                     <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
                                       ✓ Approved — Head Office will see and

@@ -309,7 +309,7 @@ export default function SubStore() {
                         {r.requested_by_name || "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        <FormattedTimestamp ts={r.approved_at} />
+                        <FormattedTimestamp ts={r.created_at} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
@@ -725,26 +725,6 @@ export default function SubStore() {
                               placeholder="pcs / kg…"
                               className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                             />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              Available
-                            </label>
-                            {(() => {
-                              const found = storeItems.find(
-                                (si) => si.item_no === item.item_no,
-                              );
-                              return found ? (
-                                <div className="w-full bg-gray-200 border border-gray-200 rounded px-2 py-1.5 text-sm text-gray-700">
-                                  {parseFloat(found.item_quantity).toFixed(0)}{" "}
-                                  {found.item_uom}
-                                </div>
-                              ) : (
-                                <div className="w-full bg-gray-50 border border-gray-200 rounded px-2 py-1.5 text-xs text-gray-400 italic">
-                                  —
-                                </div>
-                              );
-                            })()}
                           </div>
                           <div className="col-span-2">
                             <label className="text-gray-500 text-xs mb-1 block">

@@ -167,7 +167,7 @@ export default function MainReqToHO({
               setHoForm((f) => ({ ...f, requested_by_name: e.target.value }))
             }
             placeholder="Your name"
-            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+            className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
           />
         </div>
 
@@ -307,11 +307,12 @@ export default function MainReqToHO({
                     </label>
                     <input
                       value={item.item_no}
+                      readOnly
                       onChange={(e) =>
                         updateLine(idx, "item_no", e.target.value)
                       }
                       placeholder="ITM-001"
-                      className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                      className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                     />
                   </div>
                   <div className="col-span-4">
@@ -320,11 +321,12 @@ export default function MainReqToHO({
                     </label>
                     <input
                       value={item.item_name}
+                      readOnly
                       onChange={(e) =>
                         updateLine(idx, "item_no", e.target.value)
                       }
                       placeholder="Full item name"
-                      className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                      className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                     />
                   </div>
                   <div className="col-span-2">
@@ -333,11 +335,12 @@ export default function MainReqToHO({
                     </label>
                     <input
                       value={item.item_uom}
+                      readOnly
                       onChange={(e) =>
                         updateLine(idx, "item_uom", e.target.value)
                       }
                       placeholder="pcs / kg…"
-                      className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                      className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                     />
                   </div>
                   <div className="col-span-2">
@@ -351,7 +354,7 @@ export default function MainReqToHO({
                       onChange={(e) =>
                         updateLine(idx, "requested_qty", +e.target.value)
                       }
-                      className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                     />
                   </div>
                 </div>

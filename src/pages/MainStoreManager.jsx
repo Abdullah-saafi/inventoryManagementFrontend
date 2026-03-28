@@ -103,8 +103,9 @@ export default function MainStoreApprover() {
   const [rejectReason, setRejectReason] = useState("");
   const [actioning, setActioning] = useState(false);
   const [toast, setToast] = useState(null);
+  const [approveDetail, setApproveDetail] = useState(null)
 
-  const {auth} = useAuth()
+  const { auth } = useAuth()
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -145,6 +146,16 @@ export default function MainStoreApprover() {
       setDL(false);
     }
   };
+
+  const openApprove = async (r) => {
+      try {
+        const res = await getRequestById(r.request_id);
+        setApproveDetail(res.data.data);
+        setApproveModal(r);
+      } catch {
+        setToast({ message: "Failed to load data", type: "error" });
+      }
+    };
 
   const handleApprove = async () => {
     if (!actorName.trim()) return showToast("Your name is required", "error");
@@ -237,14 +248,14 @@ export default function MainStoreApprover() {
               ) : (
                 requests.map((r) => {
                   const isExpanded =
-                    detail && detail.request_id === r.request_id;
+                    detail && detail.request_id === r.request_id;                    
                   return (
                     <React.Fragment key={r.request_id}>
                       <tr
                         key={r.request_id}
                         className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
                         onClick={() => openDetail(r)}
-                      >
+                        >
                         <td className="px-4 py-3">
                           <span className="font-mono text-emerald-600 text-xs font-bold">
                             {r.request_no}
@@ -259,7 +270,7 @@ export default function MainStoreApprover() {
                           {r.requested_by_name || "—"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">
-                          <FormattedTimestamp ts={r.created_at}/>
+                          <FormattedTimestamp ts={r.created_at} />
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={r.status} />
@@ -276,7 +287,7 @@ export default function MainStoreApprover() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setApproveModal(r);
+                                    openApprove(r)
                                   }}
                                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1"
                                 >
@@ -434,7 +445,10 @@ export default function MainStoreApprover() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="absolute inset-0 bg-black/30"
-            onClick={() => setApproveModal(null)}
+            onClick={() => {
+              setApproveModal(null)
+              setApproveDetail(null)
+            }}
           />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
@@ -442,7 +456,10 @@ export default function MainStoreApprover() {
                 Approve — {approveModal.request_no}
               </h2>
               <button
-                onClick={() => setApproveModal(null)}
+                onClick={() => {
+                  setApproveModal(null)
+                  setApproveDetail(null)
+                }}
                 className="text-gray-400 hover:text-gray-700 text-xl"
               >
                 ✕
@@ -466,9 +483,42 @@ export default function MainStoreApprover() {
                   className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                 />
               </div>
+              <div>
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                      <th className="text-left pb-2">Item</th>
+                      <th className="text-center pb-2">Requested</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(approveDetail?.items || []).map((i) => (
+                      <tr
+                        key={i.request_item_id}
+                        className="border-b border-gray-100"
+                      >
+                        <td className="py-2">
+                          <div className="text-gray-800 text-sm">
+                            {i.item_name}
+                          </div>
+                          <div className="text-gray-400 text-xs">
+                            {i.item_uom}
+                          </div>
+                        </td>
+                        <td className="py-2 font-mono text-gray-500 text-center">
+                          {i.requested_qty}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
-                  onClick={() => setApproveModal(null)}
+                  onClick={() => {
+                    setApproveModal(null)
+                    setApproveDetail(null)
+                  }}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
                   Cancel

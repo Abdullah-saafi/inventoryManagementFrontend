@@ -6,6 +6,8 @@ import {
   rejectRequest,
 } from "../services/api";
 import Toast from "../components/Toast";
+import { useAuth } from "../context/authContext";
+import { FormattedTimestamp } from "../components/FormattedTimestamp";
 const BADGE = {
   PENDING: "bg-yellow-50 text-yellow-600 border-yellow-300",
   APPROVED: "bg-emerald-50 text-emerald-600 border-emerald-300",
@@ -50,9 +52,10 @@ function RejectModal({
             </label>
             <input
               value={name}
+              disabled
               onChange={(e) => setName(e.target.value)}
               placeholder="Main Store Manager name"
-              className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
+              className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
             />
           </div>
           <div>
@@ -101,12 +104,15 @@ export default function MainStoreApprover() {
   const [actioning, setActioning] = useState(false);
   const [toast, setToast] = useState(null);
 
+  const {auth} = useAuth()
+
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3500);
   };
 
   const load = async () => {
+    setActorName(auth.username)
     setLoading(true);
     try {
       const params = { direction: "MAIN_TO_HO" };
@@ -149,7 +155,6 @@ export default function MainStoreApprover() {
       });
       showToast("Request approved — Head Office can now fulfill it");
       setApproveModal(null);
-      setActorName("");
       load();
     } catch (e) {
       showToast(e.response?.data?.message || "Error approving", "error");
@@ -169,7 +174,6 @@ export default function MainStoreApprover() {
       });
       showToast("Request rejected");
       setRejectModal(null);
-      setActorName("");
       setRejectReason("");
       load();
     } catch (e) {
@@ -255,7 +259,7 @@ export default function MainStoreApprover() {
                           {r.requested_by_name || "—"}
                         </td>
                         <td className="px-4 py-3 text-gray-400 text-xs">
-                          {new Date(r.created_at).toLocaleDateString()}
+                          <FormattedTimestamp ts={r.created_at}/>
                         </td>
                         <td className="px-4 py-3">
                           <StatusBadge status={r.status} />
@@ -273,7 +277,6 @@ export default function MainStoreApprover() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setApproveModal(r);
-                                    setActorName("");
                                   }}
                                   className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1"
                                 >
@@ -283,7 +286,6 @@ export default function MainStoreApprover() {
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     setRejectModal(r);
-                                    setActorName("");
                                     setRejectReason("");
                                   }}
                                   className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1"
@@ -389,7 +391,6 @@ export default function MainStoreApprover() {
                                         onClick={() => {
                                           setDetail(null);
                                           setApproveModal(detail);
-                                          setActorName("");
                                         }}
                                         className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
                                       >
@@ -399,7 +400,6 @@ export default function MainStoreApprover() {
                                         onClick={() => {
                                           setDetail(null);
                                           setRejectModal(detail);
-                                          setActorName("");
                                           setRejectReason("");
                                         }}
                                         className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded"
@@ -460,9 +460,10 @@ export default function MainStoreApprover() {
                 </label>
                 <input
                   value={actorName}
+                  disabled
                   onChange={(e) => setActorName(e.target.value)}
                   placeholder="Main Store Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">

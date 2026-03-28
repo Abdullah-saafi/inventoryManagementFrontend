@@ -39,7 +39,7 @@ const Login = () => {
                     "sub-store": "/substore-staff",
                     "sub-store-approver": "/substore-manager",
                     "main-store": "/mainstore",
-                    "main-store-approver": "/mainstore-approver",
+                    "main-store-approver": "/mainstore-manager",
                     "headoffice": "/headoffice",
                     "admin": "/admin",
                     "super admin": "/substore-staff",

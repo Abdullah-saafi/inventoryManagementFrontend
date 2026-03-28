@@ -1,10 +1,7 @@
 import React, { useState } from "react";
 import { getRequestById } from "../services/api";
 import StatusBadge from "./StatusBadge";
-
-// Helper: format a date string or return "—" if falsy
-const fmt = (dateStr) =>
-  dateStr ? new Date(dateStr).toLocaleDateString() : "—";
+import { FormattedTimestamp } from "./FormattedTimestamp";
 
 const renderInlineDetail = (d) => (
   <div className="space-y-3">
@@ -163,7 +160,7 @@ export default function MainReqStatus({ hoRequests }) {
 
                       {/* Requested At — always created_at */}
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.created_at)}
+                        <FormattedTimestamp ts={r.created_at}/>
                       </td>
 
                       <td className="px-4 py-3">
@@ -172,17 +169,17 @@ export default function MainReqStatus({ hoRequests }) {
 
                       {/* Approved At — only shown when status is APPROVED / FULFILLED */}
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.approved_at)}
+                        <FormattedTimestamp ts={r.approved_at}/>
                       </td>
 
                       {/* Fulfilled At — only set when status is FULFILLED */}
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.fulfilled_at)}
+                        <FormattedTimestamp ts={r.fulfilled_at}/>
                       </td>
 
                       {/* Rejected At — only set when status is REJECTED */}
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.rejected_at)}
+                        <FormattedTimestamp ts={r.rejected_at}/>
                       </td>
 
                       <td className="px-4 py-3">

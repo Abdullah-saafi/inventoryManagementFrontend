@@ -4,7 +4,7 @@ import Login from "./pages/Login";
 import SubStoreStaff from "./pages/SubStoreStaff";
 import SubStoreManager from "./pages/SubStoreManager";
 import MainStore from "./pages/MainStore";
-import MainStoreApprover from "./pages/MainStoreApprover";
+import MainStoreManager from "./pages/MainStoreManager"
 import HeadOffice from "./pages/HeadOffice";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
@@ -69,8 +69,8 @@ export default function App() {
                 }
               >
                 <Route
-                  path="/mainstore-approver"
-                  element={<MainStoreApprover />}
+                  path="/mainstore-manager"
+                  element={<MainStoreManager/>}
                 />
               </Route>
 

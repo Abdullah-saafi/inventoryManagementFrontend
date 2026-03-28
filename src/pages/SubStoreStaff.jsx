@@ -7,6 +7,7 @@ import {
   getRequestById,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
+import { FormattedTimestamp } from "../components/FormattedTimestamp";
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -24,22 +25,6 @@ const StatusBadge = ({ status }) => {
   );
 };
 
-const UpdatedAtCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-
-  const d = new Date(ts);
-
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -324,19 +309,19 @@ export default function SubStore() {
                         {r.requested_by_name || "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {new Date(r.created_at).toLocaleDateString()}
+                        <FormattedTimestamp ts={r.approved_at} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <UpdatedAtCell ts={r.approved_at} />
+                        <FormattedTimestamp ts={r.approved_at} />
                       </td>
                       <td className="px-4 py-3">
-                        <UpdatedAtCell ts={r.fulfilled_at} />
+                        <FormattedTimestamp ts={r.fulfilled_at} />
                       </td>
                       <td className="px-4 py-3">
-                        <UpdatedAtCell ts={r.rejected_at} />
+                        <FormattedTimestamp ts={r.rejected_at} />
                       </td>
                       <td className="px-4 py-3 text-right">
                         <span

@@ -7,6 +7,7 @@ import {
   getStores,
 } from "../services/api";
 import Toast from "../components/Toast";
+import { FormattedTimestamp } from "../components/FormattedTimestamp";
 
 const BADGE = {
   PENDING: "bg-yellow-50 text-yellow-600 border-yellow-300",
@@ -232,7 +233,7 @@ export default function HeadOffice() {
                               {r.approved_by_name || "—"}
                             </td>
                             <td className="px-4 py-3 text-gray-400 text-xs">
-                              {new Date(r.created_at).toLocaleDateString()}
+                              <FormattedTimestamp ts={r.created_at}/>
                             </td>
                             <td className="px-4 py-3">
                               <StatusBadge status={r.status} />

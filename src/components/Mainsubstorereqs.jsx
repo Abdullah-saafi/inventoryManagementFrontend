@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { getRequestById, fulfillRequest } from "../services/api";
 import StatusBadge from "./StatusBadge";
+import { FormattedTimestamp } from "./FormattedTimestamp";
 
 const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId) => (
   <div className="space-y-3">
@@ -192,7 +193,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                         {r.approved_by_name || "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {new Date(r.created_at).toLocaleDateString()}
+                        <FormattedTimestamp ts={r.created_at}/>
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />

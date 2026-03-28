@@ -6,6 +6,8 @@ import {
   rejectRequest,
 } from "../services/api";
 import Toast from "../components/Toast";
+import { useAuth } from "../context/authContext";
+import { FormattedTimestamp } from "../components/FormattedTimestamp";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -30,22 +32,6 @@ const getStatusTimestamp = (r) => {
   return null;
 };
 
-const UpdatedAtCell = ({ r }) => {
-  const ts = getStatusTimestamp(r);
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
-
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,9 +48,13 @@ export default function SubStoreManager() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
+  const {auth} = useAuth()
+  
   const load = async () => {
     setLoading(true);
     try {
+      setApproverName(auth.username)
+      setRejecterName(auth.username)
       const params = { direction: "SUB_TO_MAIN" };
       if (filter) params.status = filter;
       const r = await getRequests(params);
@@ -106,7 +96,6 @@ export default function SubStoreManager() {
         })),
       );
       setApproveModal(r);
-      setApproverName("");
     } catch {
       setToast({ message: "Failed to load items", type: "error" });
     }
@@ -128,7 +117,6 @@ export default function SubStoreManager() {
         type: "success",
       });
       setApproveModal(null);
-      setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
@@ -151,7 +139,6 @@ export default function SubStoreManager() {
       });
       setToast({ message: "Request rejected", type: "info" });
       setRejectModal(null);
-      setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
@@ -184,7 +171,7 @@ export default function SubStoreManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">
-            Sub Store Manager Name
+            {auth.username}
           </h1>
           <p className="text-gray-500 text-sm mt-0.5">
             Review and approve or reject staff item requests
@@ -273,13 +260,13 @@ export default function SubStoreManager() {
                         {r.requested_by_name || "—"}
                       </td>
                       <td className="px-4 py-3 text-gray-400 text-xs">
-                        {new Date(r.created_at).toLocaleDateString()}
+                        <FormattedTimestamp ts={r.created_at} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <UpdatedAtCell r={r} />
+                        <FormattedTimestamp ts={getStatusTimestamp(r)} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
@@ -303,7 +290,6 @@ export default function SubStoreManager() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setRejectModal(r);
-                                  setRejecterName("");
                                   setRejectReason("");
                                 }}
                                 className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 transition-colors"
@@ -472,9 +458,10 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={approverName}
+                  disabled
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>
@@ -573,9 +560,10 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={rejecterName}
+                  disabled
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>

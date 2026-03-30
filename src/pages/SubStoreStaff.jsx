@@ -649,6 +649,20 @@ export default function SubStore() {
                                   </tbody>
                                 </table>
                               </div>
+
+                              {needsGRN && (
+                                <div className="pt-2 border-t border-gray-200">
+                                  <button
+                                    onClick={(e) => openGRN(e, r)}
+                                    disabled={grnLoading}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
+                                  >
+                                    {grnLoading
+                                      ? "Loading…"
+                                      : "Verify Delivery"}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
@@ -975,6 +989,22 @@ export default function SubStore() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
+                <button
+                  onClick={() => setShowCreate(false)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreate}
+                  disabled={creating}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
+                >
+                  {creating ? "Submitting..." : "Submit Request"}
+                </button>
               </div>
             </div>
           </div>

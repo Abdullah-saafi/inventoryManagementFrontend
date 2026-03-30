@@ -236,7 +236,7 @@ export default function SubStore() {
     try {
       const payload = {
         ...form,
-        direction: "SUB_TO_MAIN",
+        direction: "MAIN_TO_HO",
         items: items.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
         ),
@@ -719,7 +719,7 @@ export default function SubStore() {
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    To (Main Store)
+                    To (Head Office)
                   </label>
                   {mainStores.length === 1 ? (
                     // FIX 2: auto-filled — show as read-only

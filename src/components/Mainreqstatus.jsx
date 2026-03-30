@@ -2,10 +2,23 @@ import { useState } from "react";
 import { getRequestById } from "../services/api";
 import StatusBadge from "../components/Statusbadge";
 
-// Helper: format a date string or return "—" if falsy
-const fmt = (dateStr) =>
-  dateStr ? new Date(dateStr).toLocaleDateString() : "—";
+// ── Date + time cell (matches SubStore style) ─────────────────────────────────
+const DateTimeCell = ({ ts }) => {
+  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  const d = new Date(ts);
+  return (
+    <div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
+      <div className="text-gray-400 text-xs font-mono">
+        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </div>
+    </div>
+  );
+};
 
+// ── Inline detail panel ───────────────────────────────────────────────────────
 const renderInlineDetail = (d) => (
   <div className="space-y-3">
     {d.notes && (
@@ -22,53 +35,61 @@ const renderInlineDetail = (d) => (
         <div className="text-red-600 text-sm">{d.rejection_reason}</div>
       </div>
     )}
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-gray-200 text-gray-400 text-xs">
-          <th className="text-left pb-2 pr-4">Item No</th>
-          <th className="text-left pb-2 pr-4">Item Name</th>
-          <th className="text-left pb-2 pr-4">UOM</th>
-          <th className="text-center pb-2 pr-4">Requested</th>
-          <th className="text-center pb-2 pr-4">Approved</th>
-          <th className="text-center pb-2">Fulfilled</th>
-        </tr>
-      </thead>
-      <tbody>
-        {(d.items || []).map((i) => (
-          <tr key={i.request_item_id} className="border-b border-gray-100">
-            <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-              {i.item_no}
-            </td>
-            <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-            <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
-            <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-              {i.requested_qty}
-            </td>
-            <td className="py-2 pr-4 font-mono text-center">
-              <span
-                className={
-                  i.approved_qty != null ? "text-emerald-600" : "text-gray-300"
-                }
-              >
-                {i.approved_qty ?? "—"}
-              </span>
-            </td>
-            <td className="py-2 font-mono text-center">
-              <span
-                className={
-                  i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
-                }
-              >
-                {i.fulfilled_qty ?? "—"}
-              </span>
-            </td>
+    <div>
+      <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
+        Items
+      </div>
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-gray-200 text-gray-400 text-xs">
+            <th className="text-left pb-2 pr-4">Item No</th>
+            <th className="text-left pb-2 pr-4">Item Name</th>
+            <th className="text-left pb-2 pr-4">UOM</th>
+            <th className="text-center pb-2 pr-4">Requested</th>
+            <th className="text-center pb-2 pr-4">Approved</th>
+            <th className="text-center pb-2">Fulfilled</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {(d.items || []).map((i) => (
+            <tr key={i.request_item_id} className="border-b border-gray-100">
+              <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                {i.item_no}
+              </td>
+              <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
+              <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
+              <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                {i.requested_qty}
+              </td>
+              <td className="py-2 pr-4 font-mono text-center">
+                <span
+                  className={
+                    i.approved_qty != null
+                      ? "text-emerald-600"
+                      : "text-gray-300"
+                  }
+                >
+                  {i.approved_qty ?? "—"}
+                </span>
+              </td>
+              <td className="py-2 font-mono text-center">
+                <span
+                  className={
+                    i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
+                  }
+                >
+                  {i.fulfilled_qty ?? "—"}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   </div>
 );
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function MainReqStatus({ hoRequests }) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
@@ -96,16 +117,14 @@ export default function MainReqStatus({ hoRequests }) {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <p className="text-gray-500 text-sm">
-          All requests submitted to Head Office
-        </p>
+      {/* ── Filter row ── */}
+      <div className="flex flex-wrap gap-2 mb-4 items-center">
         <select
           value={hoFilter}
           onChange={(e) => setHoFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Statuses</option>
+          <option value="">All Status</option>
           <option value="PENDING">Pending</option>
           <option value="APPROVED">Approved</option>
           <option value="FULFILLED">Fulfilled</option>
@@ -113,6 +132,7 @@ export default function MainReqStatus({ hoRequests }) {
         </select>
       </div>
 
+      {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -125,7 +145,7 @@ export default function MainReqStatus({ hoRequests }) {
                 "Approved At",
                 "Fulfilled At",
                 "Rejected At",
-                " ",
+                "",
               ].map((h) => (
                 <th
                   key={h}
@@ -140,59 +160,77 @@ export default function MainReqStatus({ hoRequests }) {
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-12 text-gray-400">
-                  No HO requests found.
+                  No requests found.
                 </td>
               </tr>
             ) : (
               filtered.map((r) => {
                 const isExpanded =
                   hoDetail && hoDetail.request_id === r.request_id;
+
                 return (
                   <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
+                        isExpanded ? "bg-gray-50" : ""
+                      }`}
                       onClick={() => openHoDetail(r)}
                     >
-                      <td className="px-4 py-3 font-mono text-yellow-600 text-xs font-bold">
-                        {r.request_no}
+                      {/* Request No + item count badge */}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-yellow-600 text-xs font-bold">
+                            {r.request_no}
+                          </span>
+                          {r.item_count > 0 && (
+                            <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
+                              {r.item_count} item{r.item_count > 1 ? "s" : ""}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+
+                      <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
 
-                      {/* Requested At — always created_at */}
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.created_at)}
+                      {/* Requested At — date + time */}
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.created_at} />
                       </td>
 
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
 
-                      {/* Approved At — only shown when status is APPROVED / FULFILLED */}
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.approved_at)}
-                      </td>
-
-                      {/* Fulfilled At — only set when status is FULFILLED */}
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.fulfilled_at)}
-                      </td>
-
-                      {/* Rejected At — only set when status is REJECTED */}
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        {fmt(r.rejected_at)}
-                      </td>
-
+                      {/* Approved At — date + time */}
                       <td className="px-4 py-3">
+                        <DateTimeCell ts={r.approved_at} />
+                      </td>
+
+                      {/* Fulfilled At — date + time */}
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.fulfilled_at} />
+                      </td>
+
+                      {/* Rejected At — date + time */}
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.rejected_at} />
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
                         <span
-                          className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                          className={`text-xs transition-colors ${
+                            isExpanded ? "text-emerald-600" : "text-gray-400"
+                          }`}
                         >
-                          {isExpanded ? "▲ Hide" : "▼ Details"}
+                          {isExpanded ? "▲ Hide" : "▼ View"}
                         </span>
                       </td>
                     </tr>
+
+                    {/* ── Expanded detail row ── */}
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}

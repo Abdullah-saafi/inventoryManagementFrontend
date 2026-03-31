@@ -7,7 +7,7 @@ import useErrorHandler from "../components/useErrorHandler.jsx"
 const Login = () => {
     const navigate = useNavigate()
     const { auth, setAuth } = useAuth()
-    const location = useLocation()
+    // const location = useLocation()
     const handleError = useErrorHandler()
 
     const [form, setForm] = useState({ email: "", password: "" });
@@ -17,11 +17,14 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        setAuth(prev => ({ ...prev, message: null }))
         if (!form.email) return setMessage("Email is required")
         if (!form.password) return setMessage("Password is required")
         
         try {
             setLoading(true)
+            console.log("even wroking?");
+            
             const response = await login(form)
             const data = response.data
             
@@ -32,7 +35,7 @@ const Login = () => {
                     username: data.username,
                     role: data.role,
                     storeName: data.store_name,
-                    store_id: data.storeId
+                    store_id: data.storeId,
                 })
 
                 const routes = {
@@ -55,8 +58,7 @@ const Login = () => {
     }
 
     const handleChange = (e) => {
-        if (message) setMessage(null)
-        if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
+        setMessage(null)
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 

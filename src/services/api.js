@@ -6,6 +6,12 @@ const API = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
+const API_BASIC = axios.create({
+  baseURL: `${import.meta.env.VITE_API_URL}/api`,
+  withCredentials: true,
+  headers: { "Content-Type": "application/json" },
+});
+
 let memoryToken = "";
 let isRefreshing = false;
 let refreshSubscribers = [];
@@ -40,6 +46,16 @@ API.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
+    if (error.response?.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    if (originalRequest.url.includes("/users/login") || originalRequest.url.includes("/users/refresh")) {
+      // Clear local state so the app knows we are logged out
+      setAccessTokenInApi(""); 
+      return Promise.reject(error);
+    }
+
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
@@ -58,27 +74,21 @@ API.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const res = await API.post("/users/refresh");
+        const res = await API_BASIC.post("/users/refresh");
         const { accessToken } = res.data;
 
         setAccessTokenInApi(accessToken);
         onRefreshed(accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
         return API(originalRequest);
       } catch (refreshErr) {
-        console.log("API ERROR");
         setAccessTokenInApi("");
-        console.log("refreshError",refreshErr);
-        
         return Promise.reject(refreshErr);
       } finally {
         isRefreshing = false;
       }
     }
-    console.log("error",error);
-    
     return Promise.reject(error);
   },
 );
@@ -89,7 +99,7 @@ export const getStoreById = (id) => API.get(`/stores/${id}`);
 export const createStore = (data) => API.post("/stores", data);
 export const storeStatus = (id, data) => API.put(`/stores/${id}/toggle`, data);
 export const addStore = (data) => API.post("/stores", data);
-export const editStoreById = (id, data) => API.put(`/stores/editStoreById/${id}`,data)
+export const editStoreById = (id, data) => API.put(`/stores/editStoreById/${id}`, data)
 
 // ── Items ────────────────────────────────────────────────────
 export const getItems = (params) => API.get("/items", { params });

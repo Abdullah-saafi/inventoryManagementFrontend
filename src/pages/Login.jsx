@@ -22,9 +22,7 @@ const Login = () => {
         if (!form.password) return setMessage("Password is required")
         
         try {
-            setLoading(true)
-            console.log("even wroking?");
-            
+            setLoading(true)            
             const response = await login(form)
             const data = response.data
             

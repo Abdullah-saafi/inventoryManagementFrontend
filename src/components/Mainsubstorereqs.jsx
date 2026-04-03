@@ -1,12 +1,12 @@
-import { useState } from "react";
-import { getRequestById, fulfillRequest } from "../services/api";
-import StatusBadge from "../components/Statusbadge";
-import API from "../services/api";
-
-// ── API helpers ───────────────────────────────────────────────────────────────
-const acceptReturn = (id, data) =>
-  API.patch(`/requests/${id}/accept-return`, data);
-const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
+import React, { useState } from "react";
+import {
+  getRequestById,
+  fulfillRequest,
+  acceptReturn,
+  resendItems,
+} from "../services/api";
+import StatusBadge from "../components/StatusBadge";
+import { useAuth } from "../context/authContext";
 
 // ── Condition badge ───────────────────────────────────────────────────────────
 const ConditionBadge = ({ condition }) => {
@@ -26,7 +26,10 @@ const ConditionBadge = ({ condition }) => {
 
 // ── Dispute Resolution Panel ──────────────────────────────────────────────────
 const DisputeResolutionPanel = ({ request, onResolved, showToast }) => {
-  const [resolvedBy, setResolvedBy] = useState("");
+  
+const { auth } = useAuth();
+  
+  const [resolvedBy, setResolvedBy] = useState(auth.username || "");
   const [processing, setProcessing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
 
@@ -145,9 +148,10 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast }) => {
           </label>
           <input
             value={resolvedBy}
+            readOnly
             onChange={(e) => setResolvedBy(e.target.value)}
             placeholder="Enter your name to proceed"
-            className="w-full bg-white border border-gray-300 rounded-lg px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-300"
+            className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
           />
         </div>
 
@@ -326,10 +330,10 @@ const renderInlineDetail = (
             <th className="text-center pb-2 pr-4">Approved</th>
             <th className="text-center pb-2 pr-4">Fulfilled</th>
             {hasGRN && (
-              <>
+              <React.Fragment>
                 <th className="text-center pb-2 pr-4">Received</th>
                 <th className="text-center pb-2">Condition</th>
-              </>
+              </React.Fragment>
             )}
           </tr>
         </thead>
@@ -377,7 +381,7 @@ const renderInlineDetail = (
                   </span>
                 </td>
                 {hasGRN && (
-                  <>
+                  <React.Fragment>
                     <td className="py-2 pr-4 font-mono text-center">
                       <span
                         className={
@@ -408,7 +412,7 @@ const renderInlineDetail = (
                         <span className="text-gray-300">—</span>
                       )}
                     </td>
-                  </>
+                  </React.Fragment>
                 )}
               </tr>
             );
@@ -423,21 +427,6 @@ const renderInlineDetail = (
           onResolved={onResolved}
           showToast={showToast}
         />
-      )}
-
-      {/* Fulfill button — only for APPROVED */}
-      {d.status === "APPROVED" && onFulfill && (
-        <div className="pt-2 border-t border-gray-200">
-          <button
-            onClick={() => onFulfill(d.request_id)}
-            disabled={fulfillingId === d.request_id}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-          >
-            {fulfillingId === d.request_id
-              ? "Processing..."
-              : "Mark as Fulfilled"}
-          </button>
-        </div>
       )}
     </div>
   );
@@ -562,7 +551,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                 const isClosed = r.status === "CLOSED";
 
                 return (
-                  <>
+                  <React.Fragment>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
@@ -581,11 +570,6 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                           <span className="font-mono text-emerald-600 text-xs font-bold">
                             {r.request_no}
                           </span>
-                          {isDisputed && (
-                            <span className="bg-amber-100 text-amber-600 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200 animate-pulse">
-                              ACTION NEEDED
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-700">
@@ -661,7 +645,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

@@ -1,6 +1,6 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { getRequestById } from "../services/api";
-import StatusBadge from "../components/Statusbadge";
+import StatusBadge from "../components/StatusBadge";
 
 // ── Date + time cell (matches SubStore style) ─────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -169,7 +169,7 @@ export default function MainReqStatus({ hoRequests }) {
                   hoDetail && hoDetail.request_id === r.request_id;
 
                 return (
-                  <>
+                  <React.Fragment>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-50 ${
@@ -247,7 +247,7 @@ export default function MainReqStatus({ hoRequests }) {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

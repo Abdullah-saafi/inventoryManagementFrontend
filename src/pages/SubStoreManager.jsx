@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
@@ -255,7 +255,7 @@ export default function SubStoreManager() {
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
                 return (
-                  <>
+                  <React.Fragment>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
@@ -300,7 +300,7 @@ export default function SubStoreManager() {
                             {isExpanded ? "▲ Hide" : "▼ Details"}
                           </span>
                           {r.status === "PENDING" && (
-                            <>
+                            <React.Fragment>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -321,7 +321,7 @@ export default function SubStoreManager() {
                               >
                                 Reject
                               </button>
-                            </>
+                            </React.Fragment>
                           )}
                         </div>
                       </td>
@@ -464,7 +464,7 @@ export default function SubStoreManager() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}
@@ -501,7 +501,7 @@ export default function SubStoreManager() {
                   readOnly
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>

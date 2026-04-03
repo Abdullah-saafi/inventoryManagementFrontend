@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
-import { getRequests, getRequestById } from "../services/api";
+import React, { useEffect, useState } from "react";
+import { getRequests, getRequestById, fulfillRequest } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
-import API from "../services/api";
-
-const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -266,7 +263,7 @@ export default function HeadOffice() {
                 const isReceived = r.status === "RECEIVED";
 
                 return (
-                  <>
+                  <React.Fragment>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
@@ -437,14 +434,14 @@ export default function HeadOffice() {
                                           Fulfilled
                                         </th>
                                         {(isDisputed || isReceived) && (
-                                          <>
+                                          <React.Fragment>
                                             <th className="text-center pb-2 pr-4">
                                               Received
                                             </th>
                                             <th className="text-center pb-2">
                                               Condition
                                             </th>
-                                          </>
+                                          </React.Fragment>
                                         )}
                                       </tr>
                                     </thead>
@@ -489,7 +486,7 @@ export default function HeadOffice() {
                                             </span>
                                           </td>
                                           {(isDisputed || isReceived) && (
-                                            <>
+                                            <React.Fragment>
                                               <td className="py-2 pr-4 font-mono text-center">
                                                 <span
                                                   className={
@@ -524,7 +521,7 @@ export default function HeadOffice() {
                                                   </span>
                                                 )}
                                               </td>
-                                            </>
+                                            </React.Fragment>
                                           )}
                                         </tr>
                                       ))}
@@ -580,7 +577,7 @@ export default function HeadOffice() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

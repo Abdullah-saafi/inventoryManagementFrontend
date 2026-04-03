@@ -1,5 +1,4 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import React from "react";
 import { logout } from "../services/api";
 import { useAuth } from "../context/authContext";
 import DatePicker from "react-multi-date-picker";
@@ -66,7 +65,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="  px-5 flex items-center justify-between h-15">
+      <div className="  px-5 flex items-center h-15">
         {/* Brand */}
         <div className="flex items-center gap-2">
           <span className="font-bold text-green-500 tracking-wide text-xl">
@@ -75,7 +74,7 @@ export default function Navbar() {
         </div>
 
         {/* Links */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 ml-auto">
           {auth.accessToken &&
             links
               .filter(
@@ -98,34 +97,27 @@ export default function Navbar() {
               ))}
         </div>
 
-        <div className="flex items-center gap-1 cursor-pointer">
-          {auth.accessToken && (
-            <React.Fragment>
-              <button className="logout" disabled={logoutLoading} onClick={logoutUser}>
-                {logoutLoading ? <div className="w-6 h-6 border-2 border-gray-200 border-t-red-500 rounded-full animate-spin" /> :
-                  <span className="text-sm text-red-500 font-bold cursor-pointer">
-                    Logout
-                  </span>}
-              </button>
-
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            </React.Fragment>
-          )}
-        </div>
         {/* Badge */}
-        <div className="flex items-center ">
+        <div className="flex items-center ml-auto">
           <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">
             <span>Assalam-o-Alaikum</span>
             <span className="font-bold text-md">{auth.username}</span>
-            <span className="font-medium text-xs border bg-gray-100 border-gray-200 rounded">
+            <span className="font-medium text-xs border bg-gray-200 border-gray-200 rounded px-1">
               {auth.role}
             </span>
           </span>
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
         </div>
-        <div className="date text-xs text-gray-500 font-mono flex flex-col items-center ">
+        
+        <div className="date text-xs text-gray-500 font-mono flex flex-col items-center ml-5 ">
           <p>Gregorian: {date.toDateString()}</p>
           <p>Hijri: {hijriDate}</p>
+          <button className="logout" disabled={logoutLoading} onClick={logoutUser}>
+            {logoutLoading ? <div className="w-6 h-6 border-2 border-gray-200 border-t-red-500 rounded-full animate-spin" /> :
+              <span className="text-sm text-red-500 font-bold cursor-pointer">
+                Logout
+              </span>}
+          </button>
         </div>
       </div>
     </nav>

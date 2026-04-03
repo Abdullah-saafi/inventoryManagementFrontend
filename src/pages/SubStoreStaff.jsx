@@ -1,16 +1,14 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getStores,
   getItems,
   createRequest,
   getRequests,
   getRequestById,
+  submitGRN,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
-import API from "../services/api";
-
-const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -385,7 +383,7 @@ export default function SubStore() {
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
                 return (
-                  <>
+                  <React.Fragment>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
@@ -405,11 +403,6 @@ export default function SubStore() {
                           {r.item_count > 0 && (
                             <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                            </span>
-                          )}
-                          {needsGRN && (
-                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
-                              ACTION NEEDED
                             </span>
                           )}
                         </div>
@@ -437,7 +430,7 @@ export default function SubStore() {
                               disabled={grnLoading}
                               className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
                             >
-                              {grnLoading ? "…" : "Verify Delivery"}
+                              {grnLoading ? "…" : "Verify Deliver"}
                             </button>
                           )}
                           <span
@@ -517,14 +510,14 @@ export default function SubStore() {
                                         Fulfilled
                                       </th>
                                       {(isDisputed || isReceived) && (
-                                        <>
+                                        <React.Fragment>
                                           <th className="text-center pb-2 pr-4">
                                             Received
                                           </th>
                                           <th className="text-center pb-2">
                                             Condition
                                           </th>
-                                        </>
+                                        </React.Fragment>
                                       )}
                                     </tr>
                                   </thead>
@@ -569,7 +562,7 @@ export default function SubStore() {
                                           </span>
                                         </td>
                                         {(isDisputed || isReceived) && (
-                                          <>
+                                          <React.Fragment>
                                             <td className="py-2 pr-4 font-mono text-center">
                                               <span
                                                 className={
@@ -604,32 +597,19 @@ export default function SubStore() {
                                                 </span>
                                               )}
                                             </td>
-                                          </>
+                                          </React.Fragment>
                                         )}
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
-                              {needsGRN && (
-                                <div className="pt-2 border-t border-gray-200">
-                                  <button
-                                    onClick={(e) => openGRN(e, r)}
-                                    disabled={grnLoading}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
-                                  >
-                                    {grnLoading
-                                      ? "Loading…"
-                                      : "Verify Delivery"}
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           )}
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}

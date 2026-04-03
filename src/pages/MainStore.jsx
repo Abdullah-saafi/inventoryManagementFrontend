@@ -4,6 +4,7 @@ import MainAllItems from "../components/Mainallitems";
 import MainSubStoreReqs from "../components/Mainsubstorereqs";
 import MainReqStatus from "../components/Mainreqstatus";
 import MainReqToHO from "../components/Mainreqtoho";
+import { useAuth } from "../context/authContext";
 
 const TABS = [
   { id: "items", label: "All Items" },
@@ -21,7 +22,11 @@ export default function MainStore() {
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
+  
+  // ── Auth ──────────────────────────────────────────────────────────────────
 
+  const {auth} = useAuth()
+  
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -86,7 +91,7 @@ export default function MainStore() {
     <div>
       {/* Page header */}
       <div className="mb-4">
-        <h1 className="text-xl font-black text-gray-900">Main Store</h1>
+        <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Manage sub store requests, track inventory flow, and request from Head
           Office

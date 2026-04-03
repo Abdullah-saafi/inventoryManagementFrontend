@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getRequestById } from "../services/api";
-import StatusBadge from "../components/Statusbadge";
+import StatusBadge from "./StatusBadge";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 

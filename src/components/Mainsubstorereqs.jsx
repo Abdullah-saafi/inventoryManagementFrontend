@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { getRequestById, fulfillRequest } from "../services/api";
-import StatusBadge from "../components/Statusbadge";
+import StatusBadge from "./StatusBadge";
 import { useAuth } from "../context/authContext";
 import API from "../services/api";
 

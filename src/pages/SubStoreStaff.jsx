@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -7,7 +7,10 @@ import {
   getRequestById,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
-import { FormattedTimestamp } from "../components/FormattedTimestamp";
+import GRNModal from "../components/GRNModal";
+import API from "../services/api";
+
+const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -15,6 +18,8 @@ const StatusBadge = ({ status }) => {
     APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
     REJECTED: "border-red-400 text-red-600 bg-red-50",
     FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
+    RECEIVED: "border-teal-400 text-teal-600 bg-teal-50",
+    DISPUTED: "border-amber-400 text-amber-600 bg-amber-50",
   };
   return (
     <span
@@ -22,6 +27,21 @@ const StatusBadge = ({ status }) => {
     >
       {status}
     </span>
+  );
+};
+
+const DateTimeCell = ({ ts }) => {
+  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  const d = new Date(ts);
+  return (
+    <div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
+      <div className="text-gray-400 text-xs font-mono">
+        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </div>
+    </div>
   );
 };
 
@@ -46,10 +66,13 @@ export default function SubStore() {
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-  const [fulfilledRequests, setFulfilledRequests] = useState([]);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [grnRequest, setGrnRequest] = useState(null);
+  const [grnLoading, setGrnLoading] = useState(false);
+  const [grnSubmitting, setGrnSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     from_store_id: "",
     to_store_id: "",
@@ -78,11 +101,6 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-      const fulfilledParams = { direction: "SUB_TO_MAIN", status: "FULFILLED" };
-      if (auth.role !== "super admin") fulfilledParams.store_id = auth.store_id;
-      else if (filterStore) fulfilledParams.store_id = filterStore;
-      const fRes = await getRequests(fulfilledParams);
-      setFulfilledRequests(fRes.data.data);
     } catch {
       setError("Failed to load data");
     } finally {
@@ -95,13 +113,20 @@ export default function SubStore() {
   }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
-    const storeToFetch = form.to_store_id || form.from_store_id;
-    if (storeToFetch)
-      getItems({ store_id: storeToFetch })
+    if (form.to_store_id) {
+      getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
         .catch(() => setStoreItems([]));
-    else setStoreItems([]);
-  }, [form.from_store_id, form.to_store_id, showCreate]);
+    } else {
+      setStoreItems([]);
+    }
+  }, [form.to_store_id]);
+
+  useEffect(() => {
+    if (mainStores.length === 1 && !form.to_store_id) {
+      setForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
+    }
+  }, [mainStores]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -119,9 +144,53 @@ export default function SubStore() {
     }
   };
 
+  const openGRN = async (e, r) => {
+    e.stopPropagation();
+    setGrnLoading(true);
+    try {
+      const res = await getRequestById(r.request_id);
+      setGrnRequest(res.data.data);
+    } catch {
+      showToastMsg("Failed to load request details", "error");
+    } finally {
+      setGrnLoading(false);
+    }
+  };
+
+  const handleGRNSubmit = async (payload) => {
+    setGrnSubmitting(true);
+    try {
+      await submitGRN(grnRequest.request_id, payload);
+      const label =
+        payload.grn_status === "RECEIVED"
+          ? "Delivery confirmed — marked as RECEIVED"
+          : payload.grn_status === "DISPUTED"
+            ? "Issues reported — request marked DISPUTED"
+            : "Delivery rejected — main store notified";
+      showToastMsg(
+        label,
+        payload.grn_status === "RECEIVED" ? "success" : "warn",
+      );
+      setGrnRequest(null);
+      setDetail(null);
+      load();
+    } catch (e) {
+      showToastMsg(
+        e.response?.data?.message || "Failed to submit GRN",
+        "error",
+      );
+    } finally {
+      setGrnSubmitting(false);
+    }
+  };
+
+  const showToastMsg = (message, type = "success") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
   const addLine = () =>
     setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-
   const removeLine = (idx) =>
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
 
@@ -153,11 +222,7 @@ export default function SubStore() {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return setToast({
-        message: "Please fill all required fields",
-        type: "error",
-      });
-
+      return showToastMsg("Please fill all required fields", "error");
     setCreating(true);
     try {
       const payload = {
@@ -168,7 +233,7 @@ export default function SubStore() {
         ),
       };
       await createRequest(payload);
-      setToast({ message: "Request submitted successfully", type: "success" });
+      showToastMsg("Request submitted successfully", "success");
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -179,10 +244,7 @@ export default function SubStore() {
       });
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Failed to submit",
-        type: "error",
-      });
+      showToastMsg(e.response?.data?.message || "Failed to submit", "error");
     } finally {
       setCreating(false);
     }
@@ -201,20 +263,51 @@ export default function SubStore() {
       </div>
     );
 
+  const pendingGRN = requests.filter(
+    (r) => r.status === "FULFILLED" && !r.grn_at,
+  ).length;
+  const myStoreName =
+    subStores.find((s) => s.store_id === auth.store_id)?.store_name || "";
+
+  const getNextItemNo = (items = []) => {
+    if (!items.length) return "ITM-001";
+    const nums = items
+      .map((i) => {
+        const m = i.item_no?.match(/\d+$/);
+        return m ? parseInt(m[0], 10) : 0;
+      })
+      .filter(Boolean);
+    const max = nums.length ? Math.max(...nums) : 0;
+    const prefixMatch = items[0]?.item_no?.match(/^\D+/);
+    const prefix = prefixMatch ? prefixMatch[0] : "ITM-";
+    return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  };
+
   return (
     <div>
+      {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <p className="text-gray-400 text-sm">{myStoreName}</p>
+          {pendingGRN > 0 && (
+            <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
+              {pendingGRN} delivery{pendingGRN > 1 ? "ies" : ""} waiting for
+              your confirmation
+            </div>
+          )}
         </div>
         <button
           onClick={() => {
+            const nextItemNo = getNextItemNo(storeItems);
             setForm({
               from_store_id: auth.store_id || "",
-              to_store_id: "",
+              to_store_id:
+                mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
-              items: [{ ...EMPTY_LINE }],
+              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
             });
             setShowCreate(true);
           }}
@@ -224,7 +317,7 @@ export default function SubStore() {
         </button>
       </div>
 
-      {/* Filters */}
+      {/* ── Filters ── */}
       <div className="flex flex-wrap gap-2 mb-4 items-center">
         <select
           value={filterStatus}
@@ -236,8 +329,9 @@ export default function SubStore() {
           <option value="APPROVED">Approved</option>
           <option value="REJECTED">Rejected</option>
           <option value="FULFILLED">Fulfilled</option>
+          <option value="RECEIVED">Received</option>
+          <option value="DISPUTED">Disputed</option>
         </select>
-
         {auth.role === "super admin" && (
           <select
             value={filterStore}
@@ -254,7 +348,7 @@ export default function SubStore() {
         )}
       </div>
 
-      {/* Requests Table */}
+      {/* ── Requests Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -266,7 +360,6 @@ export default function SubStore() {
                 "Status",
                 "Approved At",
                 "Fulfilled At",
-                "Rejected At",
                 "",
               ].map((h) => (
                 <th
@@ -281,84 +374,114 @@ export default function SubStore() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
             ) : (
               requests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
+                const needsGRN = r.status === "FULFILLED" && !r.grn_at;
+                const isDisputed = r.status === "DISPUTED";
+                const isReceived = r.status === "RECEIVED";
                 return (
-                  <React.Fragment key={r.request_id}>
+                  <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                        needsGRN
+                          ? "bg-blue-50/40 hover:bg-blue-50"
+                          : isDisputed
+                            ? "bg-amber-50/40 hover:bg-amber-50"
+                            : "hover:bg-gray-50"
+                      } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                          {r.request_no}
-                        </span>
-                        {r.item_count > 0 && (
-                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-emerald-600 text-xs font-bold">
+                            {r.request_no}
                           </span>
-                        )}
+                          {r.item_count > 0 && (
+                            <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
+                              {r.item_count} item{r.item_count > 1 ? "s" : ""}
+                            </span>
+                          )}
+                          {needsGRN && (
+                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
+                              ACTION NEEDED
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        <FormattedTimestamp ts={r.created_at} />
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.requested_at || r.created_at} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <FormattedTimestamp ts={r.approved_at} />
+                        <DateTimeCell ts={r.approved_at} />
                       </td>
                       <td className="px-4 py-3">
-                        <FormattedTimestamp ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <FormattedTimestamp ts={r.rejected_at} />
+                        <DateTimeCell ts={r.fulfilled_at} />
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <span
-                          className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                        >
-                          {isExpanded ? "▲ Hide" : "▼ View"}
-                        </span>
+                        <div className="flex items-center justify-end gap-2">
+                          {needsGRN && (
+                            <button
+                              onClick={(e) => openGRN(e, r)}
+                              disabled={grnLoading}
+                              className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                            >
+                              {grnLoading ? "…" : "Verify Delivery"}
+                            </button>
+                          )}
+                          <span
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                          >
+                            {isExpanded ? "▲ Hide" : "▼ View"}
+                          </span>
+                        </div>
                       </td>
                     </tr>
+
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
                         className="bg-gray-50 border-b-2 border-emerald-200"
                       >
-                        <td colSpan={6} className="px-6 py-4">
+                        <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
                             <div className="space-y-3">
-                              <div className="grid grid-cols-3 gap-2">
-                                {[,].map(([label, val]) => (
+                              {(isDisputed || isReceived) &&
+                                detail?.grn_note && (
                                   <div
-                                    key={label}
-                                    className="bg-white rounded p-2 border border-gray-200"
+                                    className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}
                                   >
-                                    <div className="text-gray-400 text-xs mb-1">
-                                      {label}
+                                    <div className="text-xs font-bold uppercase tracking-wider mb-1">
+                                      {isDisputed
+                                        ? "⚠ Sub Store Reported Issues"
+                                        : "✓ Sub Store Confirmed Receipt"}
                                     </div>
-                                    <div className="text-gray-800 text-sm">
-                                      {val}
-                                    </div>
+                                    <div>{detail.grn_note}</div>
+                                    {detail.grn_at && (
+                                      <div className="text-xs opacity-60 mt-1">
+                                        {new Date(
+                                          detail.grn_at,
+                                        ).toLocaleString()}
+                                      </div>
+                                    )}
                                   </div>
-                                ))}
-                              </div>
-                              {detail.rejection_reason && (
+                                )}
+                              {detail?.rejection_reason && (
                                 <div className="bg-red-50 border border-red-200 rounded p-3">
                                   <div className="text-red-500 text-xs font-semibold mb-1">
                                     REJECTION REASON
@@ -387,13 +510,26 @@ export default function SubStore() {
                                       <th className="text-center pb-2 pr-4">
                                         Requested
                                       </th>
-                                      <th className="text-center pb-2">
+                                      <th className="text-center pb-2 pr-4">
                                         Approved
                                       </th>
+                                      <th className="text-center pb-2 pr-4">
+                                        Fulfilled
+                                      </th>
+                                      {(isDisputed || isReceived) && (
+                                        <>
+                                          <th className="text-center pb-2 pr-4">
+                                            Received
+                                          </th>
+                                          <th className="text-center pb-2">
+                                            Condition
+                                          </th>
+                                        </>
+                                      )}
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {(detail.items || []).map((i) => (
+                                    {(detail?.items || []).map((i) => (
                                       <tr
                                         key={i.request_item_id}
                                         className="border-b border-gray-100"
@@ -410,7 +546,7 @@ export default function SubStore() {
                                         <td className="py-2 pr-4 font-mono text-gray-800 text-center">
                                           {i.requested_qty}
                                         </td>
-                                        <td className="py-2 font-mono text-center">
+                                        <td className="py-2 pr-4 font-mono text-center">
                                           <span
                                             className={
                                               i.approved_qty != null
@@ -421,17 +557,79 @@ export default function SubStore() {
                                             {i.approved_qty ?? "—"}
                                           </span>
                                         </td>
+                                        <td className="py-2 pr-4 font-mono text-center">
+                                          <span
+                                            className={
+                                              i.fulfilled_qty != null
+                                                ? "text-blue-600"
+                                                : "text-gray-300"
+                                            }
+                                          >
+                                            {i.fulfilled_qty ?? "—"}
+                                          </span>
+                                        </td>
+                                        {(isDisputed || isReceived) && (
+                                          <>
+                                            <td className="py-2 pr-4 font-mono text-center">
+                                              <span
+                                                className={
+                                                  i.received_qty != null
+                                                    ? Number(i.received_qty) <
+                                                      Number(i.fulfilled_qty)
+                                                      ? "text-amber-600"
+                                                      : "text-teal-600"
+                                                    : "text-gray-300"
+                                                }
+                                              >
+                                                {i.received_qty ?? "—"}
+                                              </span>
+                                            </td>
+                                            <td className="py-2 text-center">
+                                              {i.item_condition ? (
+                                                <span
+                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
+                                                    i.item_condition === "OK"
+                                                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                                                      : i.item_condition ===
+                                                          "DAMAGED"
+                                                        ? "bg-amber-50 border-amber-300 text-amber-700"
+                                                        : "bg-red-50 border-red-300 text-red-700"
+                                                  }`}
+                                                >
+                                                  {i.item_condition}
+                                                </span>
+                                              ) : (
+                                                <span className="text-gray-300">
+                                                  —
+                                                </span>
+                                              )}
+                                            </td>
+                                          </>
+                                        )}
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
+                              {needsGRN && (
+                                <div className="pt-2 border-t border-gray-200">
+                                  <button
+                                    onClick={(e) => openGRN(e, r)}
+                                    disabled={grnLoading}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
+                                  >
+                                    {grnLoading
+                                      ? "Loading…"
+                                      : "Verify Delivery"}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </>
                 );
               })
             )}
@@ -439,7 +637,17 @@ export default function SubStore() {
         </table>
       </div>
 
-      {/* Create Modal */}
+      {/* ── GRN Modal ── */}
+      {grnRequest && (
+        <GRNModal
+          request={grnRequest}
+          onClose={() => setGrnRequest(null)}
+          onSubmit={handleGRNSubmit}
+          submitting={grnSubmitting}
+        />
+      )}
+
+      {/* ── Create Request Modal ── */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
@@ -451,7 +659,7 @@ export default function SubStore() {
               <h2 className="text-gray-900 font-bold">New Item Request</h2>
               <button
                 onClick={() => setShowCreate(false)}
-                className="text-gray-400 hover:text-gray-700 text-xl leading-none"
+                className="text-gray-400 hover:text-gray-700 text-xl"
               >
                 ×
               </button>
@@ -461,75 +669,41 @@ export default function SubStore() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Sub Store *
+                    Requested By
                   </label>
-                  {auth.role === "super admin" ? (
+                  <input
+                    value={form.requested_by_name}
+                    readOnly
+                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                    To (Main Store)
+                  </label>
+                  {mainStores.length === 1 ? (
+                    <input
+                      value={mainStores[0].store_name}
+                      readOnly
+                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                    />
+                  ) : (
                     <select
-                      value={form.from_store_id}
+                      value={form.to_store_id}
                       onChange={(e) =>
-                        setForm((f) => ({
-                          ...f,
-                          from_store_id: e.target.value,
-                        }))
+                        setForm((f) => ({ ...f, to_store_id: e.target.value }))
                       }
                       className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                     >
-                      <option value="">Select Sub Store</option>
-                      {subStores.map((s) => (
+                      <option value="">Select Main Store</option>
+                      {mainStores.map((s) => (
                         <option key={s.store_id} value={s.store_id}>
                           {s.store_name}
                         </option>
                       ))}
                     </select>
-                  ) : (
-                    <input
-                      type="text"
-                      value={
-                        subStores.find((s) => s.store_id === auth.store_id)
-                          ?.store_name ?? "Loading..."
-                      }
-                      readOnly
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
-                    />
                   )}
                 </div>
-                <div>
-                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Main Store *
-                  </label>
-                  <select
-                    value={form.to_store_id}
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, to_store_id: e.target.value }))
-                    }
-                    className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                  >
-                    <option value="">Select Main Store</option>
-                    {mainStores.map((s) => (
-                      <option key={s.store_id} value={s.store_id}>
-                        {s.store_name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Requested By *
-                </label>
-                <input
-                  value={form.requested_by_name}
-                  readOnly
-                  onChange={(e) =>
-                    setForm((f) => ({
-                      ...f,
-                      requested_by_name: e.target.value,
-                    }))
-                  }
-                  placeholder="Your name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
-                />
               </div>
 
               <div>
@@ -542,7 +716,7 @@ export default function SubStore() {
                     setForm((f) => ({ ...f, notes: e.target.value }))
                   }
                   rows={2}
-                  placeholder="Optional reason"
+                  placeholder="Optional reason or note"
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
                 />
               </div>
@@ -560,9 +734,9 @@ export default function SubStore() {
                   </button>
                 </div>
 
-                {!form.from_store_id ? (
+                {!form.to_store_id ? (
                   <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                    Select a Sub Store first
+                    Select a Main Store first to load available items
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -585,8 +759,9 @@ export default function SubStore() {
                         </div>
 
                         <div className="mb-3">
-                          <label className="text-gray-500 text-xs mb-1 flex items-center gap-1.5">
-                            <span>Select from catalogue</span>
+                          <label className="text-gray-500 text-xs mb-1 block">
+                            Select from catalogue ({storeItems.length} items
+                            available)
                           </label>
                           <div className="relative mt-1.5">
                             <input
@@ -605,12 +780,12 @@ export default function SubStore() {
                                 )
                               }
                               placeholder="Search by item name or number…"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                             />
                             {item._showDropdown && (
                               <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                                 <div
-                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer"
+                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
                                   onMouseDown={() => {
                                     updateLine(idx, "selected_item_no", "");
                                     updateLine(idx, "item_search", "");
@@ -624,8 +799,8 @@ export default function SubStore() {
                                     const q = (
                                       item.item_search || ""
                                     ).toLowerCase();
-                                    if (!q) return true;
                                     return (
+                                      !q ||
                                       si.item_no.toLowerCase().includes(q) ||
                                       si.item_name.toLowerCase().includes(q)
                                     );
@@ -642,18 +817,26 @@ export default function SubStore() {
                                         updateLine(
                                           idx,
                                           "item_search",
-                                          si.item_no + " — " + si.item_name,
+                                          `${si.item_no} — ${si.item_name}`,
                                         );
                                         updateLine(idx, "_showDropdown", false);
                                       }}
-                                      className={`px-3 py-2 cursor-pointer hover:bg-gray-50 border-t border-gray-100 ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
+                                      className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
                                     >
-                                      <span className="font-mono text-emerald-600 text-xs">
-                                        {si.item_no}
-                                      </span>
-                                      <span className="text-gray-800 text-xs ml-2">
-                                        {si.item_name}
-                                      </span>
+                                      <div>
+                                        <span className="font-mono text-emerald-600 text-xs font-bold">
+                                          {si.item_no}
+                                        </span>
+                                        <span className="text-gray-700 text-xs ml-2">
+                                          {si.item_name}
+                                        </span>
+                                      </div>
+                                      <div className="text-gray-400 text-xs">
+                                        {parseFloat(si.item_quantity).toFixed(
+                                          0,
+                                        )}{" "}
+                                        {si.item_uom}
+                                      </div>
                                     </div>
                                   ))}
                                 {storeItems.filter((si) => {
@@ -666,7 +849,7 @@ export default function SubStore() {
                                     si.item_name.toLowerCase().includes(q)
                                   );
                                 }).length === 0 && (
-                                  <div className="px-3 py-2 text-xs text-gray-400 italic">
+                                  <div className="px-3 py-3 text-xs text-gray-400 text-center">
                                     No items match your search
                                   </div>
                                 )}
@@ -689,27 +872,25 @@ export default function SubStore() {
                               Item No *
                             </label>
                             <input
-                              value={item.item_no}
                               readOnly
-                              onChange={(e) =>
-                                updateLine(idx, "item_no", e.target.value)
-                              }
-                              placeholder="e.g. ITM-001" 
-                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                              value={item.item_no}
+                              placeholder="ITM-001"
+                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                             />
                           </div>
-                          <div className="col-span-4">
+                          <div className="col-span-5">
                             <label className="text-gray-500 text-xs mb-1 block">
                               Item Name *
                             </label>
                             <input
                               value={item.item_name}
-                              readOnly
+                              readOnly={!!item.selected_item_no}
                               onChange={(e) =>
+                                !item.selected_item_no &&
                                 updateLine(idx, "item_name", e.target.value)
                               }
                               placeholder="Full item name"
-                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed" : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"}`}
                             />
                           </div>
                           <div className="col-span-2">
@@ -718,12 +899,13 @@ export default function SubStore() {
                             </label>
                             <input
                               value={item.item_uom}
-                              readOnly
+                              readOnly={!!item.selected_item_no}
                               onChange={(e) =>
+                                !item.selected_item_no &&
                                 updateLine(idx, "item_uom", e.target.value)
                               }
-                              placeholder="pcs / kg…"
-                              className="w-full bg-gray-200 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
+                              placeholder="pcs"
+                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed" : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"}`}
                             />
                           </div>
                           <div className="col-span-2">
@@ -751,17 +933,18 @@ export default function SubStore() {
                 )}
               </div>
 
+              {/* ── Buttons ── */}
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setShowCreate(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={creating}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
                   {creating ? "Submitting..." : "Submit Request"}
                 </button>
@@ -771,10 +954,16 @@ export default function SubStore() {
         </div>
       )}
 
-      {/* Toast */}
+      {/* ── Toast ── */}
       {toast && (
         <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-700"}`}
+          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+              : toast.type === "warn"
+                ? "bg-amber-50 border-amber-200 text-amber-700"
+                : "bg-red-50 border-red-200 text-red-700"
+          }`}
         >
           <span>{toast.message}</span>
           <button

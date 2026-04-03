@@ -114,6 +114,7 @@ export const getRequestById = (id) => API.get(`/requests/${id}`);
 export const getItemSummary = (params) =>
   API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data);
+export const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 export const approveRequest = (id, data) =>
   API.patch(`/requests/${id}/approve`, data);
@@ -133,7 +134,7 @@ export const addUser = (credentials) => API.post("/users/addUser", credentials);
 
 export const getUsers = (params) => API.get("/users/getUsers", { params });
 
-export const userStatus = (data) => API.put("/users/action", data)
+export const userStatus = (data) => API.put("/users/action", data);
 
 export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 

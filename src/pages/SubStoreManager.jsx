@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getRequests,
   getRequestById,
   approveRequest,
   rejectRequest,
 } from "../services/api";
-import Toast from "../components/Toast";
 import { useAuth } from "../context/authContext";
-import { FormattedTimestamp } from "../components/FormattedTimestamp";
+import Toast from "../components/Toast";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -15,24 +14,36 @@ const StatusBadge = ({ status }) => {
     APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
     REJECTED: "bg-red-50 text-red-600 border border-red-300",
     FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
+    RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300",
+    DISPUTED: "bg-amber-50 text-amber-600 border border-amber-300",
   };
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || ""}`}
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}
     >
       {status}
     </span>
   );
 };
 
-const getStatusTimestamp = (r) => {
-  if (r.status === "FULFILLED") return r.fulfilled_at;
-  if (r.status === "APPROVED") return r.approved_at;
-  if (r.status === "REJECTED") return r.approved_at;
-  return null;
+const DateTimeCell = ({ ts }) => {
+  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
+  const d = new Date(ts);
+  return (
+    <div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
+      <div className="text-gray-400 text-xs font-mono">
+        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      </div>
+    </div>
+  );
 };
 
 export default function SubStoreManager() {
+  const { auth } = useAuth();
+
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -48,15 +59,12 @@ export default function SubStoreManager() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
-  const {auth} = useAuth()
-  
   const load = async () => {
     setLoading(true);
     try {
-      setApproverName(auth.username)
-      setRejecterName(auth.username)
       const params = { direction: "SUB_TO_MAIN" };
       if (filter) params.status = filter;
+      if (auth.store_id) params.store_id = auth.store_id;
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch {
@@ -68,7 +76,7 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filter]);
+  }, [filter, auth.store_id]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -96,6 +104,7 @@ export default function SubStoreManager() {
         })),
       );
       setApproveModal(r);
+      setApproverName(auth.username || ""); // ← auto-fill
     } catch {
       setToast({ message: "Failed to load items", type: "error" });
     }
@@ -113,10 +122,11 @@ export default function SubStoreManager() {
         })),
       });
       setToast({
-        message: "Request approved — waiting for Main Store to fulfill",
+        message: "Request approved — waiting for Main Store Manager",
         type: "success",
       });
       setApproveModal(null);
+      setApproverName("");
       setEditedItems([]);
       load();
     } catch (e) {
@@ -139,6 +149,7 @@ export default function SubStoreManager() {
       });
       setToast({ message: "Request rejected", type: "info" });
       setRejectModal(null);
+      setRejecterName("");
       setRejectReason("");
       load();
     } catch (e) {
@@ -168,11 +179,10 @@ export default function SubStoreManager() {
 
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-gray-900">
-            {auth.username}
-          </h1>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
             Review and approve or reject staff item requests
           </p>
@@ -187,7 +197,7 @@ export default function SubStoreManager() {
           </span>
           <button
             onClick={() => setFilter("PENDING")}
-            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1 transition-colors"
+            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
           >
             Show Pending
           </button>
@@ -205,6 +215,8 @@ export default function SubStoreManager() {
           <option value="APPROVED">Approved</option>
           <option value="REJECTED">Rejected</option>
           <option value="FULFILLED">Fulfilled</option>
+          <option value="RECEIVED">Received</option>
+          <option value="DISPUTED">Disputed</option>
         </select>
       </div>
 
@@ -217,7 +229,8 @@ export default function SubStoreManager() {
                 "Requested By",
                 "Requested At",
                 "Status",
-                "Updated At ",
+                "Approved At",
+                "Fulfilled At",
                 "Actions",
               ].map((h) => (
                 <th
@@ -232,18 +245,26 @@ export default function SubStoreManager() {
           <tbody>
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
             ) : (
               requests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
+                const isDisputed = r.status === "DISPUTED";
+                const isReceived = r.status === "RECEIVED";
                 return (
-                  <React.Fragment key={r.request_id}>
+                  <>
                     <tr
                       key={r.request_id}
-                      className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
+                        isDisputed
+                          ? "bg-amber-50/40 hover:bg-amber-50"
+                          : isReceived
+                            ? "bg-teal-50/30 hover:bg-teal-50"
+                            : "hover:bg-gray-50"
+                      } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -259,30 +280,33 @@ export default function SubStoreManager() {
                       <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3 text-gray-400 text-xs">
-                        <FormattedTimestamp ts={r.created_at} />
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.requested_at || r.created_at} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
-                        <FormattedTimestamp ts={getStatusTimestamp(r)} />
+                        <DateTimeCell ts={r.approved_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.fulfilled_at} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span
-                            className={`text-xs transition-colors ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
                             {isExpanded ? "▲ Hide" : "▼ Details"}
                           </span>
                           {r.status === "PENDING" && (
-                            <React.Fragment>
+                            <>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openApprove(r);
                                 }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 transition-colors ml-1"
+                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1"
                               >
                                 Approve
                               </button>
@@ -290,23 +314,25 @@ export default function SubStoreManager() {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setRejectModal(r);
+                                  setRejecterName(auth.username || "");
                                   setRejectReason("");
                                 }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 transition-colors"
+                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1"
                               >
                                 Reject
                               </button>
-                            </React.Fragment>
+                            </>
                           )}
                         </div>
                       </td>
                     </tr>
+
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
                         className="bg-gray-50 border-b-2 border-emerald-200"
                       >
-                        <td colSpan={6} className="px-6 py-4">
+                        <td colSpan={7} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
@@ -314,31 +340,8 @@ export default function SubStoreManager() {
                           ) : (
                             detail && (
                               <div className="space-y-3">
-                                <div className="grid grid-cols-3 gap-2">
-                                  {[].map(([label, val]) => (
-                                    <div
-                                      key={label}
-                                      className="bg-white rounded p-2 border border-gray-200"
-                                    >
-                                      <div className="text-gray-400 text-xs mb-1">
-                                        {label}
-                                      </div>
-                                      <div className="text-gray-800 text-sm">
-                                        {val}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                                {detail.rejection_reason && (
-                                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                                    <div className="text-red-500 text-xs font-semibold mb-1">
-                                      REJECTION REASON
-                                    </div>
-                                    <div className="text-red-600 text-sm">
-                                      {detail.rejection_reason}
-                                    </div>
-                                  </div>
-                                )}
+                                {/* Info cards */}
+
                                 {detail.notes && (
                                   <div className="bg-white rounded p-3 border border-gray-200">
                                     <div className="text-gray-400 text-xs mb-1">
@@ -349,7 +352,44 @@ export default function SubStoreManager() {
                                     </div>
                                   </div>
                                 )}
+
+                                {detail.rejection_reason && (
+                                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                                    <div className="text-red-500 text-xs font-semibold mb-1">
+                                      REJECTION REASON
+                                    </div>
+                                    <div className="text-red-600 text-sm">
+                                      {detail.rejection_reason}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {(isDisputed || isReceived) &&
+                                  detail.grn_note && (
+                                    <div
+                                      className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}
+                                    >
+                                      <div className="text-xs font-bold uppercase tracking-wider mb-1">
+                                        {isDisputed
+                                          ? "⚠ Sub Store Reported Issues"
+                                          : "✓ Sub Store Confirmed Receipt"}
+                                      </div>
+                                      <div>{detail.grn_note}</div>
+                                      {detail.grn_at && (
+                                        <div className="text-xs opacity-60 mt-1">
+                                          {new Date(
+                                            detail.grn_at,
+                                          ).toLocaleString()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                {/* Items table */}
                                 <div>
+                                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
+                                    Items
+                                  </div>
                                   <table className="w-full text-sm">
                                     <thead>
                                       <tr className="border-b border-gray-200 text-gray-400 text-xs">
@@ -424,7 +464,7 @@ export default function SubStoreManager() {
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </>
                 );
               })
             )}
@@ -458,15 +498,15 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={approverName}
-                  disabled
+                  readOnly
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
               </div>
               <div>
                 <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                  Edit quantities if needed
+                  Adjust quantities if needed
                 </div>
                 <table className="w-full text-sm">
                   <thead>
@@ -486,8 +526,8 @@ export default function SubStoreManager() {
                           <div className="text-gray-800 text-sm">
                             {i.item_name}
                           </div>
-                          <div className="text-gray-400 text-xs">
-                            {i.item_uom}
+                          <div className="text-gray-400 text-xs font-mono">
+                            {i.item_no} · {i.item_uom}
                           </div>
                         </td>
                         <td className="py-2 font-mono text-gray-500 text-center">
@@ -517,14 +557,14 @@ export default function SubStoreManager() {
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setApproveModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleApprove}
                   disabled={actioning || !approverName.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
                   {actioning ? "Processing..." : "Confirm Approve"}
                 </button>
@@ -560,10 +600,9 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={rejecterName}
-                  disabled
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-400 text-sm cursor-not-allowed outline-none"
+                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
                 />
               </div>
               <div>
@@ -581,7 +620,7 @@ export default function SubStoreManager() {
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
                   onClick={() => setRejectModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded transition-colors"
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
                   Cancel
                 </button>
@@ -590,7 +629,7 @@ export default function SubStoreManager() {
                   disabled={
                     actioning || !rejecterName.trim() || !rejectReason.trim()
                   }
-                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded transition-colors disabled:opacity-40"
+                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
                   {actioning ? "Rejecting..." : "Confirm Reject"}
                 </button>

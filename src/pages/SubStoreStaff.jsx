@@ -11,6 +11,7 @@ import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
+import Toast from "../components/Toast";
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 
@@ -169,9 +170,19 @@ const addLine = () => {
       ...f,
       items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
     };
+    
   });
 };
+const removeLine = (idx) => {
+  setForm((f) => {
+    const items = f.items.filter((_, i) => i !== idx);
 
+    return {
+      ...f,
+      items: items.length ? items : [{ ...EMPTY_LINE }],
+    };
+  });
+};
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
@@ -194,7 +205,8 @@ const addLine = () => {
     });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (e) => {
+    e.preventDefault();
     const { from_store_id, to_store_id, requested_by_name, items } = form;
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
@@ -226,6 +238,7 @@ const addLine = () => {
     } finally {
       setCreating(false);
     }
+
   };
 
   if (pageLoading)
@@ -925,6 +938,7 @@ const getNextItemNo = (items = []) => {
                 </button>
                 <button
                   onClick={handleCreate}
+                  
                   disabled={creating}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
@@ -935,27 +949,7 @@ const getNextItemNo = (items = []) => {
           </div>
         </div>
       )}
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
-        </div>
-      )}
+<Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

@@ -252,19 +252,6 @@ export default function SubStore() {
     }
   };
 
-  // if (pageLoading)
-  //   return (
-  //     <div className="flex justify-center py-20">
-  //       <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-  //     </div>
-  //   );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
@@ -381,7 +368,15 @@ export default function SubStore() {
                   <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                 </div>
               </td>
-            </tr> :
+              </tr> :
+              error ?
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+                      {error}
+                    </div>
+                  </td>
+                </tr> : 
               requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">

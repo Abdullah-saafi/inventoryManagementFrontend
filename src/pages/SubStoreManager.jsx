@@ -62,7 +62,7 @@ export default function SubStoreManager() {
   const load = async () => {
     setLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
+      const params = { direction: "SUB_TO_MAIN"};
       if (filter) params.status = filter;
       if (auth.store_id) params.store_id = auth.store_id;
       const r = await getRequests(params);
@@ -76,7 +76,7 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filter, auth.store_id]);
+  }, [filter, auth.store_id, page]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -162,19 +162,6 @@ export default function SubStoreManager() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   return (
@@ -243,7 +230,23 @@ export default function SubStoreManager() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {loading ?
+            <tr>
+              <td colSpan={7} className="text-center py-12">
+                <div className="flex justify-center py-20">
+                  <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                </div>
+              </td>
+              </tr> :
+              error ?
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                    </div>
+                </td>
+              </tr> :
+            requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.

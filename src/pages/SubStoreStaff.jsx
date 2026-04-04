@@ -87,7 +87,7 @@ export default function SubStore() {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN",page, limit: 10 };
+      const params = { direction: "SUB_TO_MAIN",page};
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
@@ -372,7 +372,7 @@ export default function SubStore() {
               error ?
                 <tr>
                   <td colSpan={7} className="text-center py-12">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
                       {error}
                     </div>
                   </td>

@@ -434,7 +434,7 @@ const renderInlineDetail = (
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
-  const [reqFilter, setReqFilter] = useState("APPROVED");
+  const [reqFilter, setReqFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);

@@ -9,6 +9,7 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
+import { ISO_8601 } from "moment-hijri";
 
 const StatusBadge = ({ status }) => {
   const s = {
@@ -70,6 +71,8 @@ export default function SubStore() {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   const [form, setForm] = useState({
     from_store_id: "",
@@ -84,7 +87,7 @@ export default function SubStore() {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
+      const params = { direction: "SUB_TO_MAIN",page, limit: 10 };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
@@ -95,6 +98,7 @@ export default function SubStore() {
         getStores(),
         getRequests(params),
       ]);
+      setTotalPages(rRes.data.pagination.totalPages)
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
@@ -108,7 +112,7 @@ export default function SubStore() {
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
-  }, [filterStatus, filterStore, auth.store_id]);
+  }, [filterStatus, filterStore, auth.store_id, page]);
 
   useEffect(() => {
     if (form.to_store_id) {
@@ -248,12 +252,12 @@ export default function SubStore() {
     }
   };
 
-  if (pageLoading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
+  // if (pageLoading)
+  //   return (
+  //     <div className="flex justify-center py-20">
+  //       <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+  //     </div>
+  //   );
   if (error)
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
@@ -370,7 +374,15 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {pageLoading ?
+            <tr>
+              <td colSpan={7} className="text-center py-12">
+                <div className="flex justify-center">
+                  <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                </div>
+              </td>
+            </tr> :
+              requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
@@ -616,6 +628,27 @@ export default function SubStore() {
           </tbody>
         </table>
       </div>
+      
+      {/* ── Pagination ── */}
+      
+      <div>
+        <button
+          disabled={page === 1}
+          onClick={() => setPage(p => p - 1)}
+        >
+          Previous
+        </button>
+        
+        <span>Page {page} of {totalPages}</span>
+        
+        <button
+          disabled={page === totalPages}
+          onClick={() => setPage(p => p + 1)}
+        >
+          Next
+        </button>
+      </div>
+
 
       {/* ── GRN Modal ── */}
       {grnRequest && (

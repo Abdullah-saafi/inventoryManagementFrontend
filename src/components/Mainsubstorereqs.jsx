@@ -48,33 +48,34 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
       (i.received_qty != null && Number(i.received_qty) < Number(i.fulfilled_qty))
   );
 
-  const handleAcceptReturn = async () => {
-    setProcessing("return");
-    try {
-      await acceptReturn(request.request_id, { resolved_by_name: managerName });
-      showToast("Return accepted — stock restored to main store");
-      onResolved();
-    } catch (e) {
-      showToast(e.response?.data?.message || "Failed to accept return", "error");
-    } finally {
-      setProcessing(null);
-      setConfirmed(null);
-    }
-  };
+const handleAcceptReturn = async () => {
+  setProcessing("return");
+  try {
+    // This API should update inventory
+    await acceptReturn(request.request_id, { resolved_by_name: managerName });
+    showToast("Return accepted — stock restored to main store");
+    onResolved();
+  } catch (e) {
+    showToast(e.response?.data?.message || "Failed to accept return", "error");
+  } finally {
+    setProcessing(null);
+    setConfirmed(null);
+  }
+};
 
-  const handleResend = async () => {
-    setProcessing("resend");
-    try {
-      const res = await resendItems(request.request_id, { resolved_by_name: managerName });
-      showToast(res.data?.message || "New request created and ready to fulfill");
-      onResolved();
-    } catch (e) {
-      showToast(e.response?.data?.message || "Failed to create resend request", "error");
-    } finally {
-      setProcessing(null);
-      setConfirmed(null);
-    }
-  };
+const handleResend = async () => {
+  setProcessing("resend");
+  try {
+    const res = await resendItems(request.request_id, { resolved_by_name: managerName });
+    showToast(res.data?.message || "New request created and ready to fulfill");
+    onResolved();
+  } catch (e) {
+    showToast(e.response?.data?.message || "Failed to create resend request", "error");
+  } finally {
+    setProcessing(null);
+    setConfirmed(null);
+  }
+};
 
   return (
     <div className="border border-amber-200 rounded-xl overflow-hidden">
@@ -414,19 +415,23 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
     }
   };
 
-  const handleFulfill = async (requestId) => {
-    setFulfilling(requestId);
-    try {
-      await fulfillRequest(requestId);
-      showToast("Request fulfilled and inventory updated");
-      setDetail(null);
-      onRefresh();
-    } catch (e) {
-      showToast(e.response?.data?.message || "Failed to fulfill", "error");
-    } finally {
-      setFulfilling(null);
+const handleFulfill = async (requestId, status) => {
+  setFulfilling(requestId);
+  try {
+    if (status === "DISPUTED") {
+      showToast("Cannot fulfill — dispute resolution required", "error");
+      return; // Do nothing for disputed requests
     }
-  };
+    await fulfillRequest(requestId);
+    showToast("Request fulfilled and inventory updated");
+    setDetail(null);
+    onRefresh();
+  } catch (e) {
+    showToast(e.response?.data?.message || "Failed to fulfill", "error");
+  } finally {
+    setFulfilling(null);
+  }
+};
 
   const handleResolved = () => {
     setDetail(null);
@@ -439,9 +444,13 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
 
+  // Table column count: 10 (Request No, From, To, Requested By, Approved By,
+  //                        Fulfilled By, Requested At, Fulfilled At, Status, Actions)
+  const COL_COUNT = 10;
+
   return (
     <div>
-      {/* Disputed alert — no animation */}
+      {/* Disputed alert */}
       {disputedCount > 0 && reqFilter !== "DISPUTED" && (
         <div
           className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-amber-100 transition-colors"
@@ -478,7 +487,18 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Request No", "From", "To", "Requested By", "Approved By", "Requested At", "Status", ""].map((h) => (
+              {[
+                "Request No",
+                "From",
+                "To",
+                "Requested By",
+                "Approved By",
+                "Fulfilled By",
+                "Requested At",
+                "Fulfilled At",
+                "Status",
+                "",
+              ].map((h) => (
                 <th
                   key={h}
                   className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
@@ -491,7 +511,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
           <tbody>
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-400">
+                <td colSpan={COL_COUNT} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
@@ -514,12 +534,12 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
+                      {/* Request No */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-emerald-600 text-xs font-bold">
                             {r.request_no}
                           </span>
-                          {/* No animation on badge */}
                           {isDisputed && (
                             <span className="bg-amber-100 text-amber-600 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200">
                               ACTION NEEDED
@@ -527,36 +547,64 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                           )}
                         </div>
                       </td>
+
+                      {/* From */}
                       <td className="px-4 py-3 text-gray-700">{r.from_store_name}</td>
+
+                      {/* To */}
                       <td className="px-4 py-3 text-gray-700">{r.to_store_name}</td>
+
+                      {/* Requested By */}
                       <td className="px-4 py-3 text-gray-500">{r.requested_by_name || "—"}</td>
+
+                      {/* Approved By */}
                       <td className="px-4 py-3 text-gray-500">{r.approved_by_name || "—"}</td>
-                      {/* Date + time */}
-                      <td className="px-4 py-3"><DateTimeCell ts={r.created_at} /></td>
+
+                      {/* Fulfilled By */}
+                      <td className="px-4 py-3 text-gray-500">{r.fulfilled_by_name || "—"}</td>
+
+                      {/* Requested At */}
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.created_at} />
+                      </td>
+
+                      {/* Fulfilled At */}
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.fulfilled_at} />
+                      </td>
+
+                      {/* Status */}
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
+
+                      {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
                             {isExpanded ? "▲ Hide" : "▼ Details"}
                           </span>
                           {r.status === "APPROVED" && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleFulfill(r.request_id);
-                              }}
-                              disabled={fulfilling === r.request_id}
-                              className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded px-2 py-1 disabled:opacity-40 ml-1"
-                            >
-                              {fulfilling === r.request_id ? "..." : "Fulfill"}
-                            </button>
+                         <button
+  onClick={(e) => {
+    e.stopPropagation();
+    // Only fulfill if not disputed
+    if (r.status === "DISPUTED") {
+      showToast("Cannot fulfill — dispute resolution required", "error");
+      return;
+    }
+    handleFulfill(r.request_id);
+  }}
+  disabled={fulfilling === r.request_id}
+>
+  {fulfilling === r.request_id ? "..." : "Fulfill"}
+</button>
                           )}
                         </div>
                       </td>
                     </tr>
 
+                    {/* Expanded detail row */}
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
@@ -567,7 +615,7 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
                           : "bg-gray-50 border-emerald-200"
                         }`}
                       >
-                        <td colSpan={8} className="px-6 py-4">
+                        <td colSpan={COL_COUNT} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />

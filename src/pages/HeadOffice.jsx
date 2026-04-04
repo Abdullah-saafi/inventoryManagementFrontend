@@ -825,21 +825,15 @@ export default function HeadOffice() {
                 >
                   Cancel
                 </button>
-                <button
-                  onClick={handleFulfill}
-                  disabled={actioning || !fulfillerName.trim() || (fulfillMode === "refulfill" && !fulfillNotes.trim())}
-                  className={`text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 ${
-                    fulfillMode === "refulfill"
-                      ? "bg-amber-500 hover:bg-amber-400"
-                      : "bg-emerald-600 hover:bg-emerald-500"
-                  }`}
-                >
-                  {actioning
-                    ? "Processing..."
-                    : fulfillMode === "refulfill"
-                    ? "Confirm Re-dispatch"
-                    : "Confirm Fulfill"}
-                </button>
+          <button
+  onClick={(e) => {
+    e.stopPropagation();
+    handleFulfill(r.request_id, r.status);
+  }}
+  disabled={fulfilling === r.request_id}
+>
+  {fulfilling === r.request_id ? "..." : "Fulfill"}
+</button>
               </div>
             </div>
           </div>

@@ -90,7 +90,7 @@ export default function SubStore() {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN" };
+      const params = { direction: "MAIN_TO_HO" };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;

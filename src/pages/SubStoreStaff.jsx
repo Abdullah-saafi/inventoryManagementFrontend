@@ -24,7 +24,7 @@ const EMPTY_LINE = {
   item_no: "",
   item_name: "",
   item_uom: "",
-  requested_qty: 1,
+  requested_qty: 0,
 };
 
 export default function SubStore() {

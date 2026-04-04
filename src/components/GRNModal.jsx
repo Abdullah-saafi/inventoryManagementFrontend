@@ -1,37 +1,29 @@
 import { useState } from "react";
 
-// ─── Condition badge helper ───────────────────────────────────────────────────
 const ConditionBadge = ({ condition }) => {
   const styles = {
-    OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
+    OK:      "bg-emerald-50 border-emerald-300 text-emerald-700",
     DAMAGED: "bg-amber-50  border-amber-300  text-amber-700",
     MISSING: "bg-red-50    border-red-300    text-red-700",
   };
   return (
-    <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono`}>
+    <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${styles[condition] || ""}`}>
       {condition}
     </span>
   );
 };
-
-// ─── Main GRN Modal ───────────────────────────────────────────────────────────
-// Props:
-//   request     — the full request object (with .items[])
-//   onClose     — fn() to close modal
-//   onSubmit    — async fn({ grn_status, grn_note, received_items }) → called after user confirms
-//   submitting  — boolean, disables buttons while API call in progress
 
 export default function GRNModal({ request, onClose, onSubmit, submitting }) {
   const [grnNote, setGrnNote] = useState("");
   const [items, setItems] = useState(
     (request.items || []).map((i) => ({
       request_item_id: i.request_item_id,
-      item_no: i.item_no,
-      item_name: i.item_name,
-      item_uom: i.item_uom,
-      fulfilled_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
-      received_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
-      item_condition: "OK",
+      item_no:         i.item_no,
+      item_name:       i.item_name,
+      item_uom:        i.item_uom,
+      fulfilled_qty:   i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
+      received_qty:    i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
+      item_condition:  "OK",
     })),
   );
 
@@ -43,38 +35,39 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
     });
 
   // Derive overall GRN status from item states
+  // Only RECEIVED or DISPUTED — never REJECTED from the confirm button
   const deriveStatus = () => {
-    const anyDamaged = items.some((i) => i.item_condition === "DAMAGED");
-    const anyMissing = items.some((i) => i.item_condition === "MISSING");
-    const anyShort = items.some(
-      (i) => Number(i.received_qty) < Number(i.fulfilled_qty),
+    const anyIssue = items.some(
+      (i) =>
+        i.item_condition === "DAMAGED" ||
+        i.item_condition === "MISSING" ||
+        Number(i.received_qty) < Number(i.fulfilled_qty),
     );
-    if (anyDamaged || anyMissing || anyShort) return "DISPUTED";
-    return "RECEIVED";
+    return anyIssue ? "DISPUTED" : "RECEIVED";
   };
 
+  // Confirm receipt (RECEIVED or DISPUTED based on what user entered)
   const handleConfirm = () => {
     const grn_status = deriveStatus();
     onSubmit({
       grn_status,
       grn_note: grnNote.trim() || null,
-      received_items: items.map(
-        ({ request_item_id, received_qty, item_condition }) => ({
-          request_item_id,
-          received_qty: Number(received_qty),
-          item_condition,
-        }),
-      ),
+      received_items: items.map(({ request_item_id, received_qty, item_condition }) => ({
+        request_item_id,
+        received_qty:   Number(received_qty),
+        item_condition,
+      })),
     });
   };
 
+  // Reject entire delivery — sub store receives NOTHING, no inventory added
   const handleRejectAll = () => {
     onSubmit({
       grn_status: "REJECTED",
       grn_note: grnNote.trim() || "Delivery rejected by sub store.",
-      received_items: items.map(({ request_item_id, fulfilled_qty }) => ({
+      received_items: items.map(({ request_item_id }) => ({
         request_item_id,
-        received_qty: 0,
+        received_qty:  0,
         item_condition: "MISSING",
       })),
     });
@@ -143,14 +136,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  {[
-                    "Item No",
-                    "Item Name",
-                    "UOM",
-                    "Dispatched",
-                    "Received Qty",
-                    "Condition",
-                  ].map((h) => (
+                  {["Item No", "Item Name", "UOM", "Dispatched", "Received Qty", "Condition"].map((h) => (
                     <th
                       key={h}
                       className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
@@ -169,12 +155,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                     <td className="px-4 py-3 font-mono text-emerald-600 text-xs font-bold">
                       {item.item_no}
                     </td>
-                    <td className="px-4 py-3 text-gray-800">
-                      {item.item_name}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">
-                      {item.item_uom}
-                    </td>
+                    <td className="px-4 py-3 text-gray-800">{item.item_name}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">{item.item_uom}</td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-gray-700 font-semibold">
                         {item.fulfilled_qty}
@@ -187,21 +169,22 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                         max={item.fulfilled_qty}
                         value={item.received_qty}
                         onChange={(e) => {
-                          const val = Math.max(0, Number(e.target.value));
+                          const val = Math.min(
+                            Number(item.fulfilled_qty),
+                            Math.max(0, Number(e.target.value)),
+                          );
                           updateItem(idx, "received_qty", val);
-                          // Auto-flag as MISSING if qty drops to 0
                           if (val === 0 && item.item_condition === "OK") {
                             updateItem(idx, "item_condition", "MISSING");
                           }
-                          // Auto-unflag if qty restored
                           if (val > 0 && item.item_condition === "MISSING") {
                             updateItem(idx, "item_condition", "OK");
                           }
                         }}
-                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus${
+                        className={`w-20 border rounded px-2 py-1 text-sm font-mono focus:outline-none ${
                           Number(item.received_qty) < Number(item.fulfilled_qty)
-                            ? "border-amber-300 text-amber-700 bg-amber-50 focus:ring-amber-300"
-                            : "border-gray-300 text-gray-800 focus:ring-emerald-400"
+                            ? "border-amber-300 text-amber-700 bg-amber-50"
+                            : "border-gray-300 text-gray-800"
                         }`}
                       />
                     </td>
@@ -210,17 +193,16 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                         value={item.item_condition}
                         onChange={(e) => {
                           updateItem(idx, "item_condition", e.target.value);
-                          // Auto-zero qty if marked MISSING
                           if (e.target.value === "MISSING") {
                             updateItem(idx, "received_qty", 0);
                           }
                         }}
-                        className={`border rounded px-2 py-1 text-xs font-semibold  ${
+                        className={`border rounded px-2 py-1 text-xs font-semibold focus:outline-none ${
                           item.item_condition === "OK"
-                            ? "border-emerald-300 text-emerald-700 bg-emerald-50 focus:ring-emerald-300"
+                            ? "border-emerald-300 text-emerald-700 bg-emerald-50"
                             : item.item_condition === "DAMAGED"
-                              ? "border-amber-300 text-amber-700 bg-amber-50 focus:ring-amber-300"
-                              : "border-red-300 text-red-700 bg-red-50 focus:ring-red-300"
+                            ? "border-amber-300 text-amber-700 bg-amber-50"
+                            : "border-red-300 text-red-700 bg-red-50"
                         }`}
                       >
                         <option value="OK">✓ OK</option>
@@ -234,7 +216,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             </table>
           </div>
 
-          {/* Issue summary (shown when there are issues) */}
+          {/* Issue summary */}
           {hasIssues && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
               <div className="text-amber-700 text-xs font-bold uppercase tracking-wider mb-2">
@@ -268,13 +250,11 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             </div>
           )}
 
-          {/* Note to main store */}
+          {/* Note */}
           <div>
             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1.5">
               Message to Main Store{" "}
-              <span className="text-gray-300 font-normal normal-case">
-                (optional)
-              </span>
+              <span className="text-gray-300 font-normal normal-case">(optional)</span>
             </label>
             <textarea
               value={grnNote}
@@ -282,17 +262,16 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
               rows={3}
               placeholder={
                 hasIssues
-                  ? "Describe the issue in detail — e.g. 3 units of ITM-002 arrived crushed…"
+                  ? "Describe the issue in detail…"
                   : "Any remarks about the delivery…"
               }
-              className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-800 text-sm resize-none placeholder-gray-300"
+              className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-800 text-sm resize-none placeholder-gray-300 focus:outline-none focus:border-emerald-400"
             />
           </div>
         </div>
 
         {/* Footer */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4 flex items-center justify-between rounded-b-2xl gap-3">
-          {/* Reject all */}
           <button
             onClick={handleRejectAll}
             disabled={submitting}
@@ -305,7 +284,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
             <button
               onClick={onClose}
               disabled={submitting}
-              className="text-sm font-semibold text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 bg-gray-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
+              className="text-sm font-semibold text-gray-600 hover:text-gray-800 border border-gray-200 bg-gray-50 px-4 py-2 rounded-lg transition-colors disabled:opacity-40"
             >
               Cancel
             </button>
@@ -321,8 +300,8 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
               {submitting
                 ? "Submitting…"
                 : hasIssues
-                  ? "Submit with Issues"
-                  : "✓ Confirm Receipt"}
+                ? "Submit with Issues"
+                : "✓ Confirm Receipt"}
             </button>
           </div>
         </div>

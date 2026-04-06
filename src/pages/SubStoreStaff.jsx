@@ -14,9 +14,6 @@ import DateTimeCell from "../components/DateTimeCell";
 import Toast from "../components/Toast";
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
-
-
-
 const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
@@ -161,28 +158,27 @@ export default function SubStore() {
     setTimeout(() => setToast(null), 4000);
   };
 
-const addLine = () => {
-  setForm((f) => {
-    const allItems = [...storeItems, ...f.items]; // combine both
-    const nextItemNo = getNextItemNo(allItems);
+  const addLine = () => {
+    setForm((f) => {
+      const allItems = [...storeItems, ...f.items]; // combine both
+      const nextItemNo = getNextItemNo(allItems);
 
-    return {
-      ...f,
-      items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
-    };
-    
-  });
-};
-const removeLine = (idx) => {
-  setForm((f) => {
-    const items = f.items.filter((_, i) => i !== idx);
+      return {
+        ...f,
+        items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
+      };
+    });
+  };
+  const removeLine = (idx) => {
+    setForm((f) => {
+      const items = f.items.filter((_, i) => i !== idx);
 
-    return {
-      ...f,
-      items: items.length ? items : [{ ...EMPTY_LINE }],
-    };
-  });
-};
+      return {
+        ...f,
+        items: items.length ? items : [{ ...EMPTY_LINE }],
+      };
+    });
+  };
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
@@ -238,44 +234,30 @@ const removeLine = (idx) => {
     } finally {
       setCreating(false);
     }
-
   };
-
-  if (pageLoading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
 
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
   const myStoreName =
     subStores.find((s) => s.store_id === auth.store_id)?.store_name || "";
-const getNextItemNo = (items = []) => {
-  if (!items.length) return "ITM-001";
+  const getNextItemNo = (items = []) => {
+    if (!items.length) return "ITM-001";
 
-  let max = 0;
-  let prefix = "ITM-";
+    let max = 0;
+    let prefix = "ITM-";
 
-  items.forEach((item) => {
-    const match = item.item_no?.match(/(\D+)(\d+)$/);
-    if (match) {
-      prefix = match[1];
-      const num = parseInt(match[2], 10);
-      if (num > max) max = num;
-    }
-  });
+    items.forEach((item) => {
+      const match = item.item_no?.match(/(\D+)(\d+)$/);
+      if (match) {
+        prefix = match[1];
+        const num = parseInt(match[2], 10);
+        if (num > max) max = num;
+      }
+    });
 
-  return `${prefix}${String(max + 1).padStart(3, "0")}`;
-};
+    return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  };
   return (
     <div>
       {/* ── Header ── */}
@@ -292,20 +274,20 @@ const getNextItemNo = (items = []) => {
           )}
         </div>
         <button
-        onClick={() => {
-  const nextItemNo = getNextItemNo(storeItems); // ✅ FIXED
+          onClick={() => {
+            const nextItemNo = getNextItemNo(storeItems); // ✅ FIXED
 
-  setForm({
-    from_store_id: auth.store_id || "",
-    to_store_id:
-      mainStores.length === 1 ? mainStores[0].store_id : "",
-    requested_by_name: auth.username || "",
-    notes: "",
-    items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
-  });
+            setForm({
+              from_store_id: auth.store_id || "",
+              to_store_id:
+                mainStores.length === 1 ? mainStores[0].store_id : "",
+              requested_by_name: auth.username || "",
+              notes: "",
+              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+            });
 
-  setShowCreate(true);
-}}
+            setShowCreate(true);
+          }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
           نئی درخواست
@@ -319,13 +301,13 @@ const getNextItemNo = (items = []) => {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-     <option value="">تمام حالتیں</option>
-<option value="PENDING">زیرِ التواء</option>
-<option value="APPROVED">منظور شدہ</option>
-<option value="REJECTED">مسترد شدہ</option>
-<option value="FULFILLED">مکمل کیا گیا</option>
-<option value="RECEIVED">وصول ہو گیا</option>
-<option value="DISPUTED">متنازع</option>
+          <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیرِ التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل کیا گیا</option>
+          <option value="RECEIVED">وصول ہو گیا</option>
+          <option value="DISPUTED">متنازع</option>
         </select>
         {auth.role === "super admin" && (
           <select
@@ -349,12 +331,12 @@ const getNextItemNo = (items = []) => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-              "درخواست نمبر",
-  "درخواست کنندہ",
-  "درخواست کی تاریخ",
-  "حالت",
-  "منظوری کی تاریخ",
-  "تکمیل کی تاریخ",
+                "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کی تاریخ",
+                "حالت",
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
                 "",
               ].map((h) => (
                 <th
@@ -367,7 +349,23 @@ const getNextItemNo = (items = []) => {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {pageLoading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
@@ -416,7 +414,7 @@ const getNextItemNo = (items = []) => {
                         <DateTimeCell ts={r.requested_at || r.created_at} />
                       </td>
                       <td className="px-4 py-3">
-                          <StatusBadge status={r.status} />
+                        <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.approved_at} />
@@ -497,7 +495,7 @@ const getNextItemNo = (items = []) => {
                                         اشیاء نمبر
                                       </th>
                                       <th className="text-left pb-2 pr-4">
-                                      اشیاء کا نام
+                                        اشیاء کا نام
                                       </th>
                                       <th className="text-left pb-2 pr-4">
                                         UOM
@@ -938,7 +936,6 @@ const getNextItemNo = (items = []) => {
                 </button>
                 <button
                   onClick={handleCreate}
-                  
                   disabled={creating}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
@@ -949,7 +946,7 @@ const getNextItemNo = (items = []) => {
           </div>
         </div>
       )}
-<Toast toast={toast} onClose={() => setToast(null)} />
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

@@ -7,37 +7,36 @@ export const ROLE_STORE_MAP = {
 }
 
 export const ROLES = [
-  { value: "sub-store", label: "Sub Store Staff" },
-  { value: "sub-store-approver", label: "Sub Store Manager" },
-  { value: "main-store", label: "Main Store Staff" },
-  { value: "main-store-approver", label: "Main Store Manager" },
-  { value: "headoffice", label: "Head Office" },
-  { value: "admin", label: "Admin" },
+  { value: "sub-store", label: "اسٹور" },
+  { value: "sub-store-approver", label: "اسٹور نگران" },
+  { value: "main-store", label: "مرکزی اسٹور" },
+  { value: "main-store-approver", label: "مرکزی اسٹور نگران" },
+  { value: "headoffice", label: "مرکزی دفتر" },
+  { value: "admin", label: "انتظامی دفتر" },
 ]
 
 export const ROLE_LABELS = {
-  "sub-store": "Sub Store Staff",
-  "sub-store-approver": "Sub Store Manager",
-  "main-store": "Main Store Staff",
-  "main-store-approver": "Main Store Manager",
-  headoffice: "Head Office",
-  admin: "Admin",
-  "super admin": "Super Admin",
+  "sub-store":          "اسٹور",
+  "sub-store-approver": "اسٹور نگران",
+  "main-store":         "مرکزی اسٹور",
+  "main-store-approver":"مرکزی اسٹور نگران",
+  headoffice:           "مرکزی دفتر",
+  admin:                "انتظامی دفتر",
+  "super admin":        "سپر ایڈمن",
 }
 
 export const TABS = [
-  { id: "user", label: "Add User" },
-  { id: "store", label: "Add Sub Store" },
-  { id: "all-users", label: "All Users" },
-  { id: "all-stores", label: "All Stores" },
+  { id: "user", label: "نمائندہ شامل کریں" },
+  { id: "store", label: "اسٹورز شامل کریں" },
+  { id: "all-users", label: "تمام نمائندے" },
+  { id: "all-stores", label: "تمام اسٹورز" },
 ]
 
 export const STORE_TYPE_LABELS = {
-  MAIN_STORE: "Main Store",
-  SUB_STORE: "Sub Store",
-  HEAD_OFFICE: "Head Office",
+  MAIN_STORE: "مرکزی اسٹور",
+  SUB_STORE:  "اسٹور",
+  HEAD_OFFICE: "مرکزی دفتر",
 }
-
 export const inputClass =
   "w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 placeholder-gray-400";
 

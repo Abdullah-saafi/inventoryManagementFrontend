@@ -308,7 +308,7 @@ const getNextItemNo = (items = []) => {
 }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
-          New Request
+          نئی درخواست
         </button>
       </div>
 
@@ -319,13 +319,13 @@ const getNextItemNo = (items = []) => {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
+     <option value="">تمام حالتیں</option>
+<option value="PENDING">زیرِ التواء</option>
+<option value="APPROVED">منظور شدہ</option>
+<option value="REJECTED">مسترد شدہ</option>
+<option value="FULFILLED">مکمل کیا گیا</option>
+<option value="RECEIVED">وصول ہو گیا</option>
+<option value="DISPUTED">متنازع</option>
         </select>
         {auth.role === "super admin" && (
           <select
@@ -333,7 +333,7 @@ const getNextItemNo = (items = []) => {
             onChange={(e) => setFilterStore(e.target.value)}
             className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
           >
-            <option value="">All Sub Stores</option>
+            <option value="">تمام اسٹورز</option>
             {subStores.map((s) => (
               <option key={s.store_id} value={s.store_id}>
                 {s.store_name}
@@ -349,12 +349,12 @@ const getNextItemNo = (items = []) => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Request No",
-                "Requested By",
-                "Requested At",
-                "Status",
-                "Approved At",
-                "Fulfilled At",
+              "درخواست نمبر",
+  "درخواست کنندہ",
+  "درخواست کی تاریخ",
+  "حالت",
+  "منظوری کی تاریخ",
+  "تکمیل کی تاریخ",
                 "",
               ].map((h) => (
                 <th
@@ -494,30 +494,30 @@ const getNextItemNo = (items = []) => {
                                   <thead>
                                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                       <th className="text-left pb-2 pr-4">
-                                        Item No
+                                        اشیاء نمبر
                                       </th>
                                       <th className="text-left pb-2 pr-4">
-                                        Item Name
+                                      اشیاء کا نام
                                       </th>
                                       <th className="text-left pb-2 pr-4">
                                         UOM
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Requested
+                                        درخواست شدہ
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Approved
+                                        منظور شدہ
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Fulfilled
+                                        مکمل شدہ
                                       </th>
                                       {(isDisputed || isReceived) && (
                                         <>
                                           <th className="text-center pb-2 pr-4">
-                                            Received
+                                            وصول شدہ
                                           </th>
                                           <th className="text-center pb-2">
-                                            Condition
+                                            حالت
                                           </th>
                                         </>
                                       )}
@@ -651,7 +651,7 @@ const getNextItemNo = (items = []) => {
           />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">New Item Request</h2>
+              <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
               <button
                 onClick={() => setShowCreate(false)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
@@ -664,7 +664,7 @@ const getNextItemNo = (items = []) => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Requested By
+                    درخواست کنندہ
                   </label>
                   <input
                     value={form.requested_by_name}
@@ -674,7 +674,7 @@ const getNextItemNo = (items = []) => {
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    To (Main Store)
+                    بھیجیں(مرکزی اسٹور)
                   </label>
                   {mainStores.length === 1 ? (
                     <input
@@ -703,7 +703,7 @@ const getNextItemNo = (items = []) => {
 
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Notes
+                  ہدایت یا نوٹس
                 </label>
                 <textarea
                   value={form.notes}

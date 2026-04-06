@@ -77,16 +77,16 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 text-gray-400 text-xs">
-              <th className="text-left pb-2 pr-4">Item No</th>
-              <th className="text-left pb-2 pr-4">Item Name</th>
-              <th className="text-left pb-2 pr-4">UOM</th>
-              <th className="text-center pb-2 pr-4">Requested</th>
-              <th className="text-center pb-2 pr-4">Approved</th>
-              <th className="text-center pb-2 pr-4">Fulfilled</th>
+              <th className="text-left pb-2 pr-4">چیز نمبر</th>
+              <th className="text-left pb-2 pr-4">چیز کا نام</th>
+              <th className="text-left pb-2 pr-4">پیمائش کی اکائی</th>
+              <th className="text-center pb-2 pr-4">درخواست کردہ</th>
+              <th className="text-center pb-2 pr-4">منظور شدہ</th>
+              <th className="text-center pb-2 pr-4">مکمل شدہ</th>
               {showGRNColumns && (
                 <>
-                  <th className="text-center pb-2 pr-4">Received</th>
-                  <th className="text-center pb-2">Condition</th>
+                  <th className="text-center pb-2 pr-4">موصول شدہ</th>
+                  <th className="text-center pb-2">حالت</th>
                 </>
               )}
             </tr>
@@ -269,13 +269,13 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
           onChange={(e) => setHoFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
-          <option value="REJECTED">Rejected</option>
+              <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
+          <option value="RECEIVED">موصول شدہ</option>
+          <option value="DISPUTED">متنازع</option>
+          <option value="REJECTED">مسترد شدہ</option>
         </select>
       </div>
 
@@ -285,13 +285,13 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Request No",
-                "Requested By",
-                "Requested At",
-                "Status",
-                "Approved At",
-                "Fulfilled At",
-                "Rejected At",
+                 "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کا وقت",
+                "حالت",
+                "منظوری کا وقت",
+                "مکمل ہونے کا وقت",
+                "مسترد ہونے کا وقت",
                 "",
               ].map((h) => (
                 <th

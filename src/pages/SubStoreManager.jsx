@@ -210,13 +210,13 @@ export default function SubStoreManager() {
           onChange={(e) => setFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
+<option value="">تمام حالتیں</option>
+<option value="PENDING">زیر التواء</option>
+<option value="APPROVED">منظور شدہ</option>
+<option value="REJECTED">مسترد شدہ</option>
+<option value="FULFILLED">مکمل شدہ</option>
+<option value="RECEIVED">وصول شدہ</option>
+<option value="DISPUTED">متنازع</option>
         </select>
       </div>
 
@@ -225,13 +225,13 @@ export default function SubStoreManager() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Request No",
-                "Requested By",
-                "Requested At",
-                "Status",
-                "Approved At",
-                "Fulfilled At",
-                "Actions",
+                 "درخواست نمبر",
+  "درخواست کنندہ",
+  "درخواست کی تاریخ",
+  "حالت",
+  "منظوری کی تاریخ",
+  "تکمیل کی تاریخ",
+  "عملیات"
               ].map((h) => (
                 <th
                   key={h}
@@ -391,28 +391,28 @@ export default function SubStoreManager() {
                                     Items
                                   </div>
                                   <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2 pr-4">
-                                          Item No
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          Item Name
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          UOM
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          Requested
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          Approved
-                                        </th>
-                                        <th className="text-center pb-2">
-                                          Fulfilled
-                                        </th>
-                                      </tr>
-                                    </thead>
+                                  <thead>
+  <tr className="border-b border-gray-200 text-gray-400 text-xs">
+    <th className="text-left pb-2 pr-4">
+      آئٹم نمبر
+    </th>
+    <th className="text-left pb-2 pr-4">
+      آئٹم کا نام
+    </th>
+    <th className="text-left pb-2 pr-4">
+      اکائی
+    </th>
+    <th className="text-center pb-2 pr-4">
+      درخواست شدہ
+    </th>
+    <th className="text-center pb-2 pr-4">
+      منظور شدہ
+    </th>
+    <th className="text-center pb-2">
+      مکمل شدہ
+    </th>
+  </tr>
+</thead>
                                     <tbody>
                                       {(detail.items || []).map((i) => (
                                         <tr

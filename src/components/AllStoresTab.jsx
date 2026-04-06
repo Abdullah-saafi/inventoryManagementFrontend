@@ -80,10 +80,10 @@ export default function AllStoresTab() {
           onChange={(e) => setTypeFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
         >
-          <option value="">All Types</option>
-          <option value="HEAD_OFFICE">Head Office</option>
-          <option value="MAIN_STORE">Main Store</option>
-          <option value="SUB_STORE">Sub Store</option>
+          <option value="">تمام اسٹورز</option>
+          <option value="HEAD_OFFICE">ہیڈ آفس</option>
+          <option value="MAIN_STORE">مین اسٹور</option>
+          <option value="SUB_STORE">سب اسٹور</option>
         </select>
         {hasFilters && (
           <button

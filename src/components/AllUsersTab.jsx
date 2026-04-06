@@ -88,7 +88,7 @@ export default function AllUsersTab() {
           onChange={(e) => setRoleFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
         >
-          <option value="">All Roles</option>
+          <option value="">تمام شعبہ جات</option>
           {ROLES.map((r) => (
             <option key={r.value} value={r.value}>{r.label}</option>
           ))}
@@ -98,7 +98,7 @@ export default function AllUsersTab() {
           onChange={(e) => setStoreFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm"
         >
-          <option value="">All Stores</option>
+          <option value="">تمام اسٹورز</option>
           {uniqueStoreNames.map((n) => (
             <option key={n} value={n}>{n}</option>
           ))}

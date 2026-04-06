@@ -73,16 +73,16 @@ export default function AddUserTab() {
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Role *</label>
+            <label className={labelClass}>شعبہ</label>
             <select name="role" value={form.role} onChange={handleChange} className={inputClass}>
-              <option value="">Select Role</option>
+              <option value="">شعبہ منتخب کریں</option>
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className={labelClass}>Store / Branch *</label>
+            <label className={labelClass}>اسٹور / شاخ</label>
             <select
               name="store_id"
               value={form.store_id}
@@ -100,23 +100,23 @@ export default function AddUserTab() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Full Name *</label>
-            <input name="name" value={form.name} onChange={handleChange} autoComplete="off" placeholder="Ahmed Khan" className={inputClass} />
+            <label className={labelClass}>پورا نام *</label>
+            <input name="name" value={form.name} onChange={handleChange} autoComplete="off" placeholder="Abdullah Saafi" className={inputClass} />
           </div>
           <div>
-            <label className={labelClass}>Email Address *</label>
+            <label className={labelClass}>ای میل ایڈریس *</label>
             <input type="email" name="email" autoComplete="new-password" value={form.email} onChange={handleChange} placeholder="ahmed@company.com" className={inputClass} />
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="relative">
-            <label className={labelClass}>Password *</label>
+            <label className={labelClass}>پاس ورڈ *</label>
             <input type={showPass ? "text" : "password"} name="password" autoComplete="new-password" value={form.password} onChange={handleChange} className={inputClass + " pr-10"} />
             <button type="button" onClick={() => setShowPass(!showPass)} className="absolute bottom-2.5 right-3 text-gray-400 hover:text-emerald-500">{showPass ? <EyeOpen /> : <EyeClosed />}</button>
           </div>
           <div className="relative">
-            <label className={labelClass}>Confirm Password *</label>
+            <label className={labelClass}>پاس ورڈ کی تصدیق *</label>
             <input type={showConfirm ? "text" : "password"} name="confirmPassword" autoComplete="new-password" value={form.confirmPassword} onChange={handleChange} className={inputClass + " pr-10"} />
             <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute bottom-2.5 right-3 text-gray-400 hover:text-emerald-500">{showConfirm ? <EyeOpen /> : <EyeClosed />}</button>
           </div>

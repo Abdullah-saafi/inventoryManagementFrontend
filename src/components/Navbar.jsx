@@ -6,20 +6,20 @@ import moment from "moment-hijri";
 import { useState } from "react";
 
 const links = [
-  { to: "/substore-staff", label: "Sub Store Staff", roles: ["sub-store"] },
+  { to: "/substore-staff", label: "اسٹور", roles: ["sub-store"] },
   {
     to: "/substore-manager",
-    label: "Sub Store Manager",
+    label: "اسٹور نگران",
     roles: ["sub-store-approver"],
   },
-  { to: "/mainstore", label: "Main Store", roles: ["main-store"] },
+  { to: "/mainstore", label: "مرکزی اسٹور", roles: ["main-store"] },
   {
     to: "/mainstore-approver",
-    label: "Main Store Approver",
+    label: "مرکزی اسٹور نگران",
     roles: ["main-store-approver"],
   },
-  { to: "/headoffice", label: "Head Office", roles: ["headoffice"] },
-  { to: "/admin", label: "Admin Panel", roles: ["admin"] },
+  { to: "/headoffice", label: "مرکزی دفتر", roles: ["headoffice"] },
+  { to: "/admin", label: "انتظامی دفتر", roles: ["admin"] },
 ];
 
 export default function Navbar() {
@@ -64,8 +64,9 @@ export default function Navbar() {
       <div className="  px-5 flex items-center justify-between h-15">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <span className="text-gray-900 font-bold text-green-500 tracking-wide text-xl">
-            Baitusslam Inventory System
+          <span className=" font-bold text-green-500 tracking-wide text-xl">
+            Jamia Baitussalam
+
           </span>
         </div>
 
@@ -110,7 +111,7 @@ export default function Navbar() {
         {/* Badge */}
         <div className="flex items-center ">
           <span className="text-xs text-gray-500 font-mono flex flex-col items-center ">
-            <span>Assalam-o-Alaikum</span>
+            <span>اسلام علیکم</span>
             <span className="font-bold text-md">{auth.username}</span>
             <span className="font-medium text-xs border bg-gray-100 border-gray-200 rounded">
               {auth.role}
@@ -120,7 +121,7 @@ export default function Navbar() {
         </div>
         <div className="date text-xs text-gray-500 font-mono flex flex-col items-center ">
           <p>Gregorian: {date.toDateString()}</p>
-          <p>Hijri: {hijriDate}</p>
+          <p>ہجری: {hijriDate}</p>
         </div>
       </div>
     </nav>

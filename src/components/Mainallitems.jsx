@@ -121,7 +121,7 @@ export default function MainAllItems({
           }}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Categories</option>
+          <option value="">تمام زمروں</option>
           {categories.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -144,7 +144,7 @@ export default function MainAllItems({
           onClick={openAddItem}
           className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
         >
-          <span className="text-base leading-none">+</span> Add Item
+          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
         </button>
       </div>
 
@@ -154,15 +154,15 @@ export default function MainAllItems({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Item No",
-                "Name",
-                "Category",
-                "UOM",
-                "Main Store Stock",
-                "Sent to Sub-Stores",
-                "Remaining Stock",
-                "Min Stock",
-                "Status",
+        "آئٹم نمبر",
+  "نام",
+  "زمرہ",
+  "اکائی",
+  "مرکزی اسٹور کا اسٹاک",
+  "ذیلی اسٹورز کو بھیجا گیا",
+  "باقی اسٹاک",
+  "کم از کم اسٹاک",
+  "حالت"
               ].map((h) => (
                 <th
                   key={h}
@@ -324,7 +324,7 @@ export default function MainAllItems({
             <div className="px-5 py-4 space-y-4">
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Item No{" "}
+                  اشیاء نمبر{" "}
                   <span className="text-gray-400 font-normal normal-case">
                     (auto-generated, editable)
                   </span>
@@ -348,7 +348,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Item Name *
+                   اشیاء  کا نام
                 </label>
                 <input
                   value={newItem.item_name}
@@ -375,7 +375,7 @@ export default function MainAllItems({
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Category
+                    زمرہ
                   </label>
                   <input
                     value={newItem.category}
@@ -390,7 +390,7 @@ export default function MainAllItems({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Initial Quantity
+                    ابتدائی مقدار
                   </label>
                   <input
                     type="number"
@@ -408,7 +408,7 @@ export default function MainAllItems({
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Min Stock
+                    کم از کم اسٹاک
                   </label>
                   <input
                     type="number"
@@ -427,7 +427,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Store *
+                 اسٹور*
                 </label>
                 <select
                   value={newItem.store_id}
@@ -436,7 +436,7 @@ export default function MainAllItems({
                   }
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 >
-                  <option value="">Select store</option>
+                  <option value="">اسٹور منتخب کریں</option>
                   {mainStores.map((s) => (
                     <option key={s.store_id} value={s.store_id}>
                       {s.store_name}

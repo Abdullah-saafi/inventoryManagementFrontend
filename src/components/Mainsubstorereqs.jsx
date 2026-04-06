@@ -290,16 +290,16 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
-            <th className="text-left pb-2 pr-4">Item No</th>
-            <th className="text-left pb-2 pr-4">Item Name</th>
-            <th className="text-left pb-2 pr-4">UOM</th>
-            <th className="text-center pb-2 pr-4">Requested</th>
-            <th className="text-center pb-2 pr-4">Approved</th>
-            <th className="text-center pb-2 pr-4">Fulfilled</th>
+            <th className="text-left pb-2 pr-4">آئٹم نمبر</th>
+            <th className="text-left pb-2 pr-4">آئٹم کا نام</th>
+            <th className="text-left pb-2 pr-4">پیمائش کی اکائی</th>
+            <th className="text-center pb-2 pr-4">درخواست کردہ</th>
+            <th className="text-center pb-2 pr-4">منظور شدہ</th>
+            <th className="text-center pb-2 pr-4">مکمل شدہ</th>
             {hasGRN && (
               <>
-                <th className="text-center pb-2 pr-4">Received</th>
-                <th className="text-center pb-2">Condition</th>
+                <th className="text-center pb-2 pr-4">موصول شدہ</th>
+                <th className="text-center pb-2">حالت</th>
               </>
             )}
           </tr>
@@ -471,14 +471,14 @@ const handleFulfill = async (requestId, status) => {
           onChange={(e) => setReqFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
-          <option value="CLOSED">Closed</option>
+  <option value="">تمام حالتیں</option>
+<option value="PENDING">زیر التواء</option>
+<option value="APPROVED">منظور شدہ</option>
+<option value="REJECTED">مسترد شدہ</option>
+<option value="FULFILLED">مکمل شدہ</option>
+<option value="RECEIVED">وصول شدہ</option>
+<option value="DISPUTED">متنازع</option>
+<option value="CLOSED">بند شدہ</option>
         </select>
       </div>
 
@@ -488,15 +488,15 @@ const handleFulfill = async (requestId, status) => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Request No",
-                "From",
-                "To",
-                "Requested By",
-                "Approved By",
-                "Fulfilled By",
-                "Requested At",
-                "Fulfilled At",
-                "Status",
+                 "درخواست نمبر",
+  "اسٹور سے",
+    " مرکزی اسٹور کو   ",
+  "درخواست کنندہ",
+  "منظور کنندہ",
+  "مکمل کرنے والا",
+  "درخواست کی تاریخ",
+  "تکمیل کی تاریخ",
+  "حالت",
                 "",
               ].map((h) => (
                 <th
@@ -582,7 +582,7 @@ const handleFulfill = async (requestId, status) => {
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
-                            {isExpanded ? "▲ Hide" : "▼ Details"}
+                            {isExpanded ? "▲ چھپائیں" : "▼ تفصیلات"}
                           </span>
                           {r.status === "APPROVED" && (
                          <button

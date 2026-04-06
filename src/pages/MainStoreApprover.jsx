@@ -197,11 +197,11 @@ export default function MainStoreApprover() {
           onChange={(e) => setFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
+             <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
         </select>
       </div>
 
@@ -210,7 +210,8 @@ export default function MainStoreApprover() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Request No", "Requested By", "Requested At", "Status", "Approved At", "Fulfilled At", "Actions"].map((h) => (
+              {["درخواست نمبر", "درخواست کنندہ", "درخواست کا وقت", "حالت", "منظوری کا وقت", "مکمل ہونے کا وقت", "عملیات"
+].map((h) => (
                 <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
                   {h}
                 </th>
@@ -252,7 +253,8 @@ export default function MainStoreApprover() {
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
-                            {isExpanded ? "▲ Hide" : "▼ Details"}
+                            {isExpanded ? "▲ چھپائیں" : "▼ تفصیلات"
+}
                           </span>
                           {r.status === "PENDING" && (
                             <>
@@ -306,16 +308,15 @@ export default function MainStoreApprover() {
 
                                 {/* Items table */}
                                 <div>
-                                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">Items</div>
                                   <table className="w-full text-sm">
                                     <thead>
                                       <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2 pr-4">Item No</th>
-                                        <th className="text-left pb-2 pr-4">Item Name</th>
-                                        <th className="text-left pb-2 pr-4">UOM</th>
-                                        <th className="text-center pb-2 pr-4">Requested</th>
-                                        <th className="text-center pb-2 pr-4">Approved</th>
-                                        <th className="text-center pb-2">Fulfilled</th>
+                                        <th className="text-left pb-2 pr-4">چیز نمبر</th>
+                                        <th className="text-left pb-2 pr-4">چیز کا نام</th>
+                                        <th className="text-left pb-2 pr-4">پیمائش کی اکائی</th>
+                                        <th className="text-center pb-2 pr-4">درخواست کردہ</th>
+                                        <th className="text-center pb-2 pr-4">منظور شدہ</th>
+                                        <th className="text-center pb-2">مکمل شدہ</th>
                                       </tr>
                                     </thead>
                                     <tbody>

@@ -162,19 +162,6 @@ export default function SubStoreManager() {
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
   return (
@@ -210,13 +197,13 @@ export default function SubStoreManager() {
           onChange={(e) => setFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-<option value="">تمام حالتیں</option>
-<option value="PENDING">زیر التواء</option>
-<option value="APPROVED">منظور شدہ</option>
-<option value="REJECTED">مسترد شدہ</option>
-<option value="FULFILLED">مکمل شدہ</option>
-<option value="RECEIVED">وصول شدہ</option>
-<option value="DISPUTED">متنازع</option>
+          <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
+          <option value="RECEIVED">وصول شدہ</option>
+          <option value="DISPUTED">متنازع</option>
         </select>
       </div>
 
@@ -225,13 +212,13 @@ export default function SubStoreManager() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                 "درخواست نمبر",
-  "درخواست کنندہ",
-  "درخواست کی تاریخ",
-  "حالت",
-  "منظوری کی تاریخ",
-  "تکمیل کی تاریخ",
-  "عملیات"
+                "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کی تاریخ",
+                "حالت",
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -243,7 +230,23 @@ export default function SubStoreManager() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
@@ -391,28 +394,28 @@ export default function SubStoreManager() {
                                     Items
                                   </div>
                                   <table className="w-full text-sm">
-                                  <thead>
-  <tr className="border-b border-gray-200 text-gray-400 text-xs">
-    <th className="text-left pb-2 pr-4">
-      آئٹم نمبر
-    </th>
-    <th className="text-left pb-2 pr-4">
-      آئٹم کا نام
-    </th>
-    <th className="text-left pb-2 pr-4">
-      اکائی
-    </th>
-    <th className="text-center pb-2 pr-4">
-      درخواست شدہ
-    </th>
-    <th className="text-center pb-2 pr-4">
-      منظور شدہ
-    </th>
-    <th className="text-center pb-2">
-      مکمل شدہ
-    </th>
-  </tr>
-</thead>
+                                    <thead>
+                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                                        <th className="text-left pb-2 pr-4">
+                                          آئٹم نمبر
+                                        </th>
+                                        <th className="text-left pb-2 pr-4">
+                                          آئٹم کا نام
+                                        </th>
+                                        <th className="text-left pb-2 pr-4">
+                                          اکائی
+                                        </th>
+                                        <th className="text-center pb-2 pr-4">
+                                          درخواست شدہ
+                                        </th>
+                                        <th className="text-center pb-2 pr-4">
+                                          منظور شدہ
+                                        </th>
+                                        <th className="text-center pb-2">
+                                          مکمل شدہ
+                                        </th>
+                                      </tr>
+                                    </thead>
                                     <tbody>
                                       {(detail.items || []).map((i) => (
                                         <tr

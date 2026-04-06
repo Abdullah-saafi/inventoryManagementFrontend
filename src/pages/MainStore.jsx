@@ -71,18 +71,6 @@ export default function MainStore() {
   const pendingHo       = hoRequests.filter((r) => r.status === "PENDING").length;
 
   // ── Early returns ─────────────────────────────────────────────────────────
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
 
   return (
     <div>
@@ -126,6 +114,8 @@ export default function MainStore() {
           mainStores={mainStores}
           onRefresh={refresh}
           showToast={showToast}
+          loading={loading}
+          error={error}
         />
       )}
 

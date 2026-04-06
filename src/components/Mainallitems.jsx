@@ -19,6 +19,8 @@ export default function MainAllItems({
   mainStores,
   onRefresh,
   showToast,
+  loading,
+  error,
 }) {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -154,15 +156,15 @@ export default function MainAllItems({
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-        "آئٹم نمبر",
-  "نام",
-  "زمرہ",
-  "اکائی",
-  "مرکزی اسٹور کا اسٹاک",
-  "ذیلی اسٹورز کو بھیجا گیا",
-  "باقی اسٹاک",
-  "کم از کم اسٹاک",
-  "حالت"
+                "آئٹم نمبر",
+                "نام",
+                "زمرہ",
+                "اکائی",
+                "مرکزی اسٹور کا اسٹاک",
+                "ذیلی اسٹورز کو بھیجا گیا",
+                "باقی اسٹاک",
+                "کم از کم اسٹاک",
+                "حالت",
               ].map((h) => (
                 <th
                   key={h}
@@ -174,7 +176,23 @@ export default function MainAllItems({
             </tr>
           </thead>
           <tbody>
-            {paginatedItems.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedItems.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-12 text-gray-400">
                   No items found.
@@ -348,7 +366,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                   اشیاء  کا نام
+                  اشیاء کا نام
                 </label>
                 <input
                   value={newItem.item_name}
@@ -427,7 +445,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                 اسٹور*
+                  اسٹور*
                 </label>
                 <select
                   value={newItem.store_id}

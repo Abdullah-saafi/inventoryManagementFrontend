@@ -259,20 +259,6 @@ export default function SubStore() {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
-  if (pageLoading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
@@ -338,7 +324,6 @@ export default function SubStore() {
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
           نئی درخواست
-
         </button>
       </div>
 
@@ -398,7 +383,23 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {pageLoading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
@@ -531,7 +532,6 @@ export default function SubStore() {
                               )}
 
                               <div>
-                              
                                 <table className="w-full text-sm">
                                   <thead>
                                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
@@ -771,7 +771,7 @@ export default function SubStore() {
                     onClick={addLine}
                     className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
                   >
-                   + صف شامل کریں
+                    + صف شامل کریں
                   </button>
                 </div>
 
@@ -967,7 +967,7 @@ export default function SubStore() {
 
                           <div className="col-span-2">
                             <label className="text-gray-500 text-xs mb-1 block">
-                             مقدار
+                              مقدار
                             </label>
                             <input
                               type="number"
@@ -995,7 +995,7 @@ export default function SubStore() {
                   onClick={() => setShowCreate(false)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
-               منسوخ کریں
+                  منسوخ کریں
                 </button>
                 <button
                   onClick={handleCreate}

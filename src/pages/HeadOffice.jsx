@@ -4,23 +4,26 @@ import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import API from "../services/api";
 
-const fulfillRequest  = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-const acceptReturn    = (id, data) => API.patch(`/requests/${id}/accept-return`, data);
-const resendItems     = (id, data) => API.patch(`/requests/${id}/resend`, data);
+const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
+const acceptReturn = (id, data) =>
+  API.patch(`/requests/${id}/accept-return`, data);
+const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
   const styles = {
-    PENDING:  "bg-yellow-50 text-yellow-600 border border-yellow-300",
+    PENDING: "bg-yellow-50 text-yellow-600 border border-yellow-300",
     APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
     REJECTED: "bg-red-50 text-red-600 border border-red-300",
-    FULFILLED:"bg-blue-50 text-blue-600 border border-blue-300",
+    FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
     RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300",
     DISPUTED: "bg-amber-50 text-amber-600 border border-amber-300",
-    CLOSED:   "bg-gray-100 text-gray-500 border border-gray-300",
+    CLOSED: "bg-gray-100 text-gray-500 border border-gray-300",
   };
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}>
+    <span
+      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}
+    >
       {status}
     </span>
   );
@@ -31,7 +34,9 @@ const DateTimeCell = ({ ts }) => {
   const d = new Date(ts);
   return (
     <div>
-      <div className="text-gray-600 text-xs font-mono">{d.toLocaleDateString()}</div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
       <div className="text-gray-400 text-xs font-mono">
         {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
       </div>
@@ -47,21 +52,29 @@ const ConditionBadge = ({ condition }) => {
     MISSING: "bg-red-50 border-red-300 text-red-700",
   };
   return (
-    <span className={`px-1.5 py-0.5 rounded border text-xs font-bold font-mono ml-1 ${styles[condition] || "bg-gray-50 border-gray-300 text-gray-500"}`}>
+    <span
+      className={`px-1.5 py-0.5 rounded border text-xs font-bold font-mono ml-1 ${styles[condition] || "bg-gray-50 border-gray-300 text-gray-500"}`}
+    >
       {condition}
     </span>
   );
 };
 
 // ── Dispute Resolution Panel (mirrors MainSubStoreReqs exactly) ───────────────
-const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName }) => {
+const DisputeResolutionPanel = ({
+  request,
+  onResolved,
+  showToast,
+  managerName,
+}) => {
   const [processing, setProcessing] = useState(null);
-  const [confirmed, setConfirmed]   = useState(null);
+  const [confirmed, setConfirmed] = useState(null);
 
   const disputedItems = (request.items || []).filter(
     (i) =>
       (i.item_condition && i.item_condition !== "OK") ||
-      (i.received_qty != null && Number(i.received_qty) < Number(i.fulfilled_qty))
+      (i.received_qty != null &&
+        Number(i.received_qty) < Number(i.fulfilled_qty)),
   );
 
   const handleAcceptReturn = async () => {
@@ -71,7 +84,10 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
       showToast("Return accepted — stock restored to Head Office");
       onResolved();
     } catch (e) {
-      showToast(e.response?.data?.message || "Failed to accept return", "error");
+      showToast(
+        e.response?.data?.message || "Failed to accept return",
+        "error",
+      );
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -81,11 +97,18 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
   const handleResend = async () => {
     setProcessing("resend");
     try {
-      const res = await resendItems(request.request_id, { resolved_by_name: managerName });
-      showToast(res.data?.message || "New request created and ready to fulfill");
+      const res = await resendItems(request.request_id, {
+        resolved_by_name: managerName,
+      });
+      showToast(
+        res.data?.message || "New request created and ready to fulfill",
+      );
       onResolved();
     } catch (e) {
-      showToast(e.response?.data?.message || "Failed to create resend request", "error");
+      showToast(
+        e.response?.data?.message || "Failed to create resend request",
+        "error",
+      );
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -96,7 +119,9 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
     <div className="border border-amber-200 rounded-xl overflow-hidden">
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-amber-400" />
-        <span className="text-amber-700 text-sm font-bold">Dispute Resolution Required</span>
+        <span className="text-amber-700 text-sm font-bold">
+          Dispute Resolution Required
+        </span>
       </div>
 
       <div className="p-4 space-y-4 bg-white">
@@ -134,7 +159,9 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
                     <span className="font-mono text-emerald-600 text-xs font-bold w-20 shrink-0">
                       {i.item_no}
                     </span>
-                    <span className="text-gray-700 text-sm flex-1">{i.item_name}</span>
+                    <span className="text-gray-700 text-sm flex-1">
+                      {i.item_name}
+                    </span>
                     {shortfall > 0 && (
                       <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
                         {shortfall} {i.item_uom} short
@@ -192,19 +219,27 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
             </button>
           </div>
         ) : (
-          <div className={`rounded-xl border-2 p-4 space-y-3 ${
-            confirmed === "return" ? "bg-emerald-50 border-emerald-200" : "bg-blue-50 border-blue-200"
-          }`}>
-            <div className={`text-sm font-bold ${
-              confirmed === "return" ? "text-emerald-700" : "text-blue-700"
-            }`}>
+          <div
+            className={`rounded-xl border-2 p-4 space-y-3 ${
+              confirmed === "return"
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-blue-50 border-blue-200"
+            }`}
+          >
+            <div
+              className={`text-sm font-bold ${
+                confirmed === "return" ? "text-emerald-700" : "text-blue-700"
+              }`}
+            >
               {confirmed === "return"
                 ? "Confirm: Accept return and restore stock?"
                 : "Confirm: Create a new resend request?"}
             </div>
-            <div className={`text-xs ${
-              confirmed === "return" ? "text-emerald-600" : "text-blue-600"
-            }`}>
+            <div
+              className={`text-xs ${
+                confirmed === "return" ? "text-emerald-600" : "text-blue-600"
+              }`}
+            >
               {confirmed === "return"
                 ? "Missing quantities will be added back to Head Office inventory and this case will be closed."
                 : `A new APPROVED request will be created for the ${disputedItems.length} affected item(s). The original dispute will be closed.`}
@@ -218,7 +253,9 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
                 ← Back
               </button>
               <button
-                onClick={confirmed === "return" ? handleAcceptReturn : handleResend}
+                onClick={
+                  confirmed === "return" ? handleAcceptReturn : handleResend
+                }
                 disabled={!!processing}
                 className={`flex-1 px-3 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 transition-colors ${
                   confirmed === "return"
@@ -229,8 +266,8 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
                 {processing
                   ? "Processing…"
                   : confirmed === "return"
-                  ? "Yes, Accept Return & Close"
-                  : "Yes, Create Resend Request"}
+                    ? "Yes, Accept Return & Close"
+                    : "Yes, Create Resend Request"}
               </button>
             </div>
           </div>
@@ -244,21 +281,21 @@ const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName })
 export default function HeadOffice() {
   const { auth } = useAuth();
 
-  const [requests, setRequests]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
-  const [toast, setToast]           = useState(null);
-  const [filter, setFilter]         = useState("");
-  const [detail, setDetail]         = useState(null);
-  const [detailLoad, setDL]         = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+  const [filter, setFilter] = useState("");
+  const [detail, setDetail] = useState(null);
+  const [detailLoad, setDL] = useState(false);
 
   // Fulfill modal state
-  const [fulfillModal, setFulfillModal]   = useState(null);
-  const [fulfillMode, setFulfillMode]     = useState("fulfill");
+  const [fulfillModal, setFulfillModal] = useState(null);
+  const [fulfillMode, setFulfillMode] = useState("fulfill");
   const [fulfilledItems, setFulfilledItems] = useState([]);
   const [fulfillerName, setFulfillerName] = useState("");
-  const [fulfillNotes, setFulfillNotes]   = useState("");
-  const [actioning, setActioning]         = useState(false);
+  const [fulfillNotes, setFulfillNotes] = useState("");
+  const [actioning, setActioning] = useState(false);
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -279,7 +316,9 @@ export default function HeadOffice() {
     }
   };
 
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => {
+    load();
+  }, [filter]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -304,7 +343,7 @@ export default function HeadOffice() {
         (res.data.data.items || []).map((i) => ({
           ...i,
           fulfilled_qty: i.approved_qty ?? i.requested_qty,
-        }))
+        })),
       );
       setFulfillModal(res.data.data);
       setFulfillMode(mode);
@@ -331,7 +370,7 @@ export default function HeadOffice() {
       showToast(
         fulfillMode === "refulfill"
           ? "Re-dispatched — Main Store will verify the corrected delivery"
-          : "Request fulfilled — Main Store will verify delivery"
+          : "Request fulfilled — Main Store will verify delivery",
       );
       setFulfillModal(null);
       setFulfillerName("");
@@ -339,7 +378,10 @@ export default function HeadOffice() {
       setFulfilledItems([]);
       load();
     } catch (e) {
-      showToast(e.response?.data?.message || "Error fulfilling request", "error");
+      showToast(
+        e.response?.data?.message || "Error fulfilling request",
+        "error",
+      );
     } finally {
       setActioning(false);
     }
@@ -350,21 +392,8 @@ export default function HeadOffice() {
     load();
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
-  const disputedCount  = requests.filter((r) => r.status === "DISPUTED").length;
+  const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
 
   return (
     <div>
@@ -382,7 +411,8 @@ export default function HeadOffice() {
       {pendingFulfill > 0 && (
         <div className="mb-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-emerald-700 text-sm font-semibold">
-            {pendingFulfill} approved request{pendingFulfill > 1 ? "s" : ""} ready to fulfill
+            {pendingFulfill} approved request{pendingFulfill > 1 ? "s" : ""}{" "}
+            ready to fulfill
           </span>
           <button
             onClick={() => setFilter("APPROVED")}
@@ -401,7 +431,8 @@ export default function HeadOffice() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse inline-block" />
             <span className="text-amber-700 text-sm font-semibold">
-              {disputedCount} disputed deliver{disputedCount > 1 ? "ies" : "y"} — Main Store reported issues
+              {disputedCount} disputed deliver{disputedCount > 1 ? "ies" : "y"}{" "}
+              — Main Store reported issues
             </span>
           </div>
           <span className="text-amber-500 text-xs">View →</span>
@@ -431,18 +462,46 @@ export default function HeadOffice() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["درخواست نمبر", "درخواست کنندہ", "درخواست کا وقت", "حالت", "منظوری کا وقت", "مکمل ہونے کا وقت", "عملیات"
-].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">
+              {[
+                "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کا وقت",
+                "حالت",
+                "منظوری کا وقت",
+                "مکمل ہونے کا وقت",
+                "عملیات",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">No requests found.</td>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12 text-gray-400">
+                  No requests found.
+                </td>
               </tr>
             ) : (
               requests.map((r) => {
@@ -450,25 +509,31 @@ export default function HeadOffice() {
                 const canFulfill = r.status === "APPROVED";
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
-                const isClosed   = r.status === "CLOSED";
-                const hasGRN     = isDisputed || isReceived || isClosed;
+                const isClosed = r.status === "CLOSED";
+                const hasGRN = isDisputed || isReceived || isClosed;
 
                 return (
                   <>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        canFulfill ? "bg-emerald-50/30 hover:bg-emerald-50"
-                        : isDisputed ? "bg-amber-50/40 hover:bg-amber-50"
-                        : isReceived ? "bg-teal-50/30 hover:bg-teal-50"
-                        : isClosed   ? "bg-gray-50/50 hover:bg-gray-100"
-                        : "hover:bg-gray-50"
+                        canFulfill
+                          ? "bg-emerald-50/30 hover:bg-emerald-50"
+                          : isDisputed
+                            ? "bg-amber-50/40 hover:bg-amber-50"
+                            : isReceived
+                              ? "bg-teal-50/30 hover:bg-teal-50"
+                              : isClosed
+                                ? "bg-gray-50/50 hover:bg-gray-100"
+                                : "hover:bg-gray-50"
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-emerald-600 text-xs font-bold">{r.request_no}</span>
+                          <span className="font-mono text-emerald-600 text-xs font-bold">
+                            {r.request_no}
+                          </span>
                           {r.item_count > 0 && (
                             <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
@@ -486,20 +551,34 @@ export default function HeadOffice() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{r.requested_by_name || "—"}</td>
-                      <td className="px-4 py-3"><DateTimeCell ts={r.requested_at || r.created_at} /></td>
-                      <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
-                      <td className="px-4 py-3"><DateTimeCell ts={r.approved_at} /></td>
-                      <td className="px-4 py-3"><DateTimeCell ts={r.fulfilled_at} /></td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {r.requested_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.requested_at || r.created_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={r.status} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.approved_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.fulfilled_at} />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
-                          <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
-                            {isExpanded ? "▲ Hide" : "▼ تفصیلات"
-}
+                          <span
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                          >
+                            {isExpanded ? "▲ Hide" : "▼ تفصیلات"}
                           </span>
                           {canFulfill && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); openFulfill(r, "fulfill"); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openFulfill(r, "fulfill");
+                              }}
                               className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 font-semibold"
                             >
                               Fulfill
@@ -507,7 +586,10 @@ export default function HeadOffice() {
                           )}
                           {isDisputed && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); openFulfill(r, "refulfill"); }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openFulfill(r, "refulfill");
+                              }}
                               className="text-xs bg-amber-500 hover:bg-amber-400 text-white rounded px-2 py-1 ml-1 font-semibold"
                             >
                               Re-dispatch
@@ -522,10 +604,13 @@ export default function HeadOffice() {
                       <tr
                         key={r.request_id + "-detail"}
                         className={`border-b-2 ${
-                          isDisputed ? "bg-amber-50/20 border-amber-300"
-                          : isReceived ? "bg-teal-50/20 border-teal-300"
-                          : isClosed   ? "bg-gray-50 border-gray-300"
-                          : "bg-gray-50 border-emerald-200"
+                          isDisputed
+                            ? "bg-amber-50/20 border-amber-300"
+                            : isReceived
+                              ? "bg-teal-50/20 border-teal-300"
+                              : isClosed
+                                ? "bg-gray-50 border-gray-300"
+                                : "bg-gray-50 border-emerald-200"
                         }`}
                       >
                         <td colSpan={7} className="px-6 py-4">
@@ -533,167 +618,248 @@ export default function HeadOffice() {
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
-                          ) : detail && (
-                            <div className="space-y-4">
-
-                              {/* Receipt confirmed banner */}
-                              {isReceived && (
-                                <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
-                                  <div className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">
-                                    ✓ Main Store Confirmed Receipt
+                          ) : (
+                            detail && (
+                              <div className="space-y-4">
+                                {/* Receipt confirmed banner */}
+                                {isReceived && (
+                                  <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
+                                    <div className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">
+                                      ✓ Main Store Confirmed Receipt
+                                    </div>
+                                    {detail.grn_note && (
+                                      <div className="text-teal-700 text-sm">
+                                        {detail.grn_note}
+                                      </div>
+                                    )}
+                                    {detail.grn_at && (
+                                      <div className="text-teal-400 text-xs mt-1">
+                                        {new Date(
+                                          detail.grn_at,
+                                        ).toLocaleString()}
+                                      </div>
+                                    )}
                                   </div>
-                                  {detail.grn_note && <div className="text-teal-700 text-sm">{detail.grn_note}</div>}
-                                  {detail.grn_at && (
-                                    <div className="text-teal-400 text-xs mt-1">{new Date(detail.grn_at).toLocaleString()}</div>
-                                  )}
-                                </div>
-                              )}
+                                )}
 
-                              {/* Closed banner */}
-                              {isClosed && (
-                                <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                                  <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">Case Closed</div>
-                                  <div className="text-gray-600 text-sm">
-                                    Resolution:{" "}
-                                    <span className="font-semibold">
-                                      {detail.resolution === "RETURN_ACCEPTED"
-                                        ? "Return accepted — stock restored"
-                                        : detail.resolution === "RESENT"
-                                        ? "Fresh items resent via new request"
-                                        : detail.resolution}
-                                    </span>
+                                {/* Closed banner */}
+                                {isClosed && (
+                                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                                    <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">
+                                      Case Closed
+                                    </div>
+                                    <div className="text-gray-600 text-sm">
+                                      Resolution:{" "}
+                                      <span className="font-semibold">
+                                        {detail.resolution === "RETURN_ACCEPTED"
+                                          ? "Return accepted — stock restored"
+                                          : detail.resolution === "RESENT"
+                                            ? "Fresh items resent via new request"
+                                            : detail.resolution}
+                                      </span>
+                                    </div>
+                                    {detail.resolved_by_name && (
+                                      <div className="text-gray-400 text-xs mt-1">
+                                        By {detail.resolved_by_name}
+                                      </div>
+                                    )}
+                                    {detail.resolved_at && (
+                                      <div className="text-gray-400 text-xs">
+                                        {new Date(
+                                          detail.resolved_at,
+                                        ).toLocaleString()}
+                                      </div>
+                                    )}
                                   </div>
-                                  {detail.resolved_by_name && (
-                                    <div className="text-gray-400 text-xs mt-1">By {detail.resolved_by_name}</div>
-                                  )}
-                                  {detail.resolved_at && (
-                                    <div className="text-gray-400 text-xs">{new Date(detail.resolved_at).toLocaleString()}</div>
-                                  )}
-                                </div>
-                              )}
+                                )}
 
-                              {detail.notes && (
-                                <div className="bg-white rounded p-3 border border-gray-200">
-                                  <div className="text-gray-400 text-xs mb-1">NOTES</div>
-                                  <div className="text-gray-700 text-sm">{detail.notes}</div>
-                                </div>
-                              )}
+                                {detail.notes && (
+                                  <div className="bg-white rounded p-3 border border-gray-200">
+                                    <div className="text-gray-400 text-xs mb-1">
+                                      NOTES
+                                    </div>
+                                    <div className="text-gray-700 text-sm">
+                                      {detail.notes}
+                                    </div>
+                                  </div>
+                                )}
 
-                              {detail.rejection_reason && (
-                                <div className="bg-red-50 border border-red-200 rounded p-3">
-                                  <div className="text-red-500 text-xs font-semibold mb-1">REJECTION REASON</div>
-                                  <div className="text-red-600 text-sm">{detail.rejection_reason}</div>
-                                </div>
-                              )}
+                                {detail.rejection_reason && (
+                                  <div className="bg-red-50 border border-red-200 rounded p-3">
+                                    <div className="text-red-500 text-xs font-semibold mb-1">
+                                      REJECTION REASON
+                                    </div>
+                                    <div className="text-red-600 text-sm">
+                                      {detail.rejection_reason}
+                                    </div>
+                                  </div>
+                                )}
 
-                              {/* Items table */}
-                              <div>
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                      <th className="text-left pb-2 pr-4">چیز نمبر</th>
-                                      <th className="text-left pb-2 pr-4">چیز کا نام</th>
-                                      <th className="text-left pb-2 pr-4">پیمائش کی اکائی</th>
-                                      <th className="text-center pb-2 pr-4">درخواست کردہ</th>
-                                      <th className="text-center pb-2 pr-4">منظور شدہ</th>
-                                      <th className="text-center pb-2 pr-4">مکمل شدہ</th>
-                                      {hasGRN && (
-                                        <>
-                                          <th className="text-center pb-2 pr-4">موصول شدہ</th>
-                                          <th className="text-center pb-2">حالت</th>
-                                        </>
-                                      )}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {(detail.items || []).map((i) => {
-                                      const hasItemIssue =
-                                        (i.item_condition && i.item_condition !== "OK") ||
-                                        (i.received_qty != null && Number(i.received_qty) < Number(i.fulfilled_qty));
-                                      return (
-                                        <tr
-                                          key={i.request_item_id}
-                                          className={`border-b border-gray-100 ${hasItemIssue ? "bg-amber-50/50" : ""}`}
-                                        >
-                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">{i.item_no}</td>
-                                          <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-                                          <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
-                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">{i.requested_qty}</td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span className={i.approved_qty != null ? "text-emerald-600" : "text-gray-300"}>
-                                              {i.approved_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span className={i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"}>
-                                              {i.fulfilled_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          {hasGRN && (
-                                            <>
-                                              <td className="py-2 pr-4 font-mono text-center">
-                                                <span className={
-                                                  i.received_qty != null
-                                                    ? Number(i.received_qty) < Number(i.fulfilled_qty)
-                                                      ? "text-amber-600 font-bold"
-                                                      : "text-teal-600"
+                                {/* Items table */}
+                                <div>
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
+                                        <th className="text-left pb-2 pr-4">
+                                          چیز نمبر
+                                        </th>
+                                        <th className="text-left pb-2 pr-4">
+                                          چیز کا نام
+                                        </th>
+                                        <th className="text-left pb-2 pr-4">
+                                          پیمائش کی اکائی
+                                        </th>
+                                        <th className="text-center pb-2 pr-4">
+                                          درخواست کردہ
+                                        </th>
+                                        <th className="text-center pb-2 pr-4">
+                                          منظور شدہ
+                                        </th>
+                                        <th className="text-center pb-2 pr-4">
+                                          مکمل شدہ
+                                        </th>
+                                        {hasGRN && (
+                                          <>
+                                            <th className="text-center pb-2 pr-4">
+                                              موصول شدہ
+                                            </th>
+                                            <th className="text-center pb-2">
+                                              حالت
+                                            </th>
+                                          </>
+                                        )}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {(detail.items || []).map((i) => {
+                                        const hasItemIssue =
+                                          (i.item_condition &&
+                                            i.item_condition !== "OK") ||
+                                          (i.received_qty != null &&
+                                            Number(i.received_qty) <
+                                              Number(i.fulfilled_qty));
+                                        return (
+                                          <tr
+                                            key={i.request_item_id}
+                                            className={`border-b border-gray-100 ${hasItemIssue ? "bg-amber-50/50" : ""}`}
+                                          >
+                                            <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                                              {i.item_no}
+                                            </td>
+                                            <td className="py-2 pr-4 text-gray-800">
+                                              {i.item_name}
+                                            </td>
+                                            <td className="py-2 pr-4 text-gray-400 text-xs">
+                                              {i.item_uom}
+                                            </td>
+                                            <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                                              {i.requested_qty}
+                                            </td>
+                                            <td className="py-2 pr-4 font-mono text-center">
+                                              <span
+                                                className={
+                                                  i.approved_qty != null
+                                                    ? "text-emerald-600"
                                                     : "text-gray-300"
-                                                }>
-                                                  {i.received_qty ?? "—"}
-                                                </span>
-                                              </td>
-                                              <td className="py-2 text-center">
-                                                {i.item_condition ? (
-                                                  <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                                                    i.item_condition === "OK"
-                                                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                                      : i.item_condition === "DAMAGED"
-                                                      ? "bg-amber-50 border-amber-300 text-amber-700"
-                                                      : "bg-red-50 border-red-300 text-red-700"
-                                                  }`}>
-                                                    {i.item_condition}
+                                                }
+                                              >
+                                                {i.approved_qty ?? "—"}
+                                              </span>
+                                            </td>
+                                            <td className="py-2 pr-4 font-mono text-center">
+                                              <span
+                                                className={
+                                                  i.fulfilled_qty != null
+                                                    ? "text-blue-600"
+                                                    : "text-gray-300"
+                                                }
+                                              >
+                                                {i.fulfilled_qty ?? "—"}
+                                              </span>
+                                            </td>
+                                            {hasGRN && (
+                                              <>
+                                                <td className="py-2 pr-4 font-mono text-center">
+                                                  <span
+                                                    className={
+                                                      i.received_qty != null
+                                                        ? Number(
+                                                            i.received_qty,
+                                                          ) <
+                                                          Number(
+                                                            i.fulfilled_qty,
+                                                          )
+                                                          ? "text-amber-600 font-bold"
+                                                          : "text-teal-600"
+                                                        : "text-gray-300"
+                                                    }
+                                                  >
+                                                    {i.received_qty ?? "—"}
                                                   </span>
-                                                ) : (
-                                                  <span className="text-gray-300">—</span>
-                                                )}
-                                              </td>
-                                            </>
-                                          )}
-                                        </tr>
-                                      );
-                                    })}
-                                  </tbody>
-                                </table>
+                                                </td>
+                                                <td className="py-2 text-center">
+                                                  {i.item_condition ? (
+                                                    <span
+                                                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
+                                                        i.item_condition ===
+                                                        "OK"
+                                                          ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                                                          : i.item_condition ===
+                                                              "DAMAGED"
+                                                            ? "bg-amber-50 border-amber-300 text-amber-700"
+                                                            : "bg-red-50 border-red-300 text-red-700"
+                                                      }`}
+                                                    >
+                                                      {i.item_condition}
+                                                    </span>
+                                                  ) : (
+                                                    <span className="text-gray-300">
+                                                      —
+                                                    </span>
+                                                  )}
+                                                </td>
+                                              </>
+                                            )}
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+
+                                {/* ── Dispute Resolution Panel (same as MainSubStoreReqs) ── */}
+                                {isDisputed && (
+                                  <DisputeResolutionPanel
+                                    request={detail}
+                                    onResolved={handleResolved}
+                                    showToast={showToast}
+                                    managerName={auth.username}
+                                  />
+                                )}
+
+                                {/* Fulfill button inside expanded panel */}
+                                {canFulfill && (
+                                  <div className="pt-2 border-t border-gray-200">
+                                    <button
+                                      onClick={() => {
+                                        setDetail(null);
+                                        openFulfill(detail, "fulfill");
+                                      }}
+                                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
+                                    >
+                                      Fulfill This Request
+                                    </button>
+                                  </div>
+                                )}
+
+                                {detail.status === "FULFILLED" && (
+                                  <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
+                                    ✓ Fulfilled — waiting for Main Store to
+                                    verify delivery.
+                                  </div>
+                                )}
                               </div>
-
-                              {/* ── Dispute Resolution Panel (same as MainSubStoreReqs) ── */}
-                              {isDisputed && (
-                                <DisputeResolutionPanel
-                                  request={detail}
-                                  onResolved={handleResolved}
-                                  showToast={showToast}
-                                  managerName={auth.username}
-                                />
-                              )}
-
-                              {/* Fulfill button inside expanded panel */}
-                              {canFulfill && (
-                                <div className="pt-2 border-t border-gray-200">
-                                  <button
-                                    onClick={() => { setDetail(null); openFulfill(detail, "fulfill"); }}
-                                    className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
-                                  >
-                                    Fulfill This Request
-                                  </button>
-                                </div>
-                              )}
-
-                              {detail.status === "FULFILLED" && (
-                                <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
-                                  ✓ Fulfilled — waiting for Main Store to verify delivery.
-                                </div>
-                              )}
-                            </div>
+                            )
                           )}
                         </td>
                       </tr>
@@ -709,19 +875,33 @@ export default function HeadOffice() {
       {/* ── Fulfill / Re-dispatch Modal ── */}
       {fulfillModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/30" onClick={() => setFulfillModal(null)} />
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setFulfillModal(null)}
+          />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
               <h2 className="text-gray-900 font-bold">
-                {fulfillMode === "refulfill" ? "Re-dispatch" : "Fulfill"} — {fulfillModal.request_no}
+                {fulfillMode === "refulfill" ? "Re-dispatch" : "Fulfill"} —{" "}
+                {fulfillModal.request_no}
               </h2>
-              <button onClick={() => setFulfillModal(null)} className="text-gray-400 hover:text-gray-700 text-xl">✕</button>
+              <button
+                onClick={() => setFulfillModal(null)}
+                className="text-gray-400 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
             </div>
             <div className="p-5 space-y-4">
               {fulfillMode === "refulfill" ? (
                 <div className="bg-amber-50 border border-amber-200 rounded p-3 text-amber-700 text-xs space-y-1">
-                  <div className="font-bold">⚠ Responding to dispute from Main Store</div>
-                  <div>Review the reported issues and re-dispatch corrected quantities. Main Store will verify again.</div>
+                  <div className="font-bold">
+                    ⚠ Responding to dispute from Main Store
+                  </div>
+                  <div>
+                    Review the reported issues and re-dispatch corrected
+                    quantities. Main Store will verify again.
+                  </div>
                   {fulfillModal.grn_note && (
                     <div className="mt-2 pt-2 border-t border-amber-200 italic">
                       Main Store said: "{fulfillModal.grn_note}"
@@ -730,13 +910,17 @@ export default function HeadOffice() {
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
-                  Dispatch items to <strong>Main Store</strong>. Adjust quantities if needed. Main Store will verify receipt.
+                  Dispatch items to <strong>Main Store</strong>. Adjust
+                  quantities if needed. Main Store will verify receipt.
                 </div>
               )}
 
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  {fulfillMode === "refulfill" ? "Re-dispatched By" : "Fulfilled By"} *
+                  {fulfillMode === "refulfill"
+                    ? "Re-dispatched By"
+                    : "Fulfilled By"}{" "}
+                  *
                 </label>
                 <input
                   value={fulfillerName}
@@ -747,30 +931,47 @@ export default function HeadOffice() {
 
               <div>
                 <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                  {fulfillMode === "refulfill" ? "Corrected dispatch quantities" : "Dispatch quantities"}
+                  {fulfillMode === "refulfill"
+                    ? "Corrected dispatch quantities"
+                    : "Dispatch quantities"}
                 </div>
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
                       <th className="text-left pb-2">Item</th>
                       <th className="text-center pb-2">Approved</th>
-                      <th className="text-center pb-2">{fulfillMode === "refulfill" ? "Re-dispatch Qty" : "Fulfill Qty"}</th>
+                      <th className="text-center pb-2">
+                        {fulfillMode === "refulfill"
+                          ? "Re-dispatch Qty"
+                          : "Fulfill Qty"}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {fulfilledItems.map((i, idx) => (
-                      <tr key={i.request_item_id} className="border-b border-gray-100">
+                      <tr
+                        key={i.request_item_id}
+                        className="border-b border-gray-100"
+                      >
                         <td className="py-2">
-                          <div className="text-gray-800 text-sm">{i.item_name}</div>
-                          <div className="text-gray-400 text-xs font-mono">{i.item_no} · {i.item_uom}</div>
-                          {fulfillMode === "refulfill" && i.received_qty != null && (
-                            <div className="text-amber-600 text-xs mt-0.5">
-                              Previously received: {i.received_qty}
-                              {i.item_condition && i.item_condition !== "OK" && (
-                                <span className="ml-1">· {i.item_condition}</span>
-                              )}
-                            </div>
-                          )}
+                          <div className="text-gray-800 text-sm">
+                            {i.item_name}
+                          </div>
+                          <div className="text-gray-400 text-xs font-mono">
+                            {i.item_no} · {i.item_uom}
+                          </div>
+                          {fulfillMode === "refulfill" &&
+                            i.received_qty != null && (
+                              <div className="text-amber-600 text-xs mt-0.5">
+                                Previously received: {i.received_qty}
+                                {i.item_condition &&
+                                  i.item_condition !== "OK" && (
+                                    <span className="ml-1">
+                                      · {i.item_condition}
+                                    </span>
+                                  )}
+                              </div>
+                            )}
                         </td>
                         <td className="py-2 font-mono text-emerald-600 text-center">
                           {i.approved_qty ?? i.requested_qty}
@@ -782,7 +983,10 @@ export default function HeadOffice() {
                             value={i.fulfilled_qty}
                             onChange={(e) => {
                               const u = [...fulfilledItems];
-                              u[idx] = { ...u[idx], fulfilled_qty: +e.target.value };
+                              u[idx] = {
+                                ...u[idx],
+                                fulfilled_qty: +e.target.value,
+                              };
                               setFulfilledItems(u);
                             }}
                             className={`w-20 border rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none ${
@@ -800,7 +1004,9 @@ export default function HeadOffice() {
 
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  {fulfillMode === "refulfill" ? "Resolution Notes *" : "Notes (optional)"}
+                  {fulfillMode === "refulfill"
+                    ? "Resolution Notes *"
+                    : "Notes (optional)"}
                 </label>
                 <textarea
                   value={fulfillNotes}
@@ -828,7 +1034,11 @@ export default function HeadOffice() {
                 </button>
                 <button
                   onClick={handleFulfill}
-                  disabled={actioning || !fulfillerName.trim() || (fulfillMode === "refulfill" && !fulfillNotes.trim())}
+                  disabled={
+                    actioning ||
+                    !fulfillerName.trim() ||
+                    (fulfillMode === "refulfill" && !fulfillNotes.trim())
+                  }
                   className={`text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40 ${
                     fulfillMode === "refulfill"
                       ? "bg-amber-500 hover:bg-amber-400"
@@ -838,8 +1048,8 @@ export default function HeadOffice() {
                   {actioning
                     ? "Processing..."
                     : fulfillMode === "refulfill"
-                    ? "Confirm Re-dispatch"
-                    : "Confirm Fulfill"}
+                      ? "Confirm Re-dispatch"
+                      : "Confirm Fulfill"}
                 </button>
               </div>
             </div>

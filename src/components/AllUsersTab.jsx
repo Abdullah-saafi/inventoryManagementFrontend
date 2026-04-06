@@ -144,7 +144,7 @@ export default function AllUsersTab() {
               <tr>
                 <td colSpan={7} className="text-center py-12">
                   <div className="flex justify-center">
-                    <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                   </div>
                 </td>
               </tr>

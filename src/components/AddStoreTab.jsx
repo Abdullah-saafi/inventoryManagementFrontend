@@ -63,7 +63,7 @@ export default function AddStoreTab() {
         {/* Basic Info Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className={labelClass}>Store Code *</label>
+            <label className={labelClass}>اسٹور کوڈ *</label>
             <input
               name="store_code"
               value={form.store_code}
@@ -74,13 +74,13 @@ export default function AddStoreTab() {
             />
           </div>
           <div>
-            <label className={labelClass}>Store Name *</label>
+            <label className={labelClass}>اسٹور کا نام *</label>
             <input
               name="store_name"
               value={form.store_name}
               onChange={handleChange}
               autoComplete="off"
-              placeholder="e.g. Sub Store Delta"
+              placeholder="e.g. Kitchen Store"
               className={inputClass}
             />
           </div>
@@ -88,7 +88,7 @@ export default function AddStoreTab() {
 
         {/* Address Field */}
         <div>
-          <label className={labelClass}>Address</label>
+          <label className={labelClass}>پتہ</label>
           <input
             name="address"
             value={form.address}
@@ -100,7 +100,7 @@ export default function AddStoreTab() {
 
         {/* Phone Field with Numeric Enforcement */}
         <div>
-          <label className={labelClass}>Phone</label>
+          <label className={labelClass}>فون</label>
           <input
             name="phone"
             inputMode="numeric"
@@ -122,9 +122,7 @@ export default function AddStoreTab() {
           <div className="flex gap-2">
             <span>💡</span>
             <p>
-              This store will be created as a <span className="font-bold text-blue-700 underline decoration-blue-200">SUB_STORE</span>.
-              After creation, switch to the <span className="font-bold text-blue-700">Add User</span> tab 
-              to assign staff to this branch.
+              اسٹور بنانے کے بعد، نمائندہ بنانے والے سیکشن سے اس اسٹور کے لیے نمائندہ بنائیں تاکہ اسٹور کے لیے انوینٹری اور دیگر انتظامی کام انجام دے سکیں۔
             </p>
           </div>
         </div>

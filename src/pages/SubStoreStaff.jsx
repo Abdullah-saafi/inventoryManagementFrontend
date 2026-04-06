@@ -1,48 +1,21 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   getStores,
   getItems,
   createRequest,
   getRequests,
   getRequestById,
-  submitGRN,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
-import { ISO_8601 } from "moment-hijri";
+import API from "../services/api";
+import StatusBadge from "../components/StatusBadge";
+import DateTimeCell from "../components/DateTimeCell";
+import Toast from "../components/Toast";
+const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
-const StatusBadge = ({ status }) => {
-  const s = {
-    PENDING: "border-yellow-400 text-yellow-600 bg-yellow-50",
-    APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
-    REJECTED: "border-red-400 text-red-600 bg-red-50",
-    FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
-    RECEIVED: "border-teal-400 text-teal-600 bg-teal-50",
-    DISPUTED: "border-amber-400 text-amber-600 bg-amber-50",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-gray-300 text-gray-500 bg-gray-50"}`}
-    >
-      {status}
-    </span>
-  );
-};
 
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -51,7 +24,7 @@ const EMPTY_LINE = {
   item_no: "",
   item_name: "",
   item_uom: "",
-  requested_qty: 1,
+  requested_qty: 0,
 };
 
 export default function SubStore() {
@@ -71,8 +44,6 @@ export default function SubStore() {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
 
   const [form, setForm] = useState({
     from_store_id: "",
@@ -87,7 +58,7 @@ export default function SubStore() {
   const load = async () => {
     setPageLoading(true);
     try {
-      const params = { direction: "SUB_TO_MAIN",page};
+      const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
       if (auth.role !== "super admin") {
         params.store_id = auth.store_id;
@@ -98,7 +69,6 @@ export default function SubStore() {
         getStores(),
         getRequests(params),
       ]);
-      setTotalPages(rRes.data.pagination.totalPages)
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
@@ -112,7 +82,7 @@ export default function SubStore() {
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
-  }, [filterStatus, filterStore, auth.store_id, page]);
+  }, [filterStatus, filterStore, auth.store_id]);
 
   useEffect(() => {
     if (form.to_store_id) {
@@ -191,11 +161,28 @@ export default function SubStore() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  const addLine = () =>
-    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-  const removeLine = (idx) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+const addLine = () => {
+  setForm((f) => {
+    const allItems = [...storeItems, ...f.items]; // combine both
+    const nextItemNo = getNextItemNo(allItems);
 
+    return {
+      ...f,
+      items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
+    };
+    
+  });
+};
+const removeLine = (idx) => {
+  setForm((f) => {
+    const items = f.items.filter((_, i) => i !== idx);
+
+    return {
+      ...f,
+      items: items.length ? items : [{ ...EMPTY_LINE }],
+    };
+  });
+};
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
@@ -218,7 +205,8 @@ export default function SubStore() {
     });
   };
 
-  const handleCreate = async () => {
+  const handleCreate = async (e) => {
+    e.preventDefault();
     const { from_store_id, to_store_id, requested_by_name, items } = form;
     const invalid = items.some(
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
@@ -250,28 +238,44 @@ export default function SubStore() {
     } finally {
       setCreating(false);
     }
+
   };
+
+  if (pageLoading)
+    return (
+      <div className="flex justify-center py-20">
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
+        {error}
+      </div>
+    );
 
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
   const myStoreName =
     subStores.find((s) => s.store_id === auth.store_id)?.store_name || "";
+const getNextItemNo = (items = []) => {
+  if (!items.length) return "ITM-001";
 
-  const getNextItemNo = (items = []) => {
-    if (!items.length) return "ITM-001";
-    const nums = items
-      .map((i) => {
-        const m = i.item_no?.match(/\d+$/);
-        return m ? parseInt(m[0], 10) : 0;
-      })
-      .filter(Boolean);
-    const max = nums.length ? Math.max(...nums) : 0;
-    const prefixMatch = items[0]?.item_no?.match(/^\D+/);
-    const prefix = prefixMatch ? prefixMatch[0] : "ITM-";
-    return `${prefix}${String(max + 1).padStart(3, "0")}`;
-  };
+  let max = 0;
+  let prefix = "ITM-";
 
+  items.forEach((item) => {
+    const match = item.item_no?.match(/(\D+)(\d+)$/);
+    if (match) {
+      prefix = match[1];
+      const num = parseInt(match[2], 10);
+      if (num > max) max = num;
+    }
+  });
+
+  return `${prefix}${String(max + 1).padStart(3, "0")}`;
+};
   return (
     <div>
       {/* ── Header ── */}
@@ -288,21 +292,23 @@ export default function SubStore() {
           )}
         </div>
         <button
-          onClick={() => {
-            const nextItemNo = getNextItemNo(storeItems);
-            setForm({
-              from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
-              requested_by_name: auth.username || "",
-              notes: "",
-              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
-            });
-            setShowCreate(true);
-          }}
+        onClick={() => {
+  const nextItemNo = getNextItemNo(storeItems); // ✅ FIXED
+
+  setForm({
+    from_store_id: auth.store_id || "",
+    to_store_id:
+      mainStores.length === 1 ? mainStores[0].store_id : "",
+    requested_by_name: auth.username || "",
+    notes: "",
+    items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+  });
+
+  setShowCreate(true);
+}}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
         >
-          New Request
+          نئی درخواست
         </button>
       </div>
 
@@ -313,13 +319,13 @@ export default function SubStore() {
           onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
+     <option value="">تمام حالتیں</option>
+<option value="PENDING">زیرِ التواء</option>
+<option value="APPROVED">منظور شدہ</option>
+<option value="REJECTED">مسترد شدہ</option>
+<option value="FULFILLED">مکمل کیا گیا</option>
+<option value="RECEIVED">وصول ہو گیا</option>
+<option value="DISPUTED">متنازع</option>
         </select>
         {auth.role === "super admin" && (
           <select
@@ -327,7 +333,7 @@ export default function SubStore() {
             onChange={(e) => setFilterStore(e.target.value)}
             className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
           >
-            <option value="">All Sub Stores</option>
+            <option value="">تمام اسٹورز</option>
             {subStores.map((s) => (
               <option key={s.store_id} value={s.store_id}>
                 {s.store_name}
@@ -343,12 +349,12 @@ export default function SubStore() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Request No",
-                "Requested By",
-                "Requested At",
-                "Status",
-                "Approved At",
-                "Fulfilled At",
+              "درخواست نمبر",
+  "درخواست کنندہ",
+  "درخواست کی تاریخ",
+  "حالت",
+  "منظوری کی تاریخ",
+  "تکمیل کی تاریخ",
                 "",
               ].map((h) => (
                 <th
@@ -361,23 +367,7 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {pageLoading ?
-            <tr>
-              <td colSpan={7} className="text-center py-12">
-                <div className="flex justify-center">
-                  <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                </div>
-              </td>
-              </tr> :
-              error ?
-                <tr>
-                  <td colSpan={7} className="text-center py-12">
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                      {error}
-                    </div>
-                  </td>
-                </tr> : 
-              requests.length === 0 ? (
+            {requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
@@ -390,7 +380,7 @@ export default function SubStore() {
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
                 return (
-                  <React.Fragment>
+                  <>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
@@ -412,6 +402,11 @@ export default function SubStore() {
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
                             </span>
                           )}
+                          {needsGRN && (
+                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
+                              ACTION NEEDED
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -421,7 +416,7 @@ export default function SubStore() {
                         <DateTimeCell ts={r.requested_at || r.created_at} />
                       </td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
+                          <StatusBadge status={r.status} />
                       </td>
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.approved_at} />
@@ -437,7 +432,7 @@ export default function SubStore() {
                               disabled={grnLoading}
                               className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
                             >
-                              {grnLoading ? "…" : "Verify Deliver"}
+                              {grnLoading ? "…" : "Verify Delivery"}
                             </button>
                           )}
                           <span
@@ -499,32 +494,32 @@ export default function SubStore() {
                                   <thead>
                                     <tr className="border-b border-gray-200 text-gray-400 text-xs">
                                       <th className="text-left pb-2 pr-4">
-                                        Item No
+                                        اشیاء نمبر
                                       </th>
                                       <th className="text-left pb-2 pr-4">
-                                        Item Name
+                                      اشیاء کا نام
                                       </th>
                                       <th className="text-left pb-2 pr-4">
                                         UOM
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Requested
+                                        درخواست شدہ
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Approved
+                                        منظور شدہ
                                       </th>
                                       <th className="text-center pb-2 pr-4">
-                                        Fulfilled
+                                        مکمل شدہ
                                       </th>
                                       {(isDisputed || isReceived) && (
-                                        <React.Fragment>
+                                        <>
                                           <th className="text-center pb-2 pr-4">
-                                            Received
+                                            وصول شدہ
                                           </th>
                                           <th className="text-center pb-2">
-                                            Condition
+                                            حالت
                                           </th>
-                                        </React.Fragment>
+                                        </>
                                       )}
                                     </tr>
                                   </thead>
@@ -569,7 +564,7 @@ export default function SubStore() {
                                           </span>
                                         </td>
                                         {(isDisputed || isReceived) && (
-                                          <React.Fragment>
+                                          <>
                                             <td className="py-2 pr-4 font-mono text-center">
                                               <span
                                                 className={
@@ -604,46 +599,38 @@ export default function SubStore() {
                                                 </span>
                                               )}
                                             </td>
-                                          </React.Fragment>
+                                          </>
                                         )}
                                       </tr>
                                     ))}
                                   </tbody>
                                 </table>
                               </div>
+                              {needsGRN && (
+                                <div className="pt-2 border-t border-gray-200">
+                                  <button
+                                    onClick={(e) => openGRN(e, r)}
+                                    disabled={grnLoading}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
+                                  >
+                                    {grnLoading
+                                      ? "Loading…"
+                                      : "Verify Delivery"}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
                       </tr>
                     )}
-                  </React.Fragment>
+                  </>
                 );
               })
             )}
           </tbody>
         </table>
       </div>
-      
-      {/* ── Pagination ── */}
-      
-      <div>
-        <button
-          disabled={page === 1}
-          onClick={() => setPage(p => p - 1)}
-        >
-          Previous
-        </button>
-        
-        <span>Page {page} of {totalPages}</span>
-        
-        <button
-          disabled={page === totalPages}
-          onClick={() => setPage(p => p + 1)}
-        >
-          Next
-        </button>
-      </div>
-
 
       {/* ── GRN Modal ── */}
       {grnRequest && (
@@ -664,7 +651,7 @@ export default function SubStore() {
           />
           <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">New Item Request</h2>
+              <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
               <button
                 onClick={() => setShowCreate(false)}
                 className="text-gray-400 hover:text-gray-700 text-xl"
@@ -677,7 +664,7 @@ export default function SubStore() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    Requested By
+                    درخواست کنندہ
                   </label>
                   <input
                     value={form.requested_by_name}
@@ -687,7 +674,7 @@ export default function SubStore() {
                 </div>
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    To (Main Store)
+                    بھیجیں(مرکزی اسٹور)
                   </label>
                   {mainStores.length === 1 ? (
                     <input
@@ -716,7 +703,7 @@ export default function SubStore() {
 
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Notes
+                  ہدایت یا نوٹس
                 </label>
                 <textarea
                   value={form.notes}
@@ -951,6 +938,7 @@ export default function SubStore() {
                 </button>
                 <button
                   onClick={handleCreate}
+                  
                   disabled={creating}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
                 >
@@ -961,27 +949,7 @@ export default function SubStore() {
           </div>
         </div>
       )}
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
-        </div>
-      )}
+<Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

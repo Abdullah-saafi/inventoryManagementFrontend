@@ -498,7 +498,7 @@ export default function SubStore() {
                                         اشیاء کا نام
                                       </th>
                                       <th className="text-left pb-2 pr-4">
-                                        UOM
+                                        پیمائش کی اکائ / UOM
                                       </th>
                                       <th className="text-center pb-2 pr-4">
                                         درخواست شدہ
@@ -604,19 +604,6 @@ export default function SubStore() {
                                   </tbody>
                                 </table>
                               </div>
-                              {needsGRN && (
-                                <div className="pt-2 border-t border-gray-200">
-                                  <button
-                                    onClick={(e) => openGRN(e, r)}
-                                    disabled={grnLoading}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
-                                  >
-                                    {grnLoading
-                                      ? "Loading…"
-                                      : "Verify Delivery"}
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           )}
                         </td>

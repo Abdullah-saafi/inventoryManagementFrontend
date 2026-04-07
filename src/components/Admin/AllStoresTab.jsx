@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { STORE_TYPE_LABELS } from "../services/constants";
-import useErrorHandler from "./useErrorHandler";
-import { getStores, storeStatus } from "../services/api";
+import { STORE_TYPE_LABELS } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
+import { getStores, storeStatus } from "../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 
 export default function AllStoresTab() {

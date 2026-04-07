@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom"; // 1. Import this
-import API from "../services/api";
-import { EyeOpen, EyeClosed } from "./EyeIcons";
-import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../services/constants";
-import useErrorHandler from "./useErrorHandler";
+import API from "../../services/api";
+import { EyeOpen, EyeClosed } from "../EyeIcons";
+import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
 
 const addUser = (data) => API.post("/users/addUser", data);
 

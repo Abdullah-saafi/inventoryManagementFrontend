@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { editUserById, getStores, getUserById } from "../services/api";
-import { EyeOpen, EyeClosed } from "../components/EyeIcons"; // Using your icon components
-import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../services/constants";
-import useErrorHandler from "../components/useErrorHandler";
-import { useAuth } from "../context/authContext";
+import { editUserById, getStores, getUserById } from "../../services/api";
+import { EyeOpen, EyeClosed } from "../EyeIcons"; // Using your icon components
+import { ROLES, ROLE_STORE_MAP, inputClass, labelClass } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
+import { useAuth } from "../../context/authContext";
 
 const EditUser = () => {
   const { id } = useParams();

@@ -5,10 +5,10 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-} from "../services/api";
-import { useAuth } from "../context/authContext";
-import GRNModal from "../components/GRNModal";
-import API from "../services/api";
+} from "../../services/api";
+import { useAuth } from "../../context/authContext";
+import GRNModal from "../../components/GRNModal";
+import API from "../../services/api";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 

@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { getRequests, getStores, getItems } from "../services/api";
-import MainAllItems from "../components/Mainallitems";
-import MainSubStoreReqs from "../components/Mainsubstorereqs";
-import MainReqStatus from "../components/Mainreqstatus";
-import MainReqToHO from "../components/Mainreqtoho";
+import MainAllItems from "../components/MainStore/MainAllItems";
+import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
+import MainReqStatus from "../components/MainStore/MainReqStatus";
+import MainReqToHO from "../components/MainStore/MainReqToHO";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -32,8 +32,9 @@ export default function MainStore() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+  
+  // ── Fetch data (silent = no spinner, used for refreshes) ────────────────── 
 
-  // ── Fetch data (silent = no spinner, used for refreshes) ──────────────────
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -124,6 +125,7 @@ export default function MainStore() {
           requests={requests}
           onRefresh={refresh}
           showToast={showToast}
+          loading={loading}
         />
       )}
 
@@ -131,6 +133,7 @@ export default function MainStore() {
         <MainReqStatus
           hoRequests={hoRequests}
           onRefresh={refresh}
+          loading={loading}
         />
       )}
 
@@ -138,11 +141,10 @@ export default function MainStore() {
         <MainReqToHO
           mainStores={mainStores}
           headOffices={headOffices}
-          onSubmitted={() => {
-            setTab("ho-status");
-            refresh();
-          }}
+          hoRequests={hoRequests}   
+          refresh={refresh}
           showToast={showToast}
+          loading={loading}
         />
       )}
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createItem } from "../services/api";
+import { createItem } from "../../services/api";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -159,7 +159,7 @@ export default function MainAllItems({
                 "آئٹم نمبر",
                 "نام",
                 "زمرہ",
-                "اکائی",
+                "اکائی / UOM",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
                 "باقی اسٹاک",

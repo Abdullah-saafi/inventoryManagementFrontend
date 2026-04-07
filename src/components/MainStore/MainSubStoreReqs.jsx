@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { getRequestById, fulfillRequest } from "../services/api";
-import StatusBadge from "./StatusBadge";
-import { useAuth } from "../context/authContext";
-import API from "../services/api";
+import { getRequestById, fulfillRequest } from "../../services/api";
+import StatusBadge from "../StatusBadge";
+import { useAuth } from "../../context/authContext";
+import API from "../../services/api";
 
 // ── API helpers ───────────────────────────────────────────────────────────────
-const acceptReturn = (id, data) => API.patch(`/requests/${id}/accept-return`, data);
-const resendItems  = (id, data) => API.patch(`/requests/${id}/resend`, data);
+const acceptReturn = (id, data) =>
+  API.patch(`/requests/${id}/accept-return`, data);
+const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -14,7 +15,9 @@ const DateTimeCell = ({ ts }) => {
   const d = new Date(ts);
   return (
     <div>
-      <div className="text-gray-600 text-xs font-mono">{d.toLocaleDateString()}</div>
+      <div className="text-gray-600 text-xs font-mono">
+        {d.toLocaleDateString()}
+      </div>
       <div className="text-gray-400 text-xs font-mono">
         {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
       </div>
@@ -30,7 +33,9 @@ const ConditionBadge = ({ condition }) => {
     MISSING: "bg-red-50 border-red-300 text-red-700",
   };
   return (
-    <span className={`px-1.5 py-0.5 rounded border text-xs font-bold font-mono ml-1 ${styles[condition]}`}>
+    <span
+      className={`px-1.5 py-0.5 rounded border text-xs font-bold font-mono ml-1 ${styles[condition]}`}
+    >
       {condition}
     </span>
   );
@@ -38,50 +43,68 @@ const ConditionBadge = ({ condition }) => {
 
 // ── Dispute Resolution Panel ──────────────────────────────────────────────────
 // managerName is passed in from auth — read-only, not editable
-const DisputeResolutionPanel = ({ request, onResolved, showToast, managerName }) => {
+const DisputeResolutionPanel = ({
+  request,
+  onResolved,
+  showToast,
+  managerName,
+}) => {
   const [processing, setProcessing] = useState(null);
-  const [confirmed, setConfirmed]   = useState(null);
+  const [confirmed, setConfirmed] = useState(null);
 
   const disputedItems = (request.items || []).filter(
     (i) =>
       (i.item_condition && i.item_condition !== "OK") ||
-      (i.received_qty != null && Number(i.received_qty) < Number(i.fulfilled_qty))
+      (i.received_qty != null &&
+        Number(i.received_qty) < Number(i.fulfilled_qty)),
   );
 
-const handleAcceptReturn = async () => {
-  setProcessing("return");
-  try {
-    // This API should update inventory
-    await acceptReturn(request.request_id, { resolved_by_name: managerName });
-    showToast("Return accepted — stock restored to main store");
-    onResolved();
-  } catch (e) {
-    showToast(e.response?.data?.message || "Failed to accept return", "error");
-  } finally {
-    setProcessing(null);
-    setConfirmed(null);
-  }
-};
+  const handleAcceptReturn = async () => {
+    setProcessing("return");
+    try {
+      // This API should update inventory
+      await acceptReturn(request.request_id, { resolved_by_name: managerName });
+      showToast("Return accepted — stock restored to main store");
+      onResolved();
+    } catch (e) {
+      showToast(
+        e.response?.data?.message || "Failed to accept return",
+        "error",
+      );
+    } finally {
+      setProcessing(null);
+      setConfirmed(null);
+    }
+  };
 
-const handleResend = async () => {
-  setProcessing("resend");
-  try {
-    const res = await resendItems(request.request_id, { resolved_by_name: managerName });
-    showToast(res.data?.message || "New request created and ready to fulfill");
-    onResolved();
-  } catch (e) {
-    showToast(e.response?.data?.message || "Failed to create resend request", "error");
-  } finally {
-    setProcessing(null);
-    setConfirmed(null);
-  }
-};
+  const handleResend = async () => {
+    setProcessing("resend");
+    try {
+      const res = await resendItems(request.request_id, {
+        resolved_by_name: managerName,
+      });
+      showToast(
+        res.data?.message || "New request created and ready to fulfill",
+      );
+      onResolved();
+    } catch (e) {
+      showToast(
+        e.response?.data?.message || "Failed to create resend request",
+        "error",
+      );
+    } finally {
+      setProcessing(null);
+      setConfirmed(null);
+    }
+  };
 
   return (
     <div className="border border-amber-200 rounded-xl overflow-hidden">
       <div className="bg-amber-50 border-b border-amber-200 px-4 py-3 flex items-center gap-2">
         <span className="w-2 h-2 rounded-full bg-amber-400" />
-        <span className="text-amber-700 text-sm font-bold">Dispute Resolution Required</span>
+        <span className="text-amber-700 text-sm font-bold">
+          Dispute Resolution Required
+        </span>
       </div>
 
       <div className="p-4 space-y-4 bg-white">
@@ -119,7 +142,9 @@ const handleResend = async () => {
                     <span className="font-mono text-emerald-600 text-xs font-bold w-20 shrink-0">
                       {i.item_no}
                     </span>
-                    <span className="text-gray-700 text-sm flex-1">{i.item_name}</span>
+                    <span className="text-gray-700 text-sm flex-1">
+                      {i.item_name}
+                    </span>
                     {shortfall > 0 && (
                       <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
                         {shortfall} {i.item_uom} short
@@ -140,7 +165,7 @@ const handleResend = async () => {
           <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1.5">
             Resolved By
           </label>
-          <div className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm font-medium">
+          <div className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none">
             {managerName || "—"}
           </div>
         </div>
@@ -177,19 +202,27 @@ const handleResend = async () => {
             </button>
           </div>
         ) : (
-          <div className={`rounded-xl border-2 p-4 space-y-3 ${
-            confirmed === "return" ? "bg-emerald-50 border-emerald-200" : "bg-blue-50 border-blue-200"
-          }`}>
-            <div className={`text-sm font-bold ${
-              confirmed === "return" ? "text-emerald-700" : "text-blue-700"
-            }`}>
+          <div
+            className={`rounded-xl border-2 p-4 space-y-3 ${
+              confirmed === "return"
+                ? "bg-emerald-50 border-emerald-200"
+                : "bg-blue-50 border-blue-200"
+            }`}
+          >
+            <div
+              className={`text-sm font-bold ${
+                confirmed === "return" ? "text-emerald-700" : "text-blue-700"
+              }`}
+            >
               {confirmed === "return"
                 ? "Confirm: Accept return and restore stock?"
                 : "Confirm: Create a new resend request?"}
             </div>
-            <div className={`text-xs ${
-              confirmed === "return" ? "text-emerald-600" : "text-blue-600"
-            }`}>
+            <div
+              className={`text-xs ${
+                confirmed === "return" ? "text-emerald-600" : "text-blue-600"
+              }`}
+            >
               {confirmed === "return"
                 ? "Missing quantities will be added back to main store inventory and this case will be closed."
                 : `A new APPROVED request will be created for the ${disputedItems.length} affected item(s). The original dispute will be closed.`}
@@ -203,7 +236,9 @@ const handleResend = async () => {
                 ← Back
               </button>
               <button
-                onClick={confirmed === "return" ? handleAcceptReturn : handleResend}
+                onClick={
+                  confirmed === "return" ? handleAcceptReturn : handleResend
+                }
                 disabled={!!processing}
                 className={`flex-1 px-3 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 transition-colors ${
                   confirmed === "return"
@@ -214,8 +249,8 @@ const handleResend = async () => {
                 {processing
                   ? "Processing…"
                   : confirmed === "return"
-                  ? "Yes, Accept Return & Close"
-                  : "Yes, Create Resend Request"}
+                    ? "Yes, Accept Return & Close"
+                    : "Yes, Create Resend Request"}
               </button>
             </div>
           </div>
@@ -226,11 +261,19 @@ const handleResend = async () => {
 };
 
 // ── Inline detail renderer ────────────────────────────────────────────────────
-const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, showToast, managerName) => {
+const renderInlineDetail = (
+  d,
+  isLoading,
+  onFulfill,
+  fulfillingId,
+  onResolved,
+  showToast,
+  managerName,
+) => {
   const isDisputed = d.status === "DISPUTED";
   const isReceived = d.status === "RECEIVED";
-  const isClosed   = d.status === "CLOSED";
-  const hasGRN     = isDisputed || isReceived || isClosed;
+  const isClosed = d.status === "CLOSED";
+  const hasGRN = isDisputed || isReceived || isClosed;
 
   return (
     <div className="space-y-4">
@@ -240,9 +283,13 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
           <div className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">
             ✓ Sub Store Confirmed Receipt
           </div>
-          {d.grn_note && <div className="text-teal-700 text-sm">{d.grn_note}</div>}
+          {d.grn_note && (
+            <div className="text-teal-700 text-sm">{d.grn_note}</div>
+          )}
           {d.grn_at && (
-            <div className="text-teal-400 text-xs mt-1">{new Date(d.grn_at).toLocaleString()}</div>
+            <div className="text-teal-400 text-xs mt-1">
+              {new Date(d.grn_at).toLocaleString()}
+            </div>
           )}
         </div>
       )}
@@ -259,15 +306,19 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
               {d.resolution === "RETURN_ACCEPTED"
                 ? "Return accepted — stock restored"
                 : d.resolution === "RESENT"
-                ? "Fresh items resent via new request"
-                : d.resolution}
+                  ? "Fresh items resent via new request"
+                  : d.resolution}
             </span>
           </div>
           {d.resolved_by_name && (
-            <div className="text-gray-400 text-xs mt-1">By {d.resolved_by_name}</div>
+            <div className="text-gray-400 text-xs mt-1">
+              By {d.resolved_by_name}
+            </div>
           )}
           {d.resolved_at && (
-            <div className="text-gray-400 text-xs">{new Date(d.resolved_at).toLocaleString()}</div>
+            <div className="text-gray-400 text-xs">
+              {new Date(d.resolved_at).toLocaleString()}
+            </div>
           )}
         </div>
       )}
@@ -281,7 +332,9 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
 
       {d.rejection_reason && (
         <div className="bg-red-50 border border-red-200 rounded p-3">
-          <div className="text-red-500 text-xs font-semibold mb-1">REJECTION REASON</div>
+          <div className="text-red-500 text-xs font-semibold mb-1">
+            REJECTION REASON
+          </div>
           <div className="text-red-600 text-sm">{d.rejection_reason}</div>
         </div>
       )}
@@ -292,7 +345,7 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
             <th className="text-left pb-2 pr-4">آئٹم نمبر</th>
             <th className="text-left pb-2 pr-4">آئٹم کا نام</th>
-            <th className="text-left pb-2 pr-4">پیمائش کی اکائی</th>
+            <th className="text-left pb-2 pr-4">پیمائش کی اکائی / UOM</th>
             <th className="text-center pb-2 pr-4">درخواست کردہ</th>
             <th className="text-center pb-2 pr-4">منظور شدہ</th>
             <th className="text-center pb-2 pr-4">مکمل شدہ</th>
@@ -308,48 +361,71 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
           {(d.items || []).map((i) => {
             const hasItemIssue =
               (i.item_condition && i.item_condition !== "OK") ||
-              (i.received_qty != null && Number(i.received_qty) < Number(i.fulfilled_qty));
+              (i.received_qty != null &&
+                Number(i.received_qty) < Number(i.fulfilled_qty));
             return (
               <tr
                 key={i.request_item_id}
                 className={`border-b border-gray-100 ${hasItemIssue ? "bg-amber-50/50" : ""}`}
               >
-                <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">{i.item_no}</td>
+                <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
+                  {i.item_no}
+                </td>
                 <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-                <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
-                <td className="py-2 pr-4 font-mono text-gray-800 text-center">{i.requested_qty}</td>
+                <td className="py-2 pr-4 text-gray-400 text-xs">
+                  {i.item_uom}
+                </td>
+                <td className="py-2 pr-4 font-mono text-gray-800 text-center">
+                  {i.requested_qty}
+                </td>
                 <td className="py-2 pr-4 font-mono text-center">
-                  <span className={i.approved_qty != null ? "text-emerald-600" : "text-gray-300"}>
+                  <span
+                    className={
+                      i.approved_qty != null
+                        ? "text-emerald-600"
+                        : "text-gray-300"
+                    }
+                  >
                     {i.approved_qty ?? "—"}
                   </span>
                 </td>
                 <td className="py-2 pr-4 font-mono text-center">
-                  <span className={i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"}>
+                  <span
+                    className={
+                      i.fulfilled_qty != null
+                        ? "text-blue-600"
+                        : "text-gray-300"
+                    }
+                  >
                     {i.fulfilled_qty ?? "—"}
                   </span>
                 </td>
                 {hasGRN && (
                   <>
                     <td className="py-2 pr-4 font-mono text-center">
-                      <span className={
-                        i.received_qty != null
-                          ? Number(i.received_qty) < Number(i.fulfilled_qty)
-                            ? "text-amber-600 font-bold"
-                            : "text-teal-600"
-                          : "text-gray-300"
-                      }>
+                      <span
+                        className={
+                          i.received_qty != null
+                            ? Number(i.received_qty) < Number(i.fulfilled_qty)
+                              ? "text-amber-600 font-bold"
+                              : "text-teal-600"
+                            : "text-gray-300"
+                        }
+                      >
                         {i.received_qty ?? "—"}
                       </span>
                     </td>
                     <td className="py-2 text-center">
                       {i.item_condition ? (
-                        <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                          i.item_condition === "OK"
-                            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                            : i.item_condition === "DAMAGED"
-                            ? "bg-amber-50 border-amber-300 text-amber-700"
-                            : "bg-red-50 border-red-300 text-red-700"
-                        }`}>
+                        <span
+                          className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
+                            i.item_condition === "OK"
+                              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                              : i.item_condition === "DAMAGED"
+                                ? "bg-amber-50 border-amber-300 text-amber-700"
+                                : "bg-red-50 border-red-300 text-red-700"
+                          }`}
+                        >
                           {i.item_condition}
                         </span>
                       ) : (
@@ -373,28 +449,15 @@ const renderInlineDetail = (d, isLoading, onFulfill, fulfillingId, onResolved, s
           managerName={managerName}
         />
       )}
-
-      {/* Fulfill button */}
-      {d.status === "APPROVED" && onFulfill && (
-        <div className="pt-2 border-t border-gray-200">
-          <button
-            onClick={() => onFulfill(d.request_id)}
-            disabled={fulfillingId === d.request_id}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-          >
-            {fulfillingId === d.request_id ? "Processing..." : "Mark as Fulfilled"}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
-  const [reqFilter, setReqFilter]   = useState("APPROVED");
-  const [detail, setDetail]         = useState(null);
-  const [detailLoad, setDL]         = useState(false);
+export default function MainSubStoreReqs({ requests, onRefresh, showToast, loading }) {
+  const [reqFilter, setReqFilter] = useState("APPROVED");
+  const [detail, setDetail] = useState(null);
+  const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
 
   const { auth } = useAuth();
@@ -415,23 +478,23 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast }) {
     }
   };
 
-const handleFulfill = async (requestId, status) => {
-  setFulfilling(requestId);
-  try {
-    if (status === "DISPUTED") {
-      showToast("Cannot fulfill — dispute resolution required", "error");
-      return; // Do nothing for disputed requests
+  const handleFulfill = async (requestId, status) => {
+    setFulfilling(requestId);
+    try {
+      if (status === "DISPUTED") {
+        showToast("Cannot fulfill — dispute resolution required", "error");
+        return; // Do nothing for disputed requests
+      }
+      await fulfillRequest(requestId);
+      showToast("Request fulfilled and inventory updated");
+      setDetail(null);
+      onRefresh();
+    } catch (e) {
+      showToast(e.response?.data?.message || "Failed to fulfill", "error");
+    } finally {
+      setFulfilling(null);
     }
-    await fulfillRequest(requestId);
-    showToast("Request fulfilled and inventory updated");
-    setDetail(null);
-    onRefresh();
-  } catch (e) {
-    showToast(e.response?.data?.message || "Failed to fulfill", "error");
-  } finally {
-    setFulfilling(null);
-  }
-};
+  };
 
   const handleResolved = () => {
     setDetail(null);
@@ -458,7 +521,8 @@ const handleFulfill = async (requestId, status) => {
         >
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
           <span className="text-amber-700 text-sm font-semibold">
-            {disputedCount} request{disputedCount > 1 ? "s" : ""} disputed by sub store — click to review
+            {disputedCount} request{disputedCount > 1 ? "s" : ""} disputed by
+            sub store — click to review
           </span>
           <span className="ml-auto text-amber-500 text-xs">View →</span>
         </div>
@@ -471,14 +535,14 @@ const handleFulfill = async (requestId, status) => {
           onChange={(e) => setReqFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-  <option value="">تمام حالتیں</option>
-<option value="PENDING">زیر التواء</option>
-<option value="APPROVED">منظور شدہ</option>
-<option value="REJECTED">مسترد شدہ</option>
-<option value="FULFILLED">مکمل شدہ</option>
-<option value="RECEIVED">وصول شدہ</option>
-<option value="DISPUTED">متنازع</option>
-<option value="CLOSED">بند شدہ</option>
+          <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
+          <option value="RECEIVED">وصول شدہ</option>
+          <option value="DISPUTED">متنازع</option>
+          <option value="CLOSED">بند شدہ</option>
         </select>
       </div>
 
@@ -488,15 +552,15 @@ const handleFulfill = async (requestId, status) => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                 "درخواست نمبر",
-  "اسٹور سے",
-    " مرکزی اسٹور کو   ",
-  "درخواست کنندہ",
-  "منظور کنندہ",
-  "مکمل کرنے والا",
-  "درخواست کی تاریخ",
-  "تکمیل کی تاریخ",
-  "حالت",
+                "درخواست نمبر",
+                "اسٹور سے",
+                " مرکزی اسٹور کو   ",
+                "درخواست کنندہ",
+                "منظور کنندہ",
+                "مکمل کرنے والا",
+                "درخواست کی تاریخ",
+                "تکمیل کی تاریخ",
+                "حالت",
                 "",
               ].map((h) => (
                 <th
@@ -509,9 +573,20 @@ const handleFulfill = async (requestId, status) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
               <tr>
-                <td colSpan={COL_COUNT} className="text-center py-12 text-gray-400">
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={COL_COUNT}
+                  className="text-center py-12 text-gray-400"
+                >
                   No requests found.
                 </td>
               </tr>
@@ -520,17 +595,20 @@ const handleFulfill = async (requestId, status) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
-                const isClosed   = r.status === "CLOSED";
+                const isClosed = r.status === "CLOSED";
 
                 return (
                   <>
                     <tr
                       key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        isDisputed ? "bg-amber-50/50 hover:bg-amber-50"
-                        : isReceived ? "bg-teal-50/30 hover:bg-teal-50"
-                        : isClosed   ? "bg-gray-50/50 hover:bg-gray-100"
-                        : "hover:bg-gray-50"
+                        isDisputed
+                          ? "bg-amber-50/50 hover:bg-amber-50"
+                          : isReceived
+                            ? "bg-teal-50/30 hover:bg-teal-50"
+                            : isClosed
+                              ? "bg-gray-50/50 hover:bg-gray-100"
+                              : "hover:bg-gray-50"
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
@@ -549,19 +627,29 @@ const handleFulfill = async (requestId, status) => {
                       </td>
 
                       {/* From */}
-                      <td className="px-4 py-3 text-gray-700">{r.from_store_name}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {r.from_store_name}
+                      </td>
 
                       {/* To */}
-                      <td className="px-4 py-3 text-gray-700">{r.to_store_name}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {r.to_store_name}
+                      </td>
 
                       {/* Requested By */}
-                      <td className="px-4 py-3 text-gray-500">{r.requested_by_name || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.requested_by_name || "—"}
+                      </td>
 
                       {/* Approved By */}
-                      <td className="px-4 py-3 text-gray-500">{r.approved_by_name || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.approved_by_name || "—"}
+                      </td>
 
                       {/* Fulfilled By */}
-                      <td className="px-4 py-3 text-gray-500">{r.fulfilled_by_name || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.fulfilled_by_name || "—"}
+                      </td>
 
                       {/* Requested At */}
                       <td className="px-4 py-3">
@@ -581,24 +669,30 @@ const handleFulfill = async (requestId, status) => {
                       {/* Actions */}
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
-                          <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
-                            {isExpanded ? "▲ چھپائیں" : "▼ تفصیلات"}
+                          <span
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                          >
+                            {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                           {r.status === "APPROVED" && (
-                         <button
-  onClick={(e) => {
-    e.stopPropagation();
-    // Only fulfill if not disputed
-    if (r.status === "DISPUTED") {
-      showToast("Cannot fulfill — dispute resolution required", "error");
-      return;
-    }
-    handleFulfill(r.request_id);
-  }}
-  disabled={fulfilling === r.request_id}
->
-  {fulfilling === r.request_id ? "..." : "Fulfill"}
-</button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // Only fulfill if not disputed
+                                if (r.status === "DISPUTED") {
+                                  showToast(
+                                    "Cannot fulfill — dispute resolution required",
+                                    "error",
+                                  );
+                                  return;
+                                }
+                                handleFulfill(r.request_id);
+                              }}
+                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-3 py-1 rounded disabled:opacity-40"
+                              disabled={fulfilling === r.request_id}
+                            >
+                              {fulfilling === r.request_id ? "..." : "Fulfill"}
+                            </button>
                           )}
                         </div>
                       </td>
@@ -609,10 +703,13 @@ const handleFulfill = async (requestId, status) => {
                       <tr
                         key={r.request_id + "-detail"}
                         className={`border-b-2 ${
-                          isDisputed ? "bg-amber-50/20 border-amber-300"
-                          : isReceived ? "bg-teal-50/20 border-teal-300"
-                          : isClosed   ? "bg-gray-50 border-gray-300"
-                          : "bg-gray-50 border-emerald-200"
+                          isDisputed
+                            ? "bg-amber-50/20 border-amber-300"
+                            : isReceived
+                              ? "bg-teal-50/20 border-teal-300"
+                              : isClosed
+                                ? "bg-gray-50 border-gray-300"
+                                : "bg-gray-50 border-emerald-200"
                         }`}
                       >
                         <td colSpan={COL_COUNT} className="px-6 py-4">

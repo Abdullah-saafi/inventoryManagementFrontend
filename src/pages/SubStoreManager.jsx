@@ -403,7 +403,7 @@ export default function SubStoreManager() {
                                           آئٹم کا نام
                                         </th>
                                         <th className="text-left pb-2 pr-4">
-                                          اکائی
+                                          پیمائش کی اکائی / UOM
                                         </th>
                                         <th className="text-center pb-2 pr-4">
                                           درخواست شدہ
@@ -504,7 +504,7 @@ export default function SubStoreManager() {
                   readOnly
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>

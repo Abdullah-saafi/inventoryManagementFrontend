@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { getRequestById } from "../services/api";
-import StatusBadge from "./StatusBadge";
-import GRNModal from "../components/GRNModal";
-import API from "../services/api";
+import { getRequestById } from "../../services/api";
+import StatusBadge from "../StatusBadge";
+import GRNModal from "../GRNModal";
+import API from "../../services/api";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -180,7 +180,7 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainReqStatus({ hoRequests, onRefresh }) {
+export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
@@ -304,7 +304,15 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-12 text-gray-400">
                   No requests found.
@@ -409,7 +417,8 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
-                          ) : (
+                          ) :
+                            (
                             hoDetail &&
                             renderInlineDetail(hoDetail, () => openGRN(r), grnLoading)
                           )}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { getUsers, userStatus } from "../services/api";
-import { ROLES, ROLE_LABELS } from "../services/constants";
-import useErrorHandler from "./useErrorHandler";
+import { getUsers, userStatus } from "../../services/api";
+import { ROLES, ROLE_LABELS } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
 import { useNavigate } from "react-router-dom";
 
 export default function AllUsersTab() { 

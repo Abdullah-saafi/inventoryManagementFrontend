@@ -57,7 +57,7 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function SubStore() {
+export default function MainReqToHO({loading}) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -383,7 +383,7 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {pageLoading ? (
+            {loading || pageLoading ? (
               <tr>
                 <td colSpan={7} className="text-center py-12">
                   <div className="flex justify-center">

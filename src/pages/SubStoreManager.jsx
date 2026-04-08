@@ -62,6 +62,11 @@ export default function SubStoreManager() {
   const [rejectReason, setRejectReason] = useState("");
   
   const handleError = useErrorHandler()
+  
+  const showToastMsg = (message, type) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
 
   const load = async () => {
     setLoading(true);

@@ -162,7 +162,7 @@ export default function SubStore() {
     }
   };
 
-  const showToastMsg = (message, type = "success") => {
+  const showToastMsg = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
@@ -240,7 +240,7 @@ export default function SubStore() {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit")
-      showToastMsg(msg);
+      showToastMsg(msg, "error");
     } finally {
       setCreating(false);
     }

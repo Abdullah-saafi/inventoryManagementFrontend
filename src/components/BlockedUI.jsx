@@ -6,9 +6,9 @@ const BlockedUI = ({ message }) => (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m0-8V7m0 0a2 2 0 100-4 2 2 0 000 4zm-4 12h8a2 2 0 002-2v-3a2 2 0 10-4 0v-1a2 2 0 00-2-2H8a2 2 0 00-2 2v1a2 2 0 10-4 0v3a2 2 0 002 2z" />
                 </svg>
             </div>
-            <h2 className="text-gray-900 text-xl font-black uppercase tracking-tight mb-2">Access Restricted</h2>
+            <h2 className="text-gray-900 text-xl font-black uppercase tracking-tight mb-2">رسائی ممنوع ہے</h2>
             <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                {message || "Your account does not have the necessary permissions to view the Admin Panel."}
+                {message || "آپ کا اکاؤنٹ فی الحال غیر فعال ہے۔ رسائی دوبارہ حاصل کرنے کے لیے براہ کرم اپنے ایڈمنسٹریٹر سے رابطہ کریں۔"}
             </p>
             {/* <button 
                 onClick={() => window.location.href = "/"} 

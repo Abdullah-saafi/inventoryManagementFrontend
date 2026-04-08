@@ -13,6 +13,7 @@ import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 const EMPTY_LINE = {
@@ -52,6 +53,7 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
+  const handleError = useErrorHandler()
 
   const load = async () => {
     setPageLoading(true);
@@ -71,8 +73,9 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-    } catch {
-      setError("Failed to load data");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setError(msg);
     } finally {
       setPageLoading(false);
     }
@@ -86,7 +89,11 @@ export default function SubStore() {
     if (form.to_store_id) {
       getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
+        .catch((e) => {
+          setStoreItems([])
+          const msg = handleError(e, "Failed to set store items")
+          setError(msg)
+        });
     } else {
       setStoreItems([]);
     }
@@ -108,7 +115,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to get request")
+      showToastMsg(msg)
     } finally {
       setDL(false);
     }
@@ -120,8 +129,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      showToastMsg("Failed to load request details", "error");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details")
+      shwToa(msg)
     } finally {
       setGrnLoading(false);
     }
@@ -145,10 +155,8 @@ export default function SubStore() {
       setDetail(null);
       load();
     } catch (e) {
-      showToastMsg(
-        e.response?.data?.message || "Failed to submit GRN",
-        "error",
-      );
+      const msg = handleError(e, "Failed to submit GRN")
+      showToastMsg(msg);
     } finally {
       setGrnSubmitting(false);
     }
@@ -231,7 +239,8 @@ export default function SubStore() {
       });
       load();
     } catch (e) {
-      showToastMsg(e.response?.data?.message || "Failed to submit", "error");
+      const msg = handleError(e, "Failed to submit")
+      showToastMsg(msg);
     } finally {
       setCreating(false);
     }

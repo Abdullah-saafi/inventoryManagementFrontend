@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createItem } from "../../services/api";
+import useErrorHandler from "../useErrorHandler";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -57,7 +58,7 @@ export default function MainAllItems({
       onRefresh();
     } catch (e) {
       const msg = handleError(error, "Failed to add item")
-      setError(msg);
+      showToast(msg);
     } finally {
       setSavingItem(false);
     }

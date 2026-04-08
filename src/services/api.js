@@ -107,6 +107,7 @@ export const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, dat
 export const approveRequest = (id, data) => API.patch(`/requests/${id}/approve`, data);
 export const rejectRequest = (id, data) => API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
+export const headOfficeFulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
 
 // ── Users ────────────────────────────────────────────────
 

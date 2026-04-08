@@ -7,6 +7,8 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI"
+import useErrorHandler from "../components/useErrorHandler";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -43,7 +45,6 @@ const DateTimeCell = ({ ts }) => {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
-  const { auth } = useAuth();
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +60,10 @@ export default function MainStoreApprover() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  
+  const { auth } = useAuth();
+  
+  const handleError = useErrorHandler()
 
   const load = async () => {
     setLoading(true);
@@ -68,8 +73,9 @@ export default function MainStoreApprover() {
       // No store_id filter — main store approver sees all MAIN_TO_HO requests
       const r = await getRequests(params);
       setRequests(r.data.data);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests")
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -89,7 +95,9 @@ export default function MainStoreApprover() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setToast(msg);
     } finally {
       setDL(false);
     }
@@ -106,8 +114,9 @@ export default function MainStoreApprover() {
       );
       setApproveModal(r);
       setApproverName(auth.username || ""); // ← auto-fill, read-only
-    } catch {
-      setToast({ message: "Failed to load items", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items")
+      setToast({ message: msg, type: "error" });
     }
   };
 
@@ -131,10 +140,8 @@ export default function MainStoreApprover() {
       setEditedItems([]);
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error approving",
-        type: "error",
-      });
+      const msg = handleError(e, "Error approving")
+      setToast({ message: msg, type: "error",});
     } finally {
       setActioning(false);
     }
@@ -154,10 +161,8 @@ export default function MainStoreApprover() {
       setRejectReason("");
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error rejecting",
-        type: "error",
-      });
+      const msg = handleError(e, "Error rejecting")
+      setToast({ message: msg, type: "error",});
     } finally {
       setActioning(false);
     }

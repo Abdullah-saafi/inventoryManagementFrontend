@@ -67,8 +67,8 @@ const DisputeResolutionPanel = ({
       showToast("Return accepted — stock restored to main store");
       onResolved();
     } catch (e) {
-      const msg = handleError(e, "Failed to accept return")
-      setError(msg)
+      const msg = handleError(e, "Failed to accept return");
+      showToast(msg);
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -86,8 +86,8 @@ const DisputeResolutionPanel = ({
       );
       onResolved();
     } catch (e) {
-      const msg = handleError(e, "Failed to create resend request")
-      setError(msg)
+      const msg = handleError(e, "Failed to create resend request");
+      showToast(msg);
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -477,8 +477,8 @@ export default function MainSubStoreReqs({
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data")
-      setError(msg)
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg);
     } finally {
       setDL(false);
     }
@@ -496,8 +496,8 @@ export default function MainSubStoreReqs({
       setDetail(null);
       onRefresh();
     } catch (e) {
-      const msg = handleError(e, "Failed to fulfill")
-      setError(msg)
+      const msg = handleError(e, "Failed to fulfill");
+      showToast(msg);
     } finally {
       setFulfilling(null);
     }

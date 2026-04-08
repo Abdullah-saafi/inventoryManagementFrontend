@@ -178,7 +178,7 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStoreError }) {
+export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStoreError, showToast }) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
@@ -186,14 +186,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [toast, setToast] = useState(null);
   
   const handleError = useErrorHandler()
-
-  const showToastMsg = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
 
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {
@@ -207,7 +201,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       setHoDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data")
-      setError(msg)
+      showToast(msg)
     } finally {
       setHoDL(false);
     }
@@ -220,7 +214,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       setGrnRequest(res.data.data);
     } catch(error) {
       const msg = handleError(error, "Failed to load request details")
-      setError(msg);
+      showToast(msg);
     } finally {
       setGrnLoading(false);
     }
@@ -236,13 +230,13 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
           : payload.grn_status === "DISPUTED"
           ? "Issues reported — request marked DISPUTED"
           : "Delivery rejected — notified";
-      showToastMsg(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setHoDetail(null);
       if (onRefresh) onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN")
-      setError(msg);
+      showToast(msg);
     } finally {
       setGrnSubmitting(false);
     }
@@ -453,24 +447,6 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
           onSubmit={handleGRNSubmit}
           submitting={grnSubmitting}
         />
-      )}
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-              ? "bg-amber-50 border-amber-200 text-amber-700"
-              : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">
-            ×
-          </button>
-        </div>
       )}
     </div>
   );

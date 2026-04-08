@@ -6,6 +6,8 @@ import MainReqStatus from "../components/MainStore/MainReqStatus";
 import MainReqToHO from "../components/MainStore/MainReqToHO";
 import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
+import BlockedUI from "../components/BlockedUI"
+import Toast from "../components/Toast";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -166,16 +168,7 @@ export default function MainStore() {
       )}
 
       {/* Toast */}
-      {toast && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-          ${toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-          : toast.type === "error"   ? "bg-red-50 border-red-200 text-red-700"
-          : "bg-blue-50 border-blue-200 text-blue-700"}`}
-        >
-          <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">×</button>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

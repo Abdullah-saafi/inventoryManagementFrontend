@@ -1,13 +1,9 @@
 import { useEffect, useState } from "react";
-import { getRequests, getRequestById } from "../services/api";
+import { getRequests, getRequestById, headOfficeFulfillRequest, acceptReturn, resendItems } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
-import API from "../services/api";
-
-const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-const acceptReturn = (id, data) =>
-  API.patch(`/requests/${id}/accept-return`, data);
-const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
+import BlockedUI from "../components/BlockedUI"
+import useErrorHandler from "../components/useErrorHandler";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -69,6 +65,8 @@ const DisputeResolutionPanel = ({
 }) => {
   const [processing, setProcessing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
+  
+  const handleError = useErrorHandler()
 
   const disputedItems = (request.items || []).filter(
     (i) =>
@@ -84,10 +82,8 @@ const DisputeResolutionPanel = ({
       showToast("Return accepted — stock restored to Head Office");
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to accept return",
-        "error",
-      );
+      const msg = handleError(e, "Failed to accept return")
+      showToast(msg, "error",);
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -105,10 +101,8 @@ const DisputeResolutionPanel = ({
       );
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to create resend request",
-        "error",
-      );
+      const msg = handleError(e, "Failed to create resend request")
+      showToast( msg, "error",);
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -279,7 +273,6 @@ const DisputeResolutionPanel = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HeadOffice() {
-  const { auth } = useAuth();
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -296,6 +289,9 @@ export default function HeadOffice() {
   const [fulfillerName, setFulfillerName] = useState("");
   const [fulfillNotes, setFulfillNotes] = useState("");
   const [actioning, setActioning] = useState(false);
+  
+  const { auth } = useAuth();
+  const handleError = useErrorHandler()
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -309,8 +305,9 @@ export default function HeadOffice() {
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests")
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -330,7 +327,9 @@ export default function HeadOffice() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data", "error")
+      setToast(msg)
     } finally {
       setDL(false);
     }
@@ -349,8 +348,9 @@ export default function HeadOffice() {
       setFulfillMode(mode);
       setFulfillerName(auth.username || "");
       setFulfillNotes("");
-    } catch {
-      showToast("Failed to load items", "error");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items")
+      showToast(msg, "error");
     }
   };
 
@@ -359,7 +359,7 @@ export default function HeadOffice() {
     if (fulfillMode === "refulfill" && !fulfillNotes.trim()) return;
     setActioning(true);
     try {
-      await fulfillRequest(fulfillModal.request_id, {
+      await headOfficeFulfillRequest(fulfillModal.request_id, {
         fulfilled_by_name: fulfillerName,
         notes: fulfillNotes,
         fulfilled_items: fulfilledItems.map((i) => ({
@@ -378,10 +378,8 @@ export default function HeadOffice() {
       setFulfilledItems([]);
       load();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Error fulfilling request",
-        "error",
-      );
+      const msg = handleError(e, "Error fulfilling request")
+      showToast( msg, "error");
     } finally {
       setActioning(false);
     }

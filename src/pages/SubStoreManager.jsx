@@ -7,6 +7,8 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI"
+import useErrorHandler from "../components/useErrorHandler";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -58,6 +60,8 @@ export default function SubStoreManager() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+  
+  const handleError = useErrorHandler()
 
   const load = async () => {
     setLoading(true);
@@ -67,8 +71,9 @@ export default function SubStoreManager() {
       if (auth.store_id) params.store_id = auth.store_id;
       const r = await getRequests(params);
       setRequests(r.data.data);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests")
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -88,7 +93,9 @@ export default function SubStoreManager() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setToast(msg)
     } finally {
       setDL(false);
     }
@@ -105,8 +112,9 @@ export default function SubStoreManager() {
       );
       setApproveModal(r);
       setApproverName(auth.username || ""); // ← auto-fill
-    } catch {
-      setToast({ message: "Failed to load items", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items")
+      setToast({ message: msg , type: "error" });
     }
   };
 
@@ -130,10 +138,8 @@ export default function SubStoreManager() {
       setEditedItems([]);
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error approving",
-        type: "error",
-      });
+      const msg = handleError(e, "Error approving")
+      setToast({ message: msg ,type: "error",});
     } finally {
       setActioning(false);
     }
@@ -153,10 +159,8 @@ export default function SubStoreManager() {
       setRejectReason("");
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error rejecting",
-        type: "error",
-      });
+      const msg = handleError(e, "Error rejecting")
+      setToast({ message: msg, type: "error",});
     } finally {
       setActioning(false);
     }

@@ -56,13 +56,12 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function MainReqToHO({loading, mainStoreError}) {
+export default function MainReqToHO({loading, mainStoreError, showToast}) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStore, setFilterStore] = useState("");
   const [detail, setDetail] = useState(null);
@@ -153,7 +152,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details")
-      setError(msg)
+      showToast(msg)
     } finally {
       setDL(false);
     }
@@ -167,7 +166,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details")
-      setError(msg);
+      showToast(msg);
     } finally {
       setGrnLoading(false);
     }
@@ -183,7 +182,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToastMsg(
+      showToast(
         label,
         payload.grn_status === "RECEIVED" ? "success" : "warn",
       );
@@ -192,15 +191,10 @@ export default function MainReqToHO({loading, mainStoreError}) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN")
-      setError(msg)
+      showToast(msg)
     } finally {
       setGrnSubmitting(false);
     }
-  };
-
-  const showToastMsg = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
   };
 
   // ── Form helpers ───────────────────────────────────────────────────────────
@@ -237,7 +231,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToastMsg("Please fill all required fields", "error");
+      return showToast("Please fill all required fields", "error");
 
     setCreating(true);
     try {
@@ -249,7 +243,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
         ),
       };
       await createRequest(payload);
-      showToastMsg("Request submitted successfully", "success");
+      showToast("Request submitted successfully", "success");
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -261,7 +255,7 @@ export default function MainReqToHO({loading, mainStoreError}) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit")
-      setError(msg);
+      showToast(msg);
     } finally {
       setCreating(false);
     }
@@ -1015,27 +1009,6 @@ export default function MainReqToHO({loading, mainStoreError}) {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
         </div>
       )}
     </div>

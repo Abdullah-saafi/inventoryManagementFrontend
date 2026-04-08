@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { getRequestById, fulfillRequest } from "../../services/api";
+import {
+  getRequestById,
+  fulfillRequest,
+  acceptReturn,
+  resendItems,
+} from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
-import API from "../../services/api";
-
-// ── API helpers ───────────────────────────────────────────────────────────────
-const acceptReturn = (id, data) =>
-  API.patch(`/requests/${id}/accept-return`, data);
-const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
+import useErrorHandler from "../useErrorHandler";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -67,10 +67,8 @@ const DisputeResolutionPanel = ({
       showToast("Return accepted — stock restored to main store");
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to accept return",
-        "error",
-      );
+      const msg = handleError(e, "Failed to accept return")
+      setError(msg)
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -88,10 +86,8 @@ const DisputeResolutionPanel = ({
       );
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to create resend request",
-        "error",
-      );
+      const msg = handleError(e, "Failed to create resend request")
+      setError(msg)
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -454,13 +450,21 @@ const renderInlineDetail = (
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainSubStoreReqs({ requests, onRefresh, showToast, loading }) {
+export default function MainSubStoreReqs({
+  requests,
+  onRefresh,
+  showToast,
+  loading,
+  mainStoreError,
+}) {
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
+  const [error, setError] = useState("");
   const [fulfilling, setFulfilling] = useState(null);
 
   const { auth } = useAuth();
+  const handleError = useErrorHandler();
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -472,7 +476,9 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast, loadi
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setError(msg)
     } finally {
       setDL(false);
     }
@@ -490,7 +496,8 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast, loadi
       setDetail(null);
       onRefresh();
     } catch (e) {
-      showToast(e.response?.data?.message || "Failed to fulfill", "error");
+      const msg = handleError(e, "Failed to fulfill")
+      setError(msg)
     } finally {
       setFulfilling(null);
     }
@@ -578,6 +585,14 @@ export default function MainSubStoreReqs({ requests, onRefresh, showToast, loadi
                 <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error || mainStoreError ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
                   </div>
                 </td>
               </tr>

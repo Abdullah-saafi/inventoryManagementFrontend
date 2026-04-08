@@ -164,6 +164,10 @@ export default function MainStoreApprover() {
   };
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message}/>
+  }
 
   return (
     <div>

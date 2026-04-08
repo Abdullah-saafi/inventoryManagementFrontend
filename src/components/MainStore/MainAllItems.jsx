@@ -20,16 +20,18 @@ export default function MainAllItems({
   onRefresh,
   showToast,
   loading,
-  error,
+  mainStoreError,
 }) {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-
+  const [error, setError] = useState("")
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
+  
+  const handleError = useErrorHandler()
 
   const openAddItem = () => {
     setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
@@ -54,7 +56,8 @@ export default function MainAllItems({
       setShowAddItem(false);
       onRefresh();
     } catch (e) {
-      showToast(e.response?.data?.message || "Failed to add item", "error");
+      const msg = handleError(error, "Failed to add item")
+      setError(msg);
     } finally {
       setSavingItem(false);
     }
@@ -184,9 +187,9 @@ export default function MainAllItems({
                   </div>
                 </td>
               </tr>
-            ) : error ? (
+            ) : error || mainStoreError ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
                     {error}
                   </div>

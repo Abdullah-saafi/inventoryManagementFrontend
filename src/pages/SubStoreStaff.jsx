@@ -12,6 +12,7 @@ import API from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI";
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 const EMPTY_LINE = {
@@ -258,6 +259,11 @@ export default function SubStore() {
 
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+  
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message}/>
+  }
+  
   return (
     <div>
       {/* ── Header ── */}

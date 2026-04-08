@@ -1,10 +1,8 @@
 import { useState } from "react";
-import { getRequestById } from "../../services/api";
+import { getRequestById, submitGRN } from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import GRNModal from "../GRNModal";
-import API from "../../services/api";
-
-const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
+import useErrorHandler from "../useErrorHandler";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -180,15 +178,17 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
+export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStoreError }) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
-
+  const [error, setError] = useState("")
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
+  
+  const handleError = useErrorHandler()
 
   const showToastMsg = (message, type = "success") => {
     setToast({ message, type });
@@ -205,7 +205,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
     try {
       const res = await getRequestById(r.request_id);
       setHoDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setError(msg)
     } finally {
       setHoDL(false);
     }
@@ -216,8 +218,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      showToastMsg("Failed to load request details", "error");
+    } catch(error) {
+      const msg = handleError(error, "Failed to load request details")
+      setError(msg);
     } finally {
       setGrnLoading(false);
     }
@@ -238,7 +241,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
       setHoDetail(null);
       if (onRefresh) onRefresh();
     } catch (e) {
-      showToastMsg(e.response?.data?.message || "Failed to submit GRN", "error");
+      const msg = handleError(e, "Failed to submit GRN")
+      setError(msg);
     } finally {
       setGrnSubmitting(false);
     }
@@ -309,6 +313,14 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading }) {
                 <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error || mainStoreError ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
                   </div>
                 </td>
               </tr>

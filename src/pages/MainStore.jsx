@@ -4,6 +4,8 @@ import MainAllItems from "../components/MainStore/MainAllItems";
 import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
 import MainReqStatus from "../components/MainStore/MainReqStatus";
 import MainReqToHO from "../components/MainStore/MainReqToHO";
+import { useAuth } from "../context/authContext";
+import useErrorHandler from "../components/useErrorHandler";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -24,7 +26,7 @@ export default function MainStore() {
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState("");
+  const [mainStoreError, setMainStoreError]     = useState("");
   const [toast, setToast]     = useState(null);
 
   // ── Toast helper ──────────────────────────────────────────────────────────
@@ -32,6 +34,12 @@ export default function MainStore() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+  
+  // ── Auth And Error ──────────────────────────────────────────────────────────
+  
+  const { auth } = useAuth()
+  
+  const handleError = useErrorHandler()
   
   // ── Fetch data (silent = no spinner, used for refreshes) ────────────────── 
 
@@ -52,8 +60,9 @@ export default function MainStore() {
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
       setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-    } catch {
-      setError("Failed to load data");
+    } catch(error) {
+      const msg = handleError(error, "Failed to load data")
+      setMainStoreError(msg);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -71,7 +80,11 @@ export default function MainStore() {
   const pendingApproved = requests.filter((r) => r.status === "APPROVED").length;
   const pendingHo       = hoRequests.filter((r) => r.status === "PENDING").length;
 
-  // ── Early returns ─────────────────────────────────────────────────────────
+  
+  
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message}/>
+  }
 
   return (
     <div>
@@ -116,7 +129,7 @@ export default function MainStore() {
           onRefresh={refresh}
           showToast={showToast}
           loading={loading}
-          error={error}
+          mainStoreError={mainStoreError}
         />
       )}
 
@@ -126,14 +139,17 @@ export default function MainStore() {
           onRefresh={refresh}
           showToast={showToast}
           loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 
       {tab === "ho-status" && (
         <MainReqStatus
           hoRequests={hoRequests}
+          showToast={showToast}
           onRefresh={refresh}
           loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 
@@ -145,6 +161,7 @@ export default function MainStore() {
           refresh={refresh}
           showToast={showToast}
           loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 

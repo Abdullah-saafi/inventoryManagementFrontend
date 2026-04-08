@@ -394,6 +394,10 @@ export default function HeadOffice() {
 
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+  
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message}/>
+  }
 
   return (
     <div>

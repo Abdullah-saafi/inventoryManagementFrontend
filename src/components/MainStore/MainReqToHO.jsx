@@ -5,12 +5,11 @@ import {
   createRequest,
   getRequests,
   getRequestById,
+  submitGRN
 } from "../../services/api";
 import { useAuth } from "../../context/authContext";
 import GRNModal from "../../components/GRNModal";
-import API from "../../services/api";
-
-const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
+import useErrorHandler from "../useErrorHandler";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -57,7 +56,7 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function MainReqToHO({loading}) {
+export default function MainReqToHO({loading, mainStoreError}) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -75,6 +74,8 @@ export default function MainReqToHO({loading}) {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  
+  const handleError = useErrorHandler()
 
   const [form, setForm] = useState({
     from_store_id: "",
@@ -105,8 +106,9 @@ export default function MainReqToHO({loading}) {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-    } catch {
-      setError("Failed to load data");
+    } catch(error) {
+      const msg = handleError(error,"Failed to load data")
+      setError(msg);
     } finally {
       setPageLoading(false);
     }
@@ -121,10 +123,14 @@ export default function MainReqToHO({loading}) {
     if (form.to_store_id) {
       getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
+        .catch((e) => {
+          setStoreItems([])
+          const msg = handleError(e, "Failed to load items")
+          setError(msg)
+        });
     } else {
       setStoreItems([]);
-    }
+    } 
   }, [form.to_store_id]);
 
   // ── FIX 2: Auto-fill main store when only one exists ──────────────────────
@@ -145,7 +151,9 @@ export default function MainReqToHO({loading}) {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details")
+      setError(msg)
     } finally {
       setDL(false);
     }
@@ -157,8 +165,9 @@ export default function MainReqToHO({loading}) {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      showToastMsg("Failed to load request details", "error");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details")
+      setError(msg);
     } finally {
       setGrnLoading(false);
     }
@@ -182,10 +191,8 @@ export default function MainReqToHO({loading}) {
       setDetail(null);
       load();
     } catch (e) {
-      showToastMsg(
-        e.response?.data?.message || "Failed to submit GRN",
-        "error",
-      );
+      const msg = handleError(e, "Failed to submit GRN")
+      setError(msg)
     } finally {
       setGrnSubmitting(false);
     }
@@ -253,7 +260,8 @@ export default function MainReqToHO({loading}) {
       });
       load();
     } catch (e) {
-      showToastMsg(e.response?.data?.message || "Failed to submit", "error");
+      const msg = handleError(e, "Failed to submit")
+      setError(msg);
     } finally {
       setCreating(false);
     }
@@ -391,7 +399,7 @@ export default function MainReqToHO({loading}) {
                   </div>
                 </td>
               </tr>
-            ) : error ? (
+            ) : error || mainStoreError ? (
               <tr>
                 <td colSpan={7} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">

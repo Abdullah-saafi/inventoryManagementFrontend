@@ -5,8 +5,7 @@ import { getStores, storeStatus } from "../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 
 export default function AllStoresTab() {
-
-  const { loadStores: refreshAdminStores } = useOutletContext(); 
+  const { loadStores: refreshAdminStores } = useOutletContext();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -15,7 +14,7 @@ export default function AllStoresTab() {
   const [loading, setLoading] = useState(false);
 
   const handleError = useErrorHandler();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const loadStores = async () => {
     try {
@@ -38,12 +37,14 @@ export default function AllStoresTab() {
     try {
       setLoading(true);
       const status = !currentStatus;
-      const response = await storeStatus(id, {status} );
-      
+      const response = await storeStatus(id, { status });
+
       if (response.status === 200) {
         await loadStores();
         if (refreshAdminStores) refreshAdminStores();
-        setMessage(`Success: Store ${status ? 'activated' : 'deactivated'} successfully`);
+        setMessage(
+          `Success: Store ${status ? "activated" : "deactivated"} successfully`,
+        );
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update store status");
@@ -87,7 +88,10 @@ export default function AllStoresTab() {
         </select>
         {hasFilters && (
           <button
-            onClick={() => { setSearch(""); setTypeFilter(""); }}
+            onClick={() => {
+              setSearch("");
+              setTypeFilter("");
+            }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
           >
             Clear
@@ -102,17 +106,26 @@ export default function AllStoresTab() {
       </div>
 
       {message && (
-        <div className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
-          ${isSuccess
-            ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-            : "bg-red-50 border-red-100 text-red-700"
+        <div
+          className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
+          ${
+            isSuccess
+              ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+              : "bg-red-50 border-red-100 text-red-700"
           }`}
         >
           <div className="flex items-center gap-2">
             <span className="text-sm">{isSuccess ? "✅" : "⚠️"}</span>
-            <p className="text-[10px] font-black uppercase tracking-tight">{message}</p>
+            <p className="text-[10px] font-black uppercase tracking-tight">
+              {message}
+            </p>
           </div>
-          <button onClick={() => setMessage("")} className="text-gray-400 hover:text-gray-600 text-lg">×</button>
+          <button
+            onClick={() => setMessage("")}
+            className="text-gray-400 hover:text-gray-600 text-lg"
+          >
+            ×
+          </button>
         </div>
       )}
 
@@ -120,8 +133,21 @@ export default function AllStoresTab() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Store Code", "Store Name", "Type", "Address", "Phone", "Status", "Action"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-gray-500 font-bold text-[10px] uppercase tracking-wider font-sans">{h}</th>
+              {[
+                "Store Code",
+                "Store Name",
+                "Type",
+                "Address",
+                "Phone",
+                "Status",
+                "Action",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-gray-500 font-bold text-[10px] uppercase tracking-wider font-sans"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -136,25 +162,48 @@ export default function AllStoresTab() {
               </tr>
             ) : displayed.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">No stores found.</td>
+                <td colSpan={7} className="text-center py-12 text-gray-400">
+                  No stores found.
+                </td>
               </tr>
             ) : (
               displayed.map((s) => (
-                <tr key={s.store_id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!s.is_active ? "opacity-60" : ""}`}>
-                  <td className="px-4 py-3"><span className="font-mono text-emerald-600 text-[11px] font-bold">{s.store_code}</span></td>
-                  <td className="px-4 py-3 text-gray-800 font-semibold">{s.store_name}</td>
+                <tr
+                  key={s.store_id}
+                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!s.is_active ? "opacity-60" : ""}`}
+                >
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase
-                        ${s.store_type === "HEAD_OFFICE" ? "bg-purple-50 border-purple-200 text-purple-600"
-                        : s.store_type === "MAIN_STORE" ? "bg-blue-50 border-blue-200 text-blue-600"
-                          : "bg-emerald-50 border-emerald-200 text-emerald-600"}`}>
+                    <span className="font-mono text-emerald-600 text-[11px] font-bold">
+                      {s.store_code}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-gray-800 font-semibold">
+                    {s.store_name}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase
+                        ${
+                          s.store_type === "HEAD_OFFICE"
+                            ? "bg-purple-50 border-purple-200 text-purple-600"
+                            : s.store_type === "MAIN_STORE"
+                              ? "bg-blue-50 border-blue-200 text-blue-600"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                        }`}
+                    >
                       {STORE_TYPE_LABELS[s.store_type] || s.store_type}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-[11px]">{s.address || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500 text-[11px]">{s.phone || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500 text-[11px]">
+                    {s.address || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-gray-500 text-[11px]">
+                    {s.phone || "—"}
+                  </td>
                   <td className="px-4 py-3">
-                    <span className={`text-[10px] font-black uppercase ${s.is_active ? "text-emerald-600" : "text-red-500"}`}>
+                    <span
+                      className={`text-[10px] font-black uppercase ${s.is_active ? "text-emerald-600" : "text-red-500"}`}
+                    >
                       {s.is_active ? "Active" : "Inactive"}
                     </span>
                   </td>
@@ -167,7 +216,14 @@ export default function AllStoresTab() {
                     >
                       {s.is_active ? "Deactivate" : "Activate"}
                     </button>
-                    <button className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300" onClick={() => {navigate(`/admin/store/${s.store_id}`)}}>Edit</button>
+                    <button
+                      className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300"
+                      onClick={() => {
+                        navigate(`/admin/store/${s.store_id}`);
+                      }}
+                    >
+                      Edit
+                    </button>
                   </td>
                 </tr>
               ))

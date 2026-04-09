@@ -7,6 +7,7 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import ItemsTable from "../components/ItemsTable";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -184,7 +185,7 @@ export default function SubStoreManager() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Review and approve or reject staff item requests
+            Review and approve or Store item requests
           </p>
         </div>
       </div>
@@ -210,13 +211,13 @@ export default function SubStoreManager() {
           onChange={(e) => setFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-<option value="">تمام حالتیں</option>
-<option value="PENDING">زیر التواء</option>
-<option value="APPROVED">منظور شدہ</option>
-<option value="REJECTED">مسترد شدہ</option>
-<option value="FULFILLED">مکمل شدہ</option>
-<option value="RECEIVED">وصول شدہ</option>
-<option value="DISPUTED">متنازع</option>
+          <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
+          <option value="RECEIVED">وصول شدہ</option>
+          <option value="DISPUTED">متنازع</option>
         </select>
       </div>
 
@@ -225,13 +226,13 @@ export default function SubStoreManager() {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                 "درخواست نمبر",
-  "درخواست کنندہ",
-  "درخواست کی تاریخ",
-  "حالت",
-  "منظوری کی تاریخ",
-  "تکمیل کی تاریخ",
-  "عملیات"
+                "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کی تاریخ",
+                "حالت",
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -386,78 +387,11 @@ export default function SubStoreManager() {
                                   )}
 
                                 {/* Items table */}
-                                <div>
-                                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                                    Items
-                                  </div>
-                                  <table className="w-full text-sm">
-                                  <thead>
-  <tr className="border-b border-gray-200 text-gray-400 text-xs">
-    <th className="text-left pb-2 pr-4">
-      آئٹم نمبر
-    </th>
-    <th className="text-left pb-2 pr-4">
-      آئٹم کا نام
-    </th>
-    <th className="text-left pb-2 pr-4">
-      اکائی
-    </th>
-    <th className="text-center pb-2 pr-4">
-      درخواست شدہ
-    </th>
-    <th className="text-center pb-2 pr-4">
-      منظور شدہ
-    </th>
-    <th className="text-center pb-2">
-      مکمل شدہ
-    </th>
-  </tr>
-</thead>
-                                    <tbody>
-                                      {(detail.items || []).map((i) => (
-                                        <tr
-                                          key={i.request_item_id}
-                                          className="border-b border-gray-100"
-                                        >
-                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                                            {i.item_no}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-800">
-                                            {i.item_name}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-400 text-xs">
-                                            {i.item_uom}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                                            {i.requested_qty}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.approved_qty != null
-                                                  ? "text-emerald-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.approved_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.fulfilled_qty != null
-                                                  ? "text-blue-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.fulfilled_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
+                                <ItemsTable
+                                  items={detail?.items || []}
+                                  isDisputed={isDisputed}
+                                  isReceived={isReceived}
+                                />
                               </div>
                             )
                           )}

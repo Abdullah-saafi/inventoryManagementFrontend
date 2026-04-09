@@ -12,10 +12,13 @@ import API from "../services/api";
 import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import Toast from "../components/Toast";
+import ItemsTable from "../components/ItemsTable";
+import SubStoreHeader from "../components/SubStoreHeader";
+import SubStoreFilters from "../components/SubStoreFilters";
+import RequestRow from "../components/RequestRow";
+import CreateRequestModal from "../components/CreateRequestModal";
+
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
-
-
-
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -161,28 +164,27 @@ export default function SubStore() {
     setTimeout(() => setToast(null), 4000);
   };
 
-const addLine = () => {
-  setForm((f) => {
-    const allItems = [...storeItems, ...f.items]; // combine both
-    const nextItemNo = getNextItemNo(allItems);
+  const addLine = () => {
+    setForm((f) => {
+      const allItems = [...storeItems, ...f.items];
+      const nextItemNo = getNextItemNo(allItems);
 
-    return {
-      ...f,
-      items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
-    };
-    
-  });
-};
-const removeLine = (idx) => {
-  setForm((f) => {
-    const items = f.items.filter((_, i) => i !== idx);
+      return {
+        ...f,
+        items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
+      };
+    });
+  };
+  const removeLine = (idx) => {
+    setForm((f) => {
+      const items = f.items.filter((_, i) => i !== idx);
 
-    return {
-      ...f,
-      items: items.length ? items : [{ ...EMPTY_LINE }],
-    };
-  });
-};
+      return {
+        ...f,
+        items: items.length ? items : [{ ...EMPTY_LINE }],
+      };
+    });
+  };
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
@@ -238,7 +240,6 @@ const removeLine = (idx) => {
     } finally {
       setCreating(false);
     }
-
   };
 
   if (pageLoading)
@@ -257,104 +258,63 @@ const removeLine = (idx) => {
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
-  const myStoreName =
-    subStores.find((s) => s.store_id === auth.store_id)?.store_name || "";
-const getNextItemNo = (items = []) => {
-  if (!items.length) return "ITM-001";
 
-  let max = 0;
-  let prefix = "ITM-";
+  const getNextItemNo = (items = []) => {
+    if (!items.length) return "ITM-001";
 
-  items.forEach((item) => {
-    const match = item.item_no?.match(/(\D+)(\d+)$/);
-    if (match) {
-      prefix = match[1];
-      const num = parseInt(match[2], 10);
-      if (num > max) max = num;
-    }
-  });
+    let max = 0;
+    let prefix = "ITM-";
 
-  return `${prefix}${String(max + 1).padStart(3, "0")}`;
-};
+    items.forEach((item) => {
+      const match = item.item_no?.match(/(\D+)(\d+)$/);
+      if (match) {
+        prefix = match[1];
+        const num = parseInt(match[2], 10);
+        if (num > max) max = num;
+      }
+    });
+
+    return `${prefix}${String(max + 1).padStart(3, "0")}`;
+  };
+
   return (
     <div>
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <p className="text-gray-400 text-sm">{myStoreName}</p>
-          {pendingGRN > 0 && (
-            <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-              {pendingGRN} delivery{pendingGRN > 1 ? "ies" : ""} waiting for
-              your confirmation
-            </div>
-          )}
-        </div>
-        <button
-        onClick={() => {
-  const nextItemNo = getNextItemNo(storeItems); // ✅ FIXED
+      <SubStoreHeader
+        username={auth.username}
+        pendingGRN={pendingGRN}
+        onNewRequest={() => {
+          const nextItemNo = getNextItemNo(storeItems);
+          setForm({
+            from_store_id: auth.store_id || "",
+            to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+            requested_by_name: auth.username || "",
+            notes: "",
+            items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+          });
+          setShowCreate(true);
+        }}
+      />
 
-  setForm({
-    from_store_id: auth.store_id || "",
-    to_store_id:
-      mainStores.length === 1 ? mainStores[0].store_id : "",
-    requested_by_name: auth.username || "",
-    notes: "",
-    items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
-  });
+      <SubStoreFilters
+        filterStatus={filterStatus}
+        setFilterStatus={setFilterStatus}
+        filterStore={filterStore}
+        setFilterStore={setFilterStore}
+        role={auth.role}
+        subStores={subStores}
+      />
 
-  setShowCreate(true);
-}}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          نئی درخواست
-        </button>
-      </div>
-
-      {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-     <option value="">تمام حالتیں</option>
-<option value="PENDING">زیرِ التواء</option>
-<option value="APPROVED">منظور شدہ</option>
-<option value="REJECTED">مسترد شدہ</option>
-<option value="FULFILLED">مکمل کیا گیا</option>
-<option value="RECEIVED">وصول ہو گیا</option>
-<option value="DISPUTED">متنازع</option>
-        </select>
-        {auth.role === "super admin" && (
-          <select
-            value={filterStore}
-            onChange={(e) => setFilterStore(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-          >
-            <option value="">تمام اسٹورز</option>
-            {subStores.map((s) => (
-              <option key={s.store_id} value={s.store_id}>
-                {s.store_name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {/* ── Requests Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-              "درخواست نمبر",
-  "درخواست کنندہ",
-  "درخواست کی تاریخ",
-  "حالت",
-  "منظوری کی تاریخ",
-  "تکمیل کی تاریخ",
+                "درخواست نمبر",
+                "درخواست کنندہ",
+                "درخواست کی تاریخ",
+                "حالت",
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
                 "",
               ].map((h) => (
                 <th
@@ -374,265 +334,22 @@ const getNextItemNo = (items = []) => {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id;
-                const needsGRN = r.status === "FULFILLED" && !r.grn_at;
-                const isDisputed = r.status === "DISPUTED";
-                const isReceived = r.status === "RECEIVED";
-                return (
-                  <>
-                    <tr
-                      key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        needsGRN
-                          ? "bg-blue-50/40 hover:bg-blue-50"
-                          : isDisputed
-                            ? "bg-amber-50/40 hover:bg-amber-50"
-                            : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
-                      onClick={() => openDetail(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-emerald-600 text-xs font-bold">
-                            {r.request_no}
-                          </span>
-                          {r.item_count > 0 && (
-                            <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                              {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                            </span>
-                          )}
-                          {needsGRN && (
-                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
-                              ACTION NEEDED
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {r.requested_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.requested_at || r.created_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                          <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.approved_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {needsGRN && (
-                            <button
-                              onClick={(e) => openGRN(e, r)}
-                              disabled={grnLoading}
-                              className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
-                            >
-                              {grnLoading ? "…" : "Verify Delivery"}
-                            </button>
-                          )}
-                          <span
-                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                          >
-                            {isExpanded ? "▲ Hide" : "▼ View"}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className="bg-gray-50 border-b-2 border-emerald-200"
-                      >
-                        <td colSpan={7} className="px-6 py-4">
-                          {detailLoad ? (
-                            <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              {(isDisputed || isReceived) &&
-                                detail?.grn_note && (
-                                  <div
-                                    className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}
-                                  >
-                                    <div className="text-xs font-bold uppercase tracking-wider mb-1">
-                                      {isDisputed
-                                        ? "⚠ Sub Store Reported Issues"
-                                        : "✓ Sub Store Confirmed Receipt"}
-                                    </div>
-                                    <div>{detail.grn_note}</div>
-                                    {detail.grn_at && (
-                                      <div className="text-xs opacity-60 mt-1">
-                                        {new Date(
-                                          detail.grn_at,
-                                        ).toLocaleString()}
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              {detail?.rejection_reason && (
-                                <div className="bg-red-50 border border-red-200 rounded p-3">
-                                  <div className="text-red-500 text-xs font-semibold mb-1">
-                                    REJECTION REASON
-                                  </div>
-                                  <div className="text-red-600 text-sm">
-                                    {detail.rejection_reason}
-                                  </div>
-                                </div>
-                              )}
-                              <div>
-                                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                                  Items
-                                </div>
-                                <table className="w-full text-sm">
-                                  <thead>
-                                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                      <th className="text-left pb-2 pr-4">
-                                        اشیاء نمبر
-                                      </th>
-                                      <th className="text-left pb-2 pr-4">
-                                      اشیاء کا نام
-                                      </th>
-                                      <th className="text-left pb-2 pr-4">
-                                        UOM
-                                      </th>
-                                      <th className="text-center pb-2 pr-4">
-                                        درخواست شدہ
-                                      </th>
-                                      <th className="text-center pb-2 pr-4">
-                                        منظور شدہ
-                                      </th>
-                                      <th className="text-center pb-2 pr-4">
-                                        مکمل شدہ
-                                      </th>
-                                      {(isDisputed || isReceived) && (
-                                        <>
-                                          <th className="text-center pb-2 pr-4">
-                                            وصول شدہ
-                                          </th>
-                                          <th className="text-center pb-2">
-                                            حالت
-                                          </th>
-                                        </>
-                                      )}
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {(detail?.items || []).map((i) => (
-                                      <tr
-                                        key={i.request_item_id}
-                                        className="border-b border-gray-100"
-                                      >
-                                        <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                                          {i.item_no}
-                                        </td>
-                                        <td className="py-2 pr-4 text-gray-800">
-                                          {i.item_name}
-                                        </td>
-                                        <td className="py-2 pr-4 text-gray-400 text-xs">
-                                          {i.item_uom}
-                                        </td>
-                                        <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                                          {i.requested_qty}
-                                        </td>
-                                        <td className="py-2 pr-4 font-mono text-center">
-                                          <span
-                                            className={
-                                              i.approved_qty != null
-                                                ? "text-emerald-600"
-                                                : "text-gray-300"
-                                            }
-                                          >
-                                            {i.approved_qty ?? "—"}
-                                          </span>
-                                        </td>
-                                        <td className="py-2 pr-4 font-mono text-center">
-                                          <span
-                                            className={
-                                              i.fulfilled_qty != null
-                                                ? "text-blue-600"
-                                                : "text-gray-300"
-                                            }
-                                          >
-                                            {i.fulfilled_qty ?? "—"}
-                                          </span>
-                                        </td>
-                                        {(isDisputed || isReceived) && (
-                                          <>
-                                            <td className="py-2 pr-4 font-mono text-center">
-                                              <span
-                                                className={
-                                                  i.received_qty != null
-                                                    ? Number(i.received_qty) <
-                                                      Number(i.fulfilled_qty)
-                                                      ? "text-amber-600"
-                                                      : "text-teal-600"
-                                                    : "text-gray-300"
-                                                }
-                                              >
-                                                {i.received_qty ?? "—"}
-                                              </span>
-                                            </td>
-                                            <td className="py-2 text-center">
-                                              {i.item_condition ? (
-                                                <span
-                                                  className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                                                    i.item_condition === "OK"
-                                                      ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                                                      : i.item_condition ===
-                                                          "DAMAGED"
-                                                        ? "bg-amber-50 border-amber-300 text-amber-700"
-                                                        : "bg-red-50 border-red-300 text-red-700"
-                                                  }`}
-                                                >
-                                                  {i.item_condition}
-                                                </span>
-                                              ) : (
-                                                <span className="text-gray-300">
-                                                  —
-                                                </span>
-                                              )}
-                                            </td>
-                                          </>
-                                        )}
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                              {needsGRN && (
-                                <div className="pt-2 border-t border-gray-200">
-                                  <button
-                                    onClick={(e) => openGRN(e, r)}
-                                    disabled={grnLoading}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
-                                  >
-                                    {grnLoading
-                                      ? "Loading…"
-                                      : "Verify Delivery"}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })
+              requests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  openGRN={openGRN}
+                  grnLoading={grnLoading}
+                />
+              ))
             )}
           </tbody>
         </table>
       </div>
 
-      {/* ── GRN Modal ── */}
       {grnRequest && (
         <GRNModal
           request={grnRequest}
@@ -642,314 +359,28 @@ const getNextItemNo = (items = []) => {
         />
       )}
 
-      {/* ── Create Request Modal ── */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setShowCreate(false)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
-              <button
-                onClick={() => setShowCreate(false)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    درخواست کنندہ
-                  </label>
-                  <input
-                    value={form.requested_by_name}
-                    readOnly
-                    className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                    بھیجیں(مرکزی اسٹور)
-                  </label>
-                  {mainStores.length === 1 ? (
-                    <input
-                      value={mainStores[0].store_name}
-                      readOnly
-                      className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                    />
-                  ) : (
-                    <select
-                      value={form.to_store_id}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, to_store_id: e.target.value }))
-                      }
-                      className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                    >
-                      <option value="">Select Main Store</option>
-                      {mainStores.map((s) => (
-                        <option key={s.store_id} value={s.store_id}>
-                          {s.store_name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  ہدایت یا نوٹس
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, notes: e.target.value }))
-                  }
-                  rows={2}
-                  placeholder="Optional reason or note"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 resize-none"
-                />
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-500 text-xs font-semibold uppercase">
-                    Items
-                  </span>
-                  <button
-                    onClick={addLine}
-                    className="text-xs text-emerald-600 hover:text-emerald-500 border border-gray-300 rounded px-2 py-1"
-                  >
-                    + Add Row
-                  </button>
-                </div>
-
-                {!form.to_store_id ? (
-                  <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
-                    Select a Main Store first to load available items
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {form.items.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
-                            Item {idx + 1}
-                          </span>
-                          <button
-                            onClick={() => removeLine(idx)}
-                            disabled={form.items.length === 1}
-                            className="text-red-400 hover:text-red-500 disabled:opacity-30 text-lg font-bold leading-none"
-                          >
-                            ×
-                          </button>
-                        </div>
-
-                        <div className="mb-3">
-                          <label className="text-gray-500 text-xs mb-1 block">
-                            Select from catalogue ({storeItems.length} items
-                            available)
-                          </label>
-                          <div className="relative mt-1.5">
-                            <input
-                              value={item.item_search}
-                              onChange={(e) => {
-                                updateLine(idx, "item_search", e.target.value);
-                                updateLine(idx, "_showDropdown", true);
-                              }}
-                              onFocus={() =>
-                                updateLine(idx, "_showDropdown", true)
-                              }
-                              onBlur={() =>
-                                setTimeout(
-                                  () => updateLine(idx, "_showDropdown", false),
-                                  150,
-                                )
-                              }
-                              placeholder="Search by item name or number…"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                            {item._showDropdown && (
-                              <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                                <div
-                                  className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
-                                  onMouseDown={() => {
-                                    updateLine(idx, "selected_item_no", "");
-                                    updateLine(idx, "item_search", "");
-                                    updateLine(idx, "_showDropdown", false);
-                                  }}
-                                >
-                                  — Not listed / enter manually —
-                                </div>
-                                {storeItems
-                                  .filter((si) => {
-                                    const q = (
-                                      item.item_search || ""
-                                    ).toLowerCase();
-                                    return (
-                                      !q ||
-                                      si.item_no.toLowerCase().includes(q) ||
-                                      si.item_name.toLowerCase().includes(q)
-                                    );
-                                  })
-                                  .map((si) => (
-                                    <div
-                                      key={si.item_id}
-                                      onMouseDown={() => {
-                                        updateLine(
-                                          idx,
-                                          "selected_item_no",
-                                          si.item_no,
-                                        );
-                                        updateLine(
-                                          idx,
-                                          "item_search",
-                                          `${si.item_no} — ${si.item_name}`,
-                                        );
-                                        updateLine(idx, "_showDropdown", false);
-                                      }}
-                                      className={`px-3 py-2 cursor-pointer hover:bg-emerald-50 border-t border-gray-100 flex items-center justify-between ${item.selected_item_no === si.item_no ? "bg-emerald-50" : ""}`}
-                                    >
-                                      <div>
-                                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                                          {si.item_no}
-                                        </span>
-                                        <span className="text-gray-700 text-xs ml-2">
-                                          {si.item_name}
-                                        </span>
-                                      </div>
-                                      <div className="text-gray-400 text-xs">
-                                        {parseFloat(si.item_quantity).toFixed(
-                                          0,
-                                        )}{" "}
-                                        {si.item_uom}
-                                      </div>
-                                    </div>
-                                  ))}
-                                {storeItems.filter((si) => {
-                                  const q = (
-                                    item.item_search || ""
-                                  ).toLowerCase();
-                                  return (
-                                    !q ||
-                                    si.item_no.toLowerCase().includes(q) ||
-                                    si.item_name.toLowerCase().includes(q)
-                                  );
-                                }).length === 0 && (
-                                  <div className="px-3 py-3 text-xs text-gray-400 text-center">
-                                    No items match your search
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="flex-1 h-px bg-gray-200" />
-                          <span className="text-gray-400 text-xs">
-                            item details
-                          </span>
-                          <div className="flex-1 h-px bg-gray-200" />
-                        </div>
-
-                        <div className="grid grid-cols-12 gap-2">
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              Item No *
-                            </label>
-                            <input
-                              readOnly
-                              value={item.item_no}
-                              placeholder="ITM-001"
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                          </div>
-                          <div className="col-span-5">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              Item Name *
-                            </label>
-                            <input
-                              value={item.item_name}
-                              readOnly={!!item.selected_item_no}
-                              onChange={(e) =>
-                                !item.selected_item_no &&
-                                updateLine(idx, "item_name", e.target.value)
-                              }
-                              placeholder="Full item name"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed" : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"}`}
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              UOM *
-                            </label>
-                            <input
-                              value={item.item_uom}
-                              readOnly={!!item.selected_item_no}
-                              onChange={(e) =>
-                                !item.selected_item_no &&
-                                updateLine(idx, "item_uom", e.target.value)
-                              }
-                              placeholder="pcs"
-                              className={`w-full border rounded px-2 py-1.5 text-sm focus:outline-none ${item.selected_item_no ? "bg-gray-100 border-gray-200 text-gray-500 cursor-not-allowed" : "bg-white border-gray-300 text-gray-800 focus:border-emerald-500"}`}
-                            />
-                          </div>
-                          <div className="col-span-2">
-                            <label className="text-gray-500 text-xs mb-1 block">
-                              Qty *
-                            </label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.requested_qty}
-                              onChange={(e) =>
-                                updateLine(
-                                  idx,
-                                  "requested_qty",
-                                  +e.target.value,
-                                )
-                              }
-                              className="w-full bg-white border border-gray-300 rounded px-2 py-1.5 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* ── Buttons ── */}
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setShowCreate(false)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreate}
-                  
-                  disabled={creating}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {creating ? "Submitting..." : "Submit Request"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CreateRequestModal
+          form={form}
+          setForm={setForm}
+          mainStores={mainStores}
+          storeItems={storeItems}
+          onClose={() => setShowCreate(false)}
+          onSubmit={handleCreate}
+          addLine={addLine}
+          removeLine={removeLine}
+          updateLine={updateLine}
+          creating={creating}
+        />
       )}
-<Toast toast={toast} onClose={() => setToast(null)} />
+
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

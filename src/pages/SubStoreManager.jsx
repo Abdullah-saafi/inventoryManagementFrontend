@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import ExcelDownloader from "../components/ExcelDownloader";
+
 import {
   getRequests,
   getRequestById,
@@ -220,7 +222,35 @@ export default function SubStoreManager() {
           <option value="DISPUTED">متنازع</option>
         </select>
       </div>
-
+      {/* Excel FullSheet Downloader */}
+      <div className="flex justify-end mb-3">
+        <ExcelDownloader
+          data={requests}
+          fileName="sub_store_requests"
+          sheetName="Requests"
+          buttonLabel="Export Excel"
+          columns={[
+            { key: "request_id", label: "Request #" },
+            { key: "requested_by_name", label: "Requested By" },
+            {
+              key: "created_at",
+              label: "Request Date",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
+            },
+            { key: "status", label: "Status" },
+            {
+              key: "approved_at",
+              label: "Approved At",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+            },
+            {
+              key: "fulfilled_at",
+              label: "Fulfilled At",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+            },
+          ]}
+        />
+      </div>
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>

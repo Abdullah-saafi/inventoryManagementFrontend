@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import ExcelDownloader from "../components/ExcelDownloader";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
 import {
   getStores,
   getItems,
@@ -9,10 +11,7 @@ import {
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
-import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell";
 import Toast from "../components/Toast";
-import ItemsTable from "../components/ItemsTable";
 import SubStoreHeader from "../components/SubStoreHeader";
 import SubStoreFilters from "../components/SubStoreFilters";
 import RequestRow from "../components/RequestRow";
@@ -294,7 +293,6 @@ export default function SubStore() {
           setShowCreate(true);
         }}
       />
-
       <SubStoreFilters
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
@@ -303,7 +301,54 @@ export default function SubStore() {
         role={auth.role}
         subStores={subStores}
       />
+      {/* Excel FullSheet Downloader */}
+      <div className="flex justify-end mb-3">
+        <ExcelDownloader
+          data={requests}
+          fileName="sub_store_requests"
+          sheetName="Requests"
+          buttonLabel="Export Excel"
+          columns={[
+            { key: "request_id", label: "Request #" },
+            { key: "requested_by_name", label: "Requested By" },
+            {
+              key: "created_at",
+              label: "Request Date",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
+            },
+            { key: "status", label: "Status" },
+            {
+              key: "approved_at",
+              label: "Approved At",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+            },
+            {
+              key: "fulfilled_at",
+              label: "Fulfilled At",
+              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+            },
+          ]}
+        />
+      </div>
 
+      {/* Excel specific Date Downloader */}
+      {/* <ExcelDownloaderWithDates
+        data={requests} // ← already in your state
+        dateKey="created_at" // ← which field to filter by
+        fileName="requests"
+        columns={[
+          { key: "request_id", label: "Request #" },
+          { key: "requested_by_name", label: "Requested By" },
+          { key: "status", label: "Status" },
+          {
+            key: "created_at",
+            label: "Date",
+            format: (v) => new Date(v).toLocaleDateString(),
+          },
+        ]}
+      /> */}
+
+      {/* Main table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -349,7 +394,6 @@ export default function SubStore() {
           </tbody>
         </table>
       </div>
-
       {grnRequest && (
         <GRNModal
           request={grnRequest}
@@ -358,7 +402,6 @@ export default function SubStore() {
           submitting={grnSubmitting}
         />
       )}
-
       {showCreate && (
         <CreateRequestModal
           form={form}
@@ -373,7 +416,6 @@ export default function SubStore() {
           creating={creating}
         />
       )}
-
       {toast && (
         <Toast
           message={toast.message}

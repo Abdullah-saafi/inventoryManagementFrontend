@@ -305,36 +305,6 @@ export default function SubStore() {
           />
         </div>
         <div className="Temp-downloader">
-          {/* Excel FullSheet/Page Downloader (For Tssting)*/}
-          {/* <div className="flex justify-end mb-3">
-        <ExcelDownloader
-          data={requests}
-          fileName="sub_store_requests"
-          sheetName="Requests"
-          buttonLabel="Export Excel"
-          columns={[
-            { key: "request_id", label: "Request #" },
-            { key: "requested_by_name", label: "Requested By" },
-            {
-              key: "created_at",
-              label: "Request Date",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
-            },
-            { key: "status", label: "Status" },
-            {
-              key: "approved_at",
-              label: "Approved At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-            {
-              key: "fulfilled_at",
-              label: "Fulfilled At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-          ]}
-        />
-      </div> */}
-
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates

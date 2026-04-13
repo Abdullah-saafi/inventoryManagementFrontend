@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createItem } from "../services/api";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -105,7 +106,7 @@ export default function MainAllItems({
   return (
     <div>
       {/* Filters + Add button */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
+      <div className="flex flex-wrap items-center gap-2 mb-4 ">
         <input
           value={search}
           onChange={(e) => {
@@ -148,6 +149,37 @@ export default function MainAllItems({
         >
           <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
         </button>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={requests}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Table */}

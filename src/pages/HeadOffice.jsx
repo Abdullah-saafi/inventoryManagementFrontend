@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { getRequests, getRequestById } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import API from "../services/api";
 
 const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
@@ -440,7 +441,7 @@ export default function HeadOffice() {
       )}
 
       {/* ── Filter ── */}
-      <div className="mb-4">
+      <div className="flex h-full py-2  items-center justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -455,6 +456,38 @@ export default function HeadOffice() {
           <option value="DISPUTED">متنازع</option>
           <option value="CLOSED">بند شدہ</option>
         </select>
+        
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
+        
       </div>
 
       {/* ── Table ── */}

@@ -5,6 +5,7 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/api";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 
@@ -194,7 +195,7 @@ export default function MainStoreApprover() {
       )}
 
       {/* ── Filter ── */}
-      <div className="mb-4">
+      <div className="flex h-full py-2  items-center justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -206,6 +207,38 @@ export default function MainStoreApprover() {
           <option value="REJECTED">مسترد شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
         </select>
+        
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
+        
       </div>
 
       {/* ── Table ── */}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getRequestById } from "../services/api";
 import StatusBadge from "./StatusBadge";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 
@@ -263,7 +264,7 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
       )}
 
       {/* ── Filter row ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
+      <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">
         <select
           value={hoFilter}
           onChange={(e) => setHoFilter(e.target.value)}
@@ -277,6 +278,38 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
           <option value="DISPUTED">متنازع</option>
           <option value="REJECTED">مسترد شدہ</option>
         </select>
+        
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
+        
       </div>
 
       {/* ── Table ── */}

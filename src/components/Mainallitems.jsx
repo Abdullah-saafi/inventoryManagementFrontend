@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createItem } from "../services/api";
-import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -106,7 +106,16 @@ export default function MainAllItems({
   return (
     <div>
       {/* Filters + Add button */}
-      <div className="flex flex-wrap items-center gap-2 mb-4 ">
+      <div>
+        <button
+          onClick={openAddItem}
+          className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+        >
+          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
+        </button>
+      </div>
+      <div className="flex h-full py-2  items-center justify-between">
+        <div>
         <input
           value={search}
           onChange={(e) => {
@@ -114,7 +123,7 @@ export default function MainAllItems({
             setCurrentPage(1);
           }}
           placeholder="Search by name or item number..."
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64 mr-3"
         />
         <select
           value={filterCategory}
@@ -122,7 +131,7 @@ export default function MainAllItems({
             setFilterCategory(e.target.value);
             setCurrentPage(1);
           }}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
         >
           <option value="">تمام زمروں</option>
           {categories.map((c) => (
@@ -143,18 +152,14 @@ export default function MainAllItems({
             Clear
           </button>
         )}
-        <button
-          onClick={openAddItem}
-          className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
-        >
-          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
-        </button>
-
+        
+        </div>
+        
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              data={requests}
+              data={filteredItems}
               dateKey="created_at"
               fileName="requests"
               columns={[
@@ -180,8 +185,8 @@ export default function MainAllItems({
             />
           </div>
         </div>
-      </div>
 
+      </div>
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">

@@ -8,7 +8,7 @@ import {
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import ItemsTable from "../components/ItemsTable";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 
 const StatusBadge = ({ status }) => {
   const styles = {

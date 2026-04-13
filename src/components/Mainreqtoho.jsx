@@ -9,6 +9,7 @@ import {
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -328,35 +329,69 @@ export default function SubStore() {
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
-        </select>
-
-        {auth.role === "super admin" && (
+      <div className="flex flex-wrap gap-2 mb-4 items-center  h-full py-2 justify-between">
+        <div>
           <select
-            value={filterStore}
-            onChange={(e) => setFilterStore(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mx-3"
           >
-            <option value="">All Sub Stores</option>
-            {subStores.map((s) => (
-              <option key={s.store_id} value={s.store_id}>
-                {s.store_name}
-              </option>
-            ))}
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="FULFILLED">Fulfilled</option>
+            <option value="RECEIVED">Received</option>
+            <option value="DISPUTED">Disputed</option>
           </select>
-        )}
+  
+          {auth.role === "super admin" && (
+            <select
+              value={filterStore}
+              onChange={(e) => setFilterStore(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Sub Stores</option>
+              {subStores.map((s) => (
+                <option key={s.store_id} value={s.store_id}>
+                  {s.store_name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+        
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
+        
       </div>
 
       {/* ── Requests Table ── */}

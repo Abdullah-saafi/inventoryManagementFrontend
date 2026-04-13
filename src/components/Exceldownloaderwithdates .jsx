@@ -68,11 +68,13 @@ export default function ExcelDownloaderWithDates({
       }
 
       let sheetData;
-      if (columns && columns.length > 0) {
-        const headers = columns.map((c) => c.label);
+      const cols = columns && columns.length > 0 ? columns : null;
+
+      if (cols) {
+        const headers = cols.map((c) => c.label ?? c.key);
         const body = rows.map((row) =>
-          columns.map((c) => {
-            const val = row[c.key];
+          cols.map((c) => {
+            const val = c.key in row ? row[c.key] : "";
             return typeof c.format === "function"
               ? c.format(val, row)
               : (val ?? "");
@@ -80,6 +82,7 @@ export default function ExcelDownloaderWithDates({
         );
         sheetData = [headers, ...body];
       } else {
+        // No columns defined — export every key from the data
         const keys = Object.keys(rows[0]);
         const headers = keys.map((k) =>
           k.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
@@ -89,6 +92,8 @@ export default function ExcelDownloaderWithDates({
       }
 
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
+
+      // Safe column width calculation
       ws["!cols"] = sheetData[0].map((_, ci) => ({
         wch: Math.min(
           40,
@@ -147,16 +152,8 @@ export default function ExcelDownloaderWithDates({
 
       {/* Quick range shortcuts */}
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Quick
-        </label>
         <div className="flex gap-1">
-          {[
-            { label: "Today", days: 0 },
-            { label: "7 days", days: 7 },
-            { label: "30 days", days: 30 },
-            { label: "90 days", days: 90 },
-          ].map(({ label, days }) => (
+          {[{ label: "30 days", days: 30 }].map(({ label, days }) => (
             <button
               key={label}
               onClick={() => {

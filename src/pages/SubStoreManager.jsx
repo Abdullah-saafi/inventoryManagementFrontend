@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import ExcelDownloader from "../components/ExcelDownloader";
-
 import {
   getRequests,
   getRequestById,
@@ -10,6 +8,7 @@ import {
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import ItemsTable from "../components/ItemsTable";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
 
 const StatusBadge = ({ status }) => {
   const styles = {
@@ -187,7 +186,7 @@ export default function SubStoreManager() {
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-500 text-sm mt-0.5">
-            Review and approve or Store item requests
+            Review and approve or reject staff item requests
           </p>
         </div>
       </div>
@@ -222,35 +221,7 @@ export default function SubStoreManager() {
           <option value="DISPUTED">متنازع</option>
         </select>
       </div>
-      {/* Excel FullSheet Downloader */}
-      <div className="flex justify-end mb-3">
-        <ExcelDownloader
-          data={requests}
-          fileName="sub_store_requests"
-          sheetName="Requests"
-          buttonLabel="Export Excel"
-          columns={[
-            { key: "request_id", label: "Request #" },
-            { key: "requested_by_name", label: "Requested By" },
-            {
-              key: "created_at",
-              label: "Request Date",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
-            },
-            { key: "status", label: "Status" },
-            {
-              key: "approved_at",
-              label: "Approved At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-            {
-              key: "fulfilled_at",
-              label: "Fulfilled At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-          ]}
-        />
-      </div>
+
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -434,6 +405,67 @@ export default function SubStoreManager() {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="Temp-downloader">
+        {/* Excel FullSheet/Page Downloader (For Tssting)*/}
+        {/* <div className="flex justify-end mb-3">
+                    <ExcelDownloader
+                      data={requests}
+                      fileName="sub_store_requests"
+                      sheetName="Requests"
+                      buttonLabel="Export Excel"
+                      columns={[
+                        { key: "request_id", label: "Request #" },
+                        { key: "requested_by_name", label: "Requested By" },
+                        {
+                          key: "created_at",
+                          label: "Request Date",
+                          format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
+                        },
+                        { key: "status", label: "Status" },
+                        {
+                          key: "approved_at",
+                          label: "Approved At",
+                          format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                        },
+                        {
+                          key: "fulfilled_at",
+                          label: "Fulfilled At",
+                          format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                        },
+                      ]}
+                    />
+                  </div> */}
+
+        {/* Excel specific Date Downloader */}
+        <div className="downloader">
+          <ExcelDownloaderWithDates
+            data={requests}
+            dateKey="created_at"
+            fileName="requests"
+            columns={[
+              { key: "request_id", label: "درخواست نمبر" },
+              { key: "requested_by_name", label: "درخواست کنندہ" },
+              {
+                key: "created_at",
+                label: "درخواست کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              { key: "status", label: "حالت" },
+              {
+                key: "approved_at",
+                label: "منظوری کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              {
+                key: "fulfilled_at",
+                label: "تکمیل کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Approve Modal */}

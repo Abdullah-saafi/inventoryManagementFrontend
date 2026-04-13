@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import ExcelDownloader from "../components/ExcelDownloader";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
 import {
   getStores,
   getItems,
@@ -14,8 +12,10 @@ import API from "../services/api";
 import Toast from "../components/Toast";
 import SubStoreHeader from "../components/SubStoreHeader";
 import SubStoreFilters from "../components/SubStoreFilters";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
 import RequestRow from "../components/RequestRow";
 import CreateRequestModal from "../components/CreateRequestModal";
+import Pagination from "../components/Pagination";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -47,6 +47,11 @@ export default function SubStore() {
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
 
+  // ── Pagination state ─────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  // ─────────────────────────────────────────────────────────────
+
   const [form, setForm] = useState({
     from_store_id: "",
     to_store_id: "",
@@ -75,6 +80,7 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
+      setPage(1); // reset to first page on fresh load
     } catch {
       setError("Failed to load data");
     } finally {
@@ -167,7 +173,6 @@ export default function SubStore() {
     setForm((f) => {
       const allItems = [...storeItems, ...f.items];
       const nextItemNo = getNextItemNo(allItems);
-
       return {
         ...f,
         items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
@@ -177,7 +182,6 @@ export default function SubStore() {
   const removeLine = (idx) => {
     setForm((f) => {
       const items = f.items.filter((_, i) => i !== idx);
-
       return {
         ...f,
         items: items.length ? items : [{ ...EMPTY_LINE }],
@@ -260,10 +264,8 @@ export default function SubStore() {
 
   const getNextItemNo = (items = []) => {
     if (!items.length) return "ITM-001";
-
     let max = 0;
     let prefix = "ITM-";
-
     items.forEach((item) => {
       const match = item.item_no?.match(/(\D+)(\d+)$/);
       if (match) {
@@ -272,9 +274,15 @@ export default function SubStore() {
         if (num > max) max = num;
       }
     });
-
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+
+  // ── Paginated slice ──────────────────────────────────────────
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+  // ─────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -304,55 +312,36 @@ export default function SubStore() {
             subStores={subStores}
           />
         </div>
-        {/* Excel FullSheet/Page Downloader (For Tssting)*/}
-        {/* <div className="flex justify-end mb-3">
-        <ExcelDownloader
-          data={requests}
-          fileName="sub_store_requests"
-          sheetName="Requests"
-          buttonLabel="Export Excel"
-          columns={[
-            { key: "request_id", label: "Request #" },
-            { key: "requested_by_name", label: "Requested By" },
-            {
-              key: "created_at",
-              label: "Request Date",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
-            },
-            { key: "status", label: "Status" },
-            {
-              key: "approved_at",
-              label: "Approved At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-            {
-              key: "fulfilled_at",
-              label: "Fulfilled At",
-              format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-            },
-          ]}
-        />
-      </div> */}
-
         {/* Excel specific Date Downloader */}
         <div className="downloader">
           <ExcelDownloaderWithDates
-            data={requests} // ← already in your state
-            dateKey="created_at" // ← which field to filter by
+            data={requests}
+            dateKey="created_at"
             fileName="requests"
             columns={[
-              { key: "request_id", label: "Request #" },
-              { key: "requested_by_name", label: "Requested By" },
-              { key: "status", label: "Status" },
+              { key: "request_id", label: "درخواست نمبر" },
+              { key: "requested_by_name", label: "درخواست کنندہ" },
               {
                 key: "created_at",
-                label: "Date",
-                format: (v) => new Date(v).toLocaleDateString(),
+                label: "درخواست کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              { key: "status", label: "حالت" },
+              {
+                key: "approved_at",
+                label: "منظوری کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              {
+                key: "fulfilled_at",
+                label: "تکمیل کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
               },
             ]}
           />
         </div>
       </div>
+
       {/* Main table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
@@ -377,14 +366,14 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {paginatedRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
             ) : (
-              requests.map((r) => (
+              paginatedRequests.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
@@ -398,7 +387,18 @@ export default function SubStore() {
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
+
       {grnRequest && (
         <GRNModal
           request={grnRequest}

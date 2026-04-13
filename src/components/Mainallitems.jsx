@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createItem } from "../services/api";
 import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
+import Pagination from "./Pagination";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -26,7 +27,7 @@ export default function MainAllItems({
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
+  const [pageSize, setPageSize] = useState(10);
 
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
@@ -97,10 +98,9 @@ export default function MainAllItems({
     );
   });
 
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
   return (
@@ -291,76 +291,20 @@ export default function MainAllItems({
             )}
           </tbody>
         </table>
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 px-1">
-          <span className="text-gray-400 text-xs">
-            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-            {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)} of{" "}
-            {filteredItems.length} items
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              «
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p - 1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              ‹ Prev
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2,
-              )
-              .reduce((acc, p, i, arr) => {
-                if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((p, i) =>
-                p === "..." ? (
-                  <span
-                    key={`e-${i}`}
-                    className="px-2 py-1 text-xs text-gray-400"
-                  >
-                    …
-                  </span>
-                ) : (
-                  <button
-                    key={p}
-                    onClick={() => setCurrentPage(p)}
-                    className={`px-2.5 py-1 text-xs rounded border font-mono ${currentPage === p ? "bg-emerald-600 border-emerald-600 text-white font-bold" : "border-gray-300 text-gray-500 hover:bg-gray-100"}`}
-                  >
-                    {p}
-                  </button>
-                ),
-              )}
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              Next ›
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              »
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredItems.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setCurrentPage(1);
+          }}
+        />
+      </div>
 
       {/* Add Item Modal */}
       {showAddItem && (

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { getRequestById } from "../services/api";
 import StatusBadge from "./StatusBadge";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 
@@ -41,9 +42,7 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
           }`}
         >
           <div className="text-xs font-bold uppercase tracking-wider mb-1">
-            {isDisputed
-              ? "⚠ Reported Issues"
-              : "✓ Receipt Confirmed"}
+            {isDisputed ? "⚠ Reported Issues" : "✓ Receipt Confirmed"}
           </div>
           <div>{d.grn_note}</div>
           {d.grn_at && (
@@ -98,14 +97,18 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                   {i.item_no}
                 </td>
                 <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-                <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
+                <td className="py-2 pr-4 text-gray-400 text-xs">
+                  {i.item_uom}
+                </td>
                 <td className="py-2 pr-4 font-mono text-gray-800 text-center">
                   {i.requested_qty}
                 </td>
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.approved_qty != null ? "text-emerald-600" : "text-gray-300"
+                      i.approved_qty != null
+                        ? "text-emerald-600"
+                        : "text-gray-300"
                     }
                   >
                     {i.approved_qty ?? "—"}
@@ -114,7 +117,9 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
+                      i.fulfilled_qty != null
+                        ? "text-blue-600"
+                        : "text-gray-300"
                     }
                   >
                     {i.fulfilled_qty ?? "—"}
@@ -142,8 +147,8 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                             i.item_condition === "OK"
                               ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                               : i.item_condition === "DAMAGED"
-                              ? "bg-amber-50 border-amber-300 text-amber-700"
-                              : "bg-red-50 border-red-300 text-red-700"
+                                ? "bg-amber-50 border-amber-300 text-amber-700"
+                                : "bg-red-50 border-red-300 text-red-700"
                           }`}
                         >
                           {i.item_condition}
@@ -231,14 +236,20 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
         payload.grn_status === "RECEIVED"
           ? "Delivery confirmed — marked as RECEIVED"
           : payload.grn_status === "DISPUTED"
-          ? "Issues reported — request marked DISPUTED"
-          : "Delivery rejected — notified";
-      showToastMsg(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
+            ? "Issues reported — request marked DISPUTED"
+            : "Delivery rejected — notified";
+      showToastMsg(
+        label,
+        payload.grn_status === "RECEIVED" ? "success" : "warn",
+      );
       setGrnRequest(null);
       setHoDetail(null);
       if (onRefresh) onRefresh();
     } catch (e) {
-      showToastMsg(e.response?.data?.message || "Failed to submit GRN", "error");
+      showToastMsg(
+        e.response?.data?.message || "Failed to submit GRN",
+        "error",
+      );
     } finally {
       setGrnSubmitting(false);
     }
@@ -249,7 +260,7 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
     : hoRequests;
 
   const pendingGRN = hoRequests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at
+    (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
   return (
@@ -258,18 +269,19 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
       {pendingGRN > 0 && (
         <div className="mb-4 flex items-center gap-2 text-xs text-blue-600 font-semibold">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-          {pendingGRN} deliver{pendingGRN > 1 ? "ies" : "y"} waiting for confirmation
+          {pendingGRN} deliver{pendingGRN > 1 ? "ies" : "y"} waiting for
+          confirmation
         </div>
       )}
 
       {/* ── Filter row ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
+      <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">
         <select
           value={hoFilter}
           onChange={(e) => setHoFilter(e.target.value)}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-              <option value="">تمام حالتیں</option>
+          <option value="">تمام حالتیں</option>
           <option value="PENDING">زیر التواء</option>
           <option value="APPROVED">منظور شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
@@ -277,6 +289,37 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
           <option value="DISPUTED">متنازع</option>
           <option value="REJECTED">مسترد شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -285,7 +328,7 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                 "درخواست نمبر",
+                "درخواست نمبر",
                 "درخواست کنندہ",
                 "درخواست کا وقت",
                 "حالت",
@@ -325,8 +368,8 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                         needsGRN
                           ? "bg-blue-50/40 hover:bg-blue-50"
                           : isDisputed
-                          ? "bg-amber-50/40 hover:bg-amber-50"
-                          : "hover:bg-gray-50"
+                            ? "bg-amber-50/40 hover:bg-amber-50"
+                            : "hover:bg-gray-50"
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openHoDetail(r)}
                     >
@@ -411,7 +454,11 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                             </div>
                           ) : (
                             hoDetail &&
-                            renderInlineDetail(hoDetail, () => openGRN(r), grnLoading)
+                            renderInlineDetail(
+                              hoDetail,
+                              () => openGRN(r),
+                              grnLoading,
+                            )
                           )}
                         </td>
                       </tr>
@@ -441,12 +488,15 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
             toast.type === "success"
               ? "bg-emerald-50 border-emerald-200 text-emerald-700"
               : toast.type === "warn"
-              ? "bg-amber-50 border-amber-200 text-amber-700"
-              : "bg-red-50 border-red-200 text-red-700"
+                ? "bg-amber-50 border-amber-200 text-amber-700"
+                : "bg-red-50 border-red-200 text-red-700"
           }`}
         >
           <span>{toast.message}</span>
-          <button onClick={() => setToast(null)} className="opacity-60 hover:opacity-100">
+          <button
+            onClick={() => setToast(null)}
+            className="opacity-60 hover:opacity-100"
+          >
             ×
           </button>
         </div>

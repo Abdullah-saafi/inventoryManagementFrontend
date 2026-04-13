@@ -206,7 +206,7 @@ export default function SubStoreManager() {
         </div>
       )}
 
-      <div className="mb-4">
+      <div className="flex h-full py-2  items-center justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -220,6 +220,37 @@ export default function SubStoreManager() {
           <option value="RECEIVED">وصول شدہ</option>
           <option value="DISPUTED">متنازع</option>
         </select>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={requests}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
@@ -405,67 +436,6 @@ export default function SubStoreManager() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="Temp-downloader">
-        {/* Excel FullSheet/Page Downloader (For Tssting)*/}
-        {/* <div className="flex justify-end mb-3">
-                    <ExcelDownloader
-                      data={requests}
-                      fileName="sub_store_requests"
-                      sheetName="Requests"
-                      buttonLabel="Export Excel"
-                      columns={[
-                        { key: "request_id", label: "Request #" },
-                        { key: "requested_by_name", label: "Requested By" },
-                        {
-                          key: "created_at",
-                          label: "Request Date",
-                          format: (v) => (v ? new Date(v).toLocaleDateString() : ""),
-                        },
-                        { key: "status", label: "Status" },
-                        {
-                          key: "approved_at",
-                          label: "Approved At",
-                          format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                        },
-                        {
-                          key: "fulfilled_at",
-                          label: "Fulfilled At",
-                          format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                        },
-                      ]}
-                    />
-                  </div> */}
-
-        {/* Excel specific Date Downloader */}
-        <div className="downloader">
-          <ExcelDownloaderWithDates
-            data={requests}
-            dateKey="created_at"
-            fileName="requests"
-            columns={[
-              { key: "request_id", label: "درخواست نمبر" },
-              { key: "requested_by_name", label: "درخواست کنندہ" },
-              {
-                key: "created_at",
-                label: "درخواست کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-              { key: "status", label: "حالت" },
-              {
-                key: "approved_at",
-                label: "منظوری کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-              {
-                key: "fulfilled_at",
-                label: "تکمیل کی تاریخ",
-                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-              },
-            ]}
-          />
-        </div>
       </div>
 
       {/* Approve Modal */}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createItem } from "../services/api";
+import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -19,6 +20,8 @@ export default function MainAllItems({
   mainStores,
   onRefresh,
   showToast,
+  loading,
+  error,
 }) {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -103,66 +106,103 @@ export default function MainAllItems({
   return (
     <div>
       {/* Filters + Add button */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by name or item number..."
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
-        />
-        <select
-          value={filterCategory}
-          onChange={(e) => {
-            setFilterCategory(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام زمروں</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        {(search || filterCategory) && (
-          <button
-            onClick={() => {
-              setSearch("");
-              setFilterCategory("");
-              setCurrentPage(1);
-            }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-          >
-            Clear
-          </button>
-        )}
-        <button
-          onClick={openAddItem}
-          className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
-        >
-          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
-        </button>
-      </div>
+      <div className="header  flex items-center justify-between">
+        <div className="search&Downlaod flex  py-2 flex-col ">
+          <div>
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by name or item number..."
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64 mr-3"
+            />
+            <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
+            >
+              <option value="">تمام زمروں</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {(search || filterCategory) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterCategory("");
+                  setCurrentPage(1);
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
+          <div className="Temp-downloader py-4">
+            {/* Excel specific Date Downloader */}
+            <div className="downloader flex">
+              <ExcelDownloaderWithDates
+                data={filteredItems}
+                dateKey="created_at"
+                fileName="requests"
+                columns={[
+                  { key: "request_id", label: "درخواست نمبر" },
+                  { key: "requested_by_name", label: "درخواست کنندہ" },
+                  {
+                    key: "created_at",
+                    label: "درخواست کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                  { key: "status", label: "حالت" },
+                  {
+                    key: "approved_at",
+                    label: "منظوری کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                  {
+                    key: "fulfilled_at",
+                    label: "تکمیل کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="Newitem+ ">
+          <button
+            onClick={openAddItem}
+            className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+          >
+            <span className="text-base leading-none">+</span> نئی اشیاء شامل
+            کریں
+          </button>
+        </div>
+      </div>
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-        "آئٹم نمبر",
-  "نام",
-  "زمرہ",
-  "اکائی",
-  "مرکزی اسٹور کا اسٹاک",
-  "ذیلی اسٹورز کو بھیجا گیا",
-  "باقی اسٹاک",
-  "کم از کم اسٹاک",
-  "حالت"
+                "آئٹم نمبر",
+                "نام",
+                "زمرہ",
+                "اکائی",
+                "مرکزی اسٹور کا اسٹاک",
+                "ذیلی اسٹورز کو بھیجا گیا",
+                "باقی اسٹاک",
+                "کم از کم اسٹاک",
+                "حالت",
               ].map((h) => (
                 <th
                   key={h}
@@ -174,7 +214,23 @@ export default function MainAllItems({
             </tr>
           </thead>
           <tbody>
-            {paginatedItems.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedItems.length === 0 ? (
               <tr>
                 <td colSpan={9} className="text-center py-12 text-gray-400">
                   No items found.
@@ -348,7 +404,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                   اشیاء  کا نام
+                  اشیاء کا نام
                 </label>
                 <input
                   value={newItem.item_name}
@@ -427,7 +483,7 @@ export default function MainAllItems({
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                 اسٹور*
+                  اسٹور*
                 </label>
                 <select
                   value={newItem.store_id}

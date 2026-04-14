@@ -10,29 +10,13 @@ import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
+import Toast from "../components/Toast";
+import StatusBadge from "../components/StatusBadge";
+import SubStoreFilters from "../components/SubStoreFilters";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const s = {
-    PENDING: "border-yellow-400 text-yellow-600 bg-yellow-50",
-    APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
-    REJECTED: "border-red-400 text-red-600 bg-red-50",
-    FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
-    RECEIVED: "border-teal-400 text-teal-600 bg-teal-50",
-    DISPUTED: "border-amber-400 text-amber-600 bg-amber-50",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-gray-300 text-gray-500 bg-gray-50"}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-// ─── FIX 3: Date + Time cell ──────────────────────────────────────────────────
+// ─── Date + Time cell ─────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
   if (!ts) return <span className="text-gray-300 text-xs">—</span>;
   const d = new Date(ts);
@@ -87,7 +71,6 @@ export default function SubStore() {
 
   const { auth } = useAuth();
 
-  // ── Data loading ───────────────────────────────────────────────────────────
   const load = async () => {
     setPageLoading(true);
     try {
@@ -117,7 +100,6 @@ export default function SubStore() {
     if (auth.store_id || auth.role === "super admin") load();
   }, [filterStatus, filterStore, auth.store_id]);
 
-  // ── FIX 1: Load items from MAIN STORE (to_store_id), not sub store ─────────
   useEffect(() => {
     if (form.to_store_id) {
       getItems({ store_id: form.to_store_id })
@@ -128,14 +110,12 @@ export default function SubStore() {
     }
   }, [form.to_store_id]);
 
-  // ── FIX 2: Auto-fill main store when only one exists ──────────────────────
   useEffect(() => {
     if (mainStores.length === 1 && !form.to_store_id) {
       setForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
     }
   }, [mainStores]);
 
-  // ── Inline detail ──────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
@@ -197,7 +177,6 @@ export default function SubStore() {
     setTimeout(() => setToast(null), 4000);
   };
 
-  // ── Form helpers ───────────────────────────────────────────────────────────
   const addLine = () =>
     setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
   const removeLine = (idx) =>
@@ -264,7 +243,6 @@ export default function SubStore() {
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
-  // Auto-detect main store name for display
   const mainStoreName =
     mainStores.find((s) => s.store_id === form.to_store_id)?.store_name || "";
   const myStoreName =
@@ -272,21 +250,18 @@ export default function SubStore() {
 
   const getNextItemNo = (items = []) => {
     if (!items.length) return "ITM-001";
-
     const nums = items
       .map((i) => {
         const match = i.item_no?.match(/\d+$/);
         return match ? parseInt(match[0], 10) : 0;
       })
       .filter(Boolean);
-
     const max = nums.length ? Math.max(...nums) : 0;
-
     const prefixMatch = items[0]?.item_no?.match(/^\D+/);
     const prefix = prefixMatch ? prefixMatch[0] : "ITM-";
-
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+
   return (
     <div>
       {/* ── Header ── */}
@@ -305,21 +280,14 @@ export default function SubStore() {
         <button
           onClick={() => {
             const nextItemNo = getNextItemNo(storeItems);
-
             setForm({
               from_store_id: auth.store_id || "",
               to_store_id:
                 mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
-              items: [
-                {
-                  ...EMPTY_LINE,
-                  item_no: nextItemNo, // 👈 auto-fill here
-                },
-              ],
+              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
             });
-
             setShowCreate(true);
           }}
           className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
@@ -329,43 +297,19 @@ export default function SubStore() {
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center  h-full py-2 justify-between">
-        <div>
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mx-3"
-          >
-            <option value="">All Status</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="REJECTED">Rejected</option>
-            <option value="FULFILLED">Fulfilled</option>
-            <option value="RECEIVED">Received</option>
-            <option value="DISPUTED">Disputed</option>
-          </select>
-
-          {auth.role === "super admin" && (
-            <select
-              value={filterStore}
-              onChange={(e) => setFilterStore(e.target.value)}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Sub Stores</option>
-              {subStores.map((s) => (
-                <option key={s.store_id} value={s.store_id}>
-                  {s.store_name}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+      <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">
+        <SubStoreFilters
+          filterStatus={filterStatus}
+          setFilterStatus={setFilterStatus}
+          filterStore={filterStore}
+          setFilterStore={setFilterStore}
+          role={auth.role}
+          subStores={subStores}
+        />
 
         <div className="Temp-downloader">
-          {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              // data={request}
               dateKey="created_at"
               fileName="requests"
               columns={[
@@ -479,24 +423,18 @@ export default function SubStore() {
                       <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-
-                      {/* FIX 3: requested_at with time */}
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.requested_at || r.created_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
-
-                      {/* FIX 3: approved_at + fulfilled_at with time */}
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.approved_at} />
                       </td>
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.fulfilled_at} />
                       </td>
-
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {needsGRN && (
@@ -738,7 +676,6 @@ export default function SubStore() {
             </div>
 
             <div className="p-5 space-y-4">
-              {/* Store info — read-only summary */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -755,7 +692,6 @@ export default function SubStore() {
                     کے لیے (ہیڈ آفس)
                   </label>
                   {mainStores.length === 1 ? (
-                    // FIX 2: auto-filled — show as read-only
                     <input
                       value={mainStores[0].store_name}
                       readOnly
@@ -795,7 +731,6 @@ export default function SubStore() {
                 />
               </div>
 
-              {/* Items section */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-gray-500 text-xs font-semibold uppercase">
@@ -809,7 +744,6 @@ export default function SubStore() {
                   </button>
                 </div>
 
-                {/* FIX 1: show message until main store is selected */}
                 {!form.to_store_id ? (
                   <div className="text-gray-400 text-xs text-center py-6 border border-dashed border-gray-300 rounded-lg">
                     Select a Main Store first to load available items
@@ -834,7 +768,6 @@ export default function SubStore() {
                           </button>
                         </div>
 
-                        {/* Catalogue search dropdown */}
                         <div className="mb-3">
                           <label className="text-gray-500 text-xs mb-1 block">
                             Select from catalogue ({storeItems.length} items
@@ -962,7 +895,6 @@ export default function SubStore() {
                             <label className="text-gray-500 text-xs mb-1 block">
                               چیز کا نام
                             </label>
-                            {/* FIX 2: read-only when selected from catalogue */}
                             <input
                               value={item.item_name}
                               readOnly={!!item.selected_item_no}
@@ -982,7 +914,6 @@ export default function SubStore() {
                             <label className="text-gray-500 text-xs mb-1 block">
                               UOM *
                             </label>
-                            {/* FIX 2: read-only when selected from catalogue */}
                             <input
                               value={item.item_uom}
                               readOnly={!!item.selected_item_no}
@@ -998,7 +929,6 @@ export default function SubStore() {
                               }`}
                             />
                           </div>
-
                           <div className="col-span-2">
                             <label className="text-gray-500 text-xs mb-1 block">
                               مقدار
@@ -1044,26 +974,7 @@ export default function SubStore() {
         </div>
       )}
 
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { getRequestById } from "../services/api";
 import StatusBadge from "./StatusBadge";
 import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 import GRNModal from "../components/GRNModal";
+import Toast from "../components/Toast";
 import API from "../services/api";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
@@ -32,7 +33,6 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 
   return (
     <div className="space-y-3">
-      {/* GRN note banner for RECEIVED or DISPUTED */}
       {showGRNColumns && d.grn_note && (
         <div
           className={`rounded-xl p-3 border text-sm ${
@@ -165,7 +165,6 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
         </table>
       </div>
 
-      {/* Verify Delivery button inside expanded panel */}
       {needsGRN && (
         <div className="pt-2 border-t border-gray-200">
           <button
@@ -291,10 +290,8 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
         </select>
 
         <div className="Temp-downloader">
-          {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              // data={request}
               dateKey="created_at"
               fileName="requests"
               columns={[
@@ -373,7 +370,6 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openHoDetail(r)}
                     >
-                      {/* Request No + badges */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-yellow-600 text-xs font-bold">
@@ -391,31 +387,24 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                           )}
                         </div>
                       </td>
-
                       <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.created_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.approved_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.fulfilled_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.rejected_at} />
                       </td>
-
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {needsGRN && (
@@ -431,9 +420,7 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                             </button>
                           )}
                           <span
-                            className={`text-xs ${
-                              isExpanded ? "text-emerald-600" : "text-gray-400"
-                            }`}
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
                             {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
@@ -481,26 +468,7 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
         />
       )}
 
-      {/* ── Toast ── */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "warn"
-                ? "bg-amber-50 border-amber-200 text-amber-700"
-                : "bg-red-50 border-red-200 text-red-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

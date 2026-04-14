@@ -4,6 +4,7 @@ import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
 import API from "../services/api";
+import Pagination from "../components/Pagination";
 
 const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
 const acceptReturn = (id, data) =>
@@ -290,6 +291,10 @@ export default function HeadOffice() {
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // Fulfill modal state
   const [fulfillModal, setFulfillModal] = useState(null);
   const [fulfillMode, setFulfillMode] = useState("fulfill");
@@ -319,6 +324,11 @@ export default function HeadOffice() {
 
   useEffect(() => {
     load();
+  }, [filter]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setPage(1);
   }, [filter]);
 
   const openDetail = async (r) => {
@@ -395,6 +405,12 @@ export default function HeadOffice() {
 
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+
+  // Paginated slice
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   return (
     <div>
@@ -536,7 +552,7 @@ export default function HeadOffice() {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const canFulfill = r.status === "APPROVED";
                 const isDisputed = r.status === "DISPUTED";
@@ -902,6 +918,18 @@ export default function HeadOffice() {
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        {!loading && !error && requests.length > 0 && (
+          <Pagination
+            currentPage={page}
+            totalItems={requests.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            pageSizeOptions={[10, 25, 50]}
+            onPageSizeChange={setPageSize}
+          />
+        )}
       </div>
 
       {/* ── Fulfill / Re-dispatch Modal ── */}

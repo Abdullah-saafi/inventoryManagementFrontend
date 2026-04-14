@@ -7,6 +7,7 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import Pagination from "../components/Pagination";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -60,6 +61,10 @@ export default function MainStoreApprover() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -77,6 +82,11 @@ export default function MainStoreApprover() {
 
   useEffect(() => {
     load();
+  }, [filter]);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setPage(1);
   }, [filter]);
 
   const openDetail = async (r) => {
@@ -178,6 +188,12 @@ export default function MainStoreApprover() {
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
+  // Paginated slice
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
   return (
     <div>
       {/* ── Header ── */}
@@ -252,7 +268,7 @@ export default function MainStoreApprover() {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 return (
                   <>
@@ -472,6 +488,18 @@ export default function MainStoreApprover() {
             )}
           </tbody>
         </table>
+
+        {/* ── Pagination ── */}
+        {requests.length > 0 && (
+          <Pagination
+            currentPage={page}
+            totalItems={requests.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            pageSizeOptions={[10, 25, 50]}
+            onPageSizeChange={setPageSize}
+          />
+        )}
       </div>
 
       {/* ── Approve Modal ── */}

@@ -5,6 +5,7 @@ import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 import GRNModal from "../components/GRNModal";
 import Toast from "../components/Toast";
 import API from "../services/api";
+import Pagination from "./Pagination";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -188,6 +189,8 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
@@ -258,13 +261,14 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
     ? hoRequests.filter((r) => r.status === hoFilter)
     : hoRequests;
 
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
+
   const pendingGRN = hoRequests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
   return (
     <div>
-      {/* ── Pending GRN banner ── */}
       {pendingGRN > 0 && (
         <div className="mb-4 flex items-center gap-2 text-xs text-blue-600 font-semibold">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
@@ -273,11 +277,13 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
         </div>
       )}
 
-      {/* ── Filter row ── */}
       <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">
         <select
           value={hoFilter}
-          onChange={(e) => setHoFilter(e.target.value)}
+          onChange={(e) => {
+            setHoFilter(e.target.value);
+            setPage(1);
+          }}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">تمام حالتیں</option>
@@ -319,7 +325,6 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
         </div>
       </div>
 
-      {/* ── Table ── */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -344,14 +349,14 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <tr>
                 <td colSpan={8} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => {
+              paginated.map((r) => {
                 const isExpanded =
                   hoDetail && hoDetail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -428,7 +433,6 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
                       </td>
                     </tr>
 
-                    {/* ── Expanded detail row ── */}
                     {isExpanded && (
                       <tr
                         key={r.request_id + "-detail"}
@@ -456,9 +460,19 @@ export default function MainReqStatus({ hoRequests, onRefresh }) {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
+        />
       </div>
 
-      {/* ── GRN Modal ── */}
       {grnRequest && (
         <GRNModal
           request={grnRequest}

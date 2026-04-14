@@ -13,6 +13,7 @@ import ExcelDownloaderWithDates from "./Exceldownloaderwithdates ";
 import Toast from "../components/Toast";
 import StatusBadge from "../components/StatusBadge";
 import SubStoreFilters from "../components/SubStoreFilters";
+import Pagination from "../components/Pagination";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -56,6 +57,8 @@ export default function SubStore() {
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
@@ -262,6 +265,8 @@ export default function SubStore() {
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
 
+  const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div>
       {/* ── Header ── */}
@@ -300,9 +305,15 @@ export default function SubStore() {
       <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">
         <SubStoreFilters
           filterStatus={filterStatus}
-          setFilterStatus={setFilterStatus}
+          setFilterStatus={(v) => {
+            setFilterStatus(v);
+            setPage(1);
+          }}
           filterStore={filterStore}
-          setFilterStore={setFilterStore}
+          setFilterStore={(v) => {
+            setFilterStore(v);
+            setPage(1);
+          }}
           role={auth.role}
           subStores={subStores}
         />
@@ -384,7 +395,7 @@ export default function SubStore() {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginated.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
                 const isDisputed = r.status === "DISPUTED";
@@ -645,6 +656,17 @@ export default function SubStore() {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setPage(1);
+          }}
+        />
       </div>
 
       {/* ── GRN Modal ── */}

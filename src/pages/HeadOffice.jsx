@@ -456,7 +456,7 @@ export default function HeadOffice() {
           <option value="DISPUTED">متنازع</option>
           <option value="CLOSED">بند شدہ</option>
         </select>
-        
+
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}
           <div className="downloader">
@@ -487,7 +487,6 @@ export default function HeadOffice() {
             />
           </div>
         </div>
-        
       </div>
 
       {/* ── Table ── */}

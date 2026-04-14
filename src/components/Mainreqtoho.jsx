@@ -344,7 +344,7 @@ export default function SubStore() {
             <option value="RECEIVED">Received</option>
             <option value="DISPUTED">Disputed</option>
           </select>
-  
+
           {auth.role === "super admin" && (
             <select
               value={filterStore}
@@ -360,7 +360,7 @@ export default function SubStore() {
             </select>
           )}
         </div>
-        
+
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}
           <div className="downloader">
@@ -391,7 +391,6 @@ export default function SubStore() {
             />
           </div>
         </div>
-        
       </div>
 
       {/* ── Requests Table ── */}

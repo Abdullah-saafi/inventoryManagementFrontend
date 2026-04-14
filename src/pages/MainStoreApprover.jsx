@@ -207,7 +207,7 @@ export default function MainStoreApprover() {
           <option value="REJECTED">مسترد شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
         </select>
-        
+
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}
           <div className="downloader">
@@ -238,7 +238,6 @@ export default function MainStoreApprover() {
             />
           </div>
         </div>
-        
       </div>
 
       {/* ── Table ── */}

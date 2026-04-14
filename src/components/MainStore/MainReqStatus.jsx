@@ -1,8 +1,10 @@
-import { useState } from "react";
+import React, { useState } from "react"; // Added React for Fragment
 import { getRequestById, submitGRN } from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import GRNModal from "../GRNModal";
 import useErrorHandler from "../useErrorHandler";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -29,7 +31,6 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 
   return (
     <div className="space-y-3">
-      {/* GRN note banner for RECEIVED or DISPUTED */}
       {showGRNColumns && d.grn_note && (
         <div
           className={`rounded-xl p-3 border text-sm ${
@@ -39,9 +40,7 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
           }`}
         >
           <div className="text-xs font-bold uppercase tracking-wider mb-1">
-            {isDisputed
-              ? "⚠ Reported Issues"
-              : "✓ Receipt Confirmed"}
+            {isDisputed ? "⚠ Reported Issues" : "✓ Receipt Confirmed"}
           </div>
           <div>{d.grn_note}</div>
           {d.grn_at && (
@@ -96,14 +95,18 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                   {i.item_no}
                 </td>
                 <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
-                <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
+                <td className="py-2 pr-4 text-gray-400 text-xs">
+                  {i.item_uom}
+                </td>
                 <td className="py-2 pr-4 font-mono text-gray-800 text-center">
                   {i.requested_qty}
                 </td>
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.approved_qty != null ? "text-emerald-600" : "text-gray-300"
+                      i.approved_qty != null
+                        ? "text-emerald-600"
+                        : "text-gray-300"
                     }
                   >
                     {i.approved_qty ?? "—"}
@@ -112,7 +115,9 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                 <td className="py-2 pr-4 font-mono text-center">
                   <span
                     className={
-                      i.fulfilled_qty != null ? "text-blue-600" : "text-gray-300"
+                      i.fulfilled_qty != null
+                        ? "text-blue-600"
+                        : "text-gray-300"
                     }
                   >
                     {i.fulfilled_qty ?? "—"}
@@ -140,8 +145,8 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
                             i.item_condition === "OK"
                               ? "bg-emerald-50 border-emerald-300 text-emerald-700"
                               : i.item_condition === "DAMAGED"
-                              ? "bg-amber-50 border-amber-300 text-amber-700"
-                              : "bg-red-50 border-red-300 text-red-700"
+                                ? "bg-amber-50 border-amber-300 text-amber-700"
+                                : "bg-red-50 border-red-300 text-red-700"
                           }`}
                         >
                           {i.item_condition}
@@ -158,7 +163,6 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
         </table>
       </div>
 
-      {/* Verify Delivery button inside expanded panel */}
       {needsGRN && (
         <div className="pt-2 border-t border-gray-200">
           <button
@@ -182,12 +186,14 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
-  const [error, setError] = useState("")
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
   
-  const handleError = useErrorHandler()
+  const handleError = useErrorHandler();
 
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {
@@ -200,8 +206,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       const res = await getRequestById(r.request_id);
       setHoDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data")
-      showToast(msg)
+      const msg = handleError(error, "Failed to load data");
+      showToast(msg);
     } finally {
       setHoDL(false);
     }
@@ -213,7 +219,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
     } catch(error) {
-      const msg = handleError(error, "Failed to load request details")
+      const msg = handleError(error, "Failed to load request details");
       showToast(msg);
     } finally {
       setGrnLoading(false);
@@ -235,7 +241,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       setHoDetail(null);
       if (onRefresh) onRefresh();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit GRN")
+      const msg = handleError(e, "Failed to submit GRN");
       showToast(msg);
     } finally {
       setGrnSubmitting(false);
@@ -247,8 +253,13 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
     : hoRequests;
 
   const pendingGRN = hoRequests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at
+    (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
+  
+  const paginatedRequests = filtered.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
   return (
     <div>
@@ -261,13 +272,16 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       )}
 
       {/* ── Filter row ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
+      <div className="flex flex-wrap gap-2 items-end h-full py-2 justify-between">
         <select
           value={hoFilter}
-          onChange={(e) => setHoFilter(e.target.value)}
+          onChange={(e) => {
+            setHoFilter(e.target.value);
+            setCurrentPage(1); // Reset to page 1 on filter change
+          }}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
-              <option value="">تمام حالتیں</option>
+          <option value="">تمام حالتیں</option>
           <option value="PENDING">زیر التواء</option>
           <option value="APPROVED">منظور شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
@@ -275,6 +289,33 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
           <option value="DISPUTED">متنازع</option>
           <option value="REJECTED">مسترد شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          <ExcelDownloaderWithDates
+            dateKey="created_at"
+            fileName="requests"
+            columns={[
+              { key: "request_id", label: "درخواست نمبر" },
+              { key: "requested_by_name", label: "درخواست کنندہ" },
+              {
+                key: "created_at",
+                label: "درخواست کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              { key: "status", label: "حالت" },
+              {
+                key: "approved_at",
+                label: "منظوری کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              {
+                key: "fulfilled_at",
+                label: "تکمیل کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -283,7 +324,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                 "درخواست نمبر",
+                "درخواست نمبر",
                 "درخواست کنندہ",
                 "درخواست کا وقت",
                 "حالت",
@@ -304,7 +345,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="text-center py-12">
+                <td colSpan={8} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                   </div>
@@ -312,9 +353,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
               </tr>
             ) : error || mainStoreError ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={8} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
+                    {error || mainStoreError}
                   </div>
                 </td>
               </tr>
@@ -325,26 +366,23 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => {
-                const isExpanded =
-                  hoDetail && hoDetail.request_id === r.request_id;
+              paginatedRequests.map((r) => {
+                const isExpanded = hoDetail && hoDetail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
                 const isDisputed = r.status === "DISPUTED";
 
                 return (
-                  <>
+                  <React.Fragment key={r.request_id}>
                     <tr
-                      key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
                         needsGRN
                           ? "bg-blue-50/40 hover:bg-blue-50"
                           : isDisputed
-                          ? "bg-amber-50/40 hover:bg-amber-50"
-                          : "hover:bg-gray-50"
+                            ? "bg-amber-50/40 hover:bg-amber-50"
+                            : "hover:bg-gray-50"
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openHoDetail(r)}
                     >
-                      {/* Request No + badges */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-yellow-600 text-xs font-bold">
@@ -362,31 +400,24 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
                           )}
                         </div>
                       </td>
-
                       <td className="px-4 py-3 text-gray-600">
                         {r.requested_by_name || "—"}
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.created_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <StatusBadge status={r.status} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.approved_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.fulfilled_at} />
                       </td>
-
                       <td className="px-4 py-3">
                         <DateTimeCell ts={r.rejected_at} />
                       </td>
-
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {needsGRN && (
@@ -401,42 +432,40 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
                               {grnLoading ? "…" : "Verify Delivery"}
                             </button>
                           )}
-                          <span
-                            className={`text-xs ${
-                              isExpanded ? "text-emerald-600" : "text-gray-400"
-                            }`}
-                          >
+                          <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
                             {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                         </div>
                       </td>
                     </tr>
 
-                    {/* ── Expanded detail row ── */}
                     {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className="bg-gray-50 border-b-2 border-yellow-200"
-                      >
+                      <tr className="bg-gray-50 border-b-2 border-yellow-200">
                         <td colSpan={8} className="px-6 py-4">
                           {hoDetailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
-                          ) :
-                            (
-                            hoDetail &&
-                            renderInlineDetail(hoDetail, () => openGRN(r), grnLoading)
+                          ) : (
+                            hoDetail && renderInlineDetail(hoDetail, () => openGRN(r), grnLoading)
                           )}
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={filtered.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── GRN Modal ── */}

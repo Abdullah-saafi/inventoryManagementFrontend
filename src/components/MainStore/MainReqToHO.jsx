@@ -5,11 +5,13 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-  submitGRN
+  submitGRN,
 } from "../../services/api";
 import { useAuth } from "../../context/authContext";
-import GRNModal from "../../components/GRNModal";
 import useErrorHandler from "../useErrorHandler";
+import GRNModal from "../GRNModal";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -56,7 +58,7 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function MainReqToHO({loading, mainStoreError, showToast}) {
+export default function MainReqToHO({ loading, mainStoreError, showToast }) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -69,12 +71,13 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
-
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  
-  const handleError = useErrorHandler()
+
+  const handleError = useErrorHandler();
 
   const [form, setForm] = useState({
     from_store_id: "",
@@ -105,8 +108,8 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-    } catch(error) {
-      const msg = handleError(error,"Failed to load data")
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
       setError(msg);
     } finally {
       setPageLoading(false);
@@ -123,13 +126,13 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
         .catch((e) => {
-          setStoreItems([])
-          const msg = handleError(e, "Failed to load items")
-          setError(msg)
+          setStoreItems([]);
+          const msg = handleError(e, "Failed to load items");
+          setError(msg);
         });
     } else {
       setStoreItems([]);
-    } 
+    }
   }, [form.to_store_id]);
 
   // ── FIX 2: Auto-fill main store when only one exists ──────────────────────
@@ -151,8 +154,8 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load request details")
-      showToast(msg)
+      const msg = handleError(error, "Failed to load request details");
+      showToast(msg);
     } finally {
       setDL(false);
     }
@@ -165,7 +168,7 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load request details")
+      const msg = handleError(error, "Failed to load request details");
       showToast(msg);
     } finally {
       setGrnLoading(false);
@@ -182,16 +185,13 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToast(
-        label,
-        payload.grn_status === "RECEIVED" ? "success" : "warn",
-      );
+      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit GRN")
-      showToast(msg)
+      const msg = handleError(e, "Failed to submit GRN");
+      showToast(msg);
     } finally {
       setGrnSubmitting(false);
     }
@@ -254,7 +254,7 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       });
       load();
     } catch (e) {
-      const msg = handleError(e, "Failed to submit")
+      const msg = handleError(e, "Failed to submit");
       showToast(msg);
     } finally {
       setCreating(false);
@@ -288,6 +288,12 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
 
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
   return (
     <div>
       {/* ── Header ── */}
@@ -330,35 +336,68 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
       </div>
 
       {/* ── Filters ── */}
-      <div className="flex flex-wrap gap-2 mb-4 items-center">
-        <select
-          value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">All Status</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-          <option value="FULFILLED">Fulfilled</option>
-          <option value="RECEIVED">Received</option>
-          <option value="DISPUTED">Disputed</option>
-        </select>
-
-        {auth.role === "super admin" && (
+      <div className="flex flex-wrap gap-2 items-end h-full py-2 justify-between">
+        <div>
           <select
-            value={filterStore}
-            onChange={(e) => setFilterStore(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mx-3"
           >
-            <option value="">All Sub Stores</option>
-            {subStores.map((s) => (
-              <option key={s.store_id} value={s.store_id}>
-                {s.store_name}
-              </option>
-            ))}
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="FULFILLED">Fulfilled</option>
+            <option value="RECEIVED">Received</option>
+            <option value="DISPUTED">Disputed</option>
           </select>
-        )}
+
+          {auth.role === "super admin" && (
+            <select
+              value={filterStore}
+              onChange={(e) => setFilterStore(e.target.value)}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+            >
+              <option value="">All Sub Stores</option>
+              {subStores.map((s) => (
+                <option key={s.store_id} value={s.store_id}>
+                  {s.store_name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Requests Table ── */}
@@ -408,7 +447,7 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
                 const isDisputed = r.status === "DISPUTED";
@@ -675,6 +714,14 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── GRN Modal ── */}
@@ -725,7 +772,7 @@ export default function MainReqToHO({loading, mainStoreError, showToast}) {
                   {mainStores.length === 1 ? (
                     // FIX 2: auto-filled — show as read-only
                     <input
-                      value={mainStores[0].store_name}
+                      value="HeadOffice"
                       readOnly
                       className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                     />

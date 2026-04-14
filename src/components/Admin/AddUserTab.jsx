@@ -43,18 +43,18 @@ export default function AddUserTab() {
     const { name, email, role, store_id, password, confirmPassword } = form;
     
     if (!name || !email || !role || !store_id || !password || !confirmPassword)
-      return setMessage("Please fill all required fields");
+      return setMessage("براہ کرم تمام مطلوبہ خانے پُر کریں");
     if (password !== confirmPassword)
-      return setMessage("Passwords do not match");
+      return setMessage("پاس ورڈ میچ نہیں کر رہے");
     if (password.length < 6)
-      return setMessage("Password must be at least 6 characters");
+      return setMessage("پاس ورڈ کم از کم 6 حروف پر مشتمل ہونا چاہیے");
 
     setLoading(true);
     setMessage("");
 
     try {
       const res = await addUser(form);
-      setMessage(res.data.message || "User created successfully");
+      setMessage(res.data.message || "صارف کا اکاؤنٹ کامیابی سے بن گیا ہے");
       setForm({ name: "", email: "", role: "", store_id: "", password: "", confirmPassword: "" });
     } catch (e) {
       const msg = handleError(e, "Failed to add user");
@@ -128,7 +128,7 @@ export default function AddUserTab() {
             disabled={loading}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
           >
-            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "Create User Account"}
+            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : "نیا اکاؤنٹ بنائیں"}
           </button>
 
           {message && (

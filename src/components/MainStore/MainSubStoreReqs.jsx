@@ -8,6 +8,9 @@ import {
 import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
 import useErrorHandler from "../useErrorHandler";
+import React from "react";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -42,7 +45,6 @@ const ConditionBadge = ({ condition }) => {
 };
 
 // ── Dispute Resolution Panel ──────────────────────────────────────────────────
-// managerName is passed in from auth — read-only, not editable
 const DisputeResolutionPanel = ({
   request,
   onResolved,
@@ -62,7 +64,6 @@ const DisputeResolutionPanel = ({
   const handleAcceptReturn = async () => {
     setProcessing("return");
     try {
-      // This API should update inventory
       await acceptReturn(request.request_id, { resolved_by_name: managerName });
       showToast("Return accepted — stock restored to main store");
       onResolved();
@@ -104,7 +105,6 @@ const DisputeResolutionPanel = ({
       </div>
 
       <div className="p-4 space-y-4 bg-white">
-        {/* Sub store message */}
         {request.grn_note && (
           <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2.5">
             <div className="text-amber-500 text-xs font-bold uppercase tracking-wider mb-1">
@@ -119,7 +119,6 @@ const DisputeResolutionPanel = ({
           </div>
         )}
 
-        {/* Affected items */}
         {disputedItems.length > 0 && (
           <div>
             <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">
@@ -156,7 +155,6 @@ const DisputeResolutionPanel = ({
           </div>
         )}
 
-        {/* Manager name — auto-filled, read-only */}
         <div>
           <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1.5">
             Resolved By
@@ -166,7 +164,6 @@ const DisputeResolutionPanel = ({
           </div>
         </div>
 
-        {/* Action buttons or confirmation */}
         {confirmed === null ? (
           <div className="flex items-center gap-3 pt-1">
             <button
@@ -273,7 +270,6 @@ const renderInlineDetail = (
 
   return (
     <div className="space-y-4">
-      {/* Received confirmation banner */}
       {isReceived && (
         <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
           <div className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">
@@ -290,7 +286,6 @@ const renderInlineDetail = (
         </div>
       )}
 
-      {/* Closed banner */}
       {isClosed && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
           <div className="text-gray-500 text-xs font-bold uppercase tracking-wider mb-1">
@@ -335,7 +330,6 @@ const renderInlineDetail = (
         </div>
       )}
 
-      {/* Items table */}
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 text-gray-400 text-xs">
@@ -436,7 +430,6 @@ const renderInlineDetail = (
         </tbody>
       </table>
 
-      {/* Dispute resolution panel */}
       {isDisputed && (
         <DisputeResolutionPanel
           request={d}
@@ -457,11 +450,15 @@ export default function MainSubStoreReqs({
   loading,
   mainStoreError,
 }) {
+  const [error, setError] = useState("");
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-  const [error, setError] = useState("");
   const [fulfilling, setFulfilling] = useState(null);
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -489,7 +486,7 @@ export default function MainSubStoreReqs({
     try {
       if (status === "DISPUTED") {
         showToast("Cannot fulfill — dispute resolution required", "error");
-        return; // Do nothing for disputed requests
+        return;
       }
       await fulfillRequest(requestId);
       showToast("Request fulfilled and inventory updated");
@@ -508,38 +505,42 @@ export default function MainSubStoreReqs({
     onRefresh();
   };
 
-  const filtered = reqFilter
-    ? requests.filter((r) => r.status === reqFilter)
-    : requests;
+  const filtered = Array.isArray(requests) 
+    ? (reqFilter ? requests.filter((r) => r.status === reqFilter) : requests)
+    : [];
+
+  // Pagination Logic
+  const startIndex = (currentPage - 1) * pageSize;
+  const paginatedData = (filtered || []).slice(startIndex, startIndex + pageSize);
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
-
-  // Table column count: 10 (Request No, From, To, Requested By, Approved By,
-  //                        Fulfilled By, Requested At, Fulfilled At, Status, Actions)
   const COL_COUNT = 10;
 
   return (
     <div>
-      {/* Disputed alert */}
       {disputedCount > 0 && reqFilter !== "DISPUTED" && (
         <div
           className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-amber-100 transition-colors"
-          onClick={() => setReqFilter("DISPUTED")}
+          onClick={() => {
+            setReqFilter("DISPUTED");
+            setCurrentPage(1);
+          }}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
-          <span className="text-amber-700 text-sm font-semibold">
-            {disputedCount} request{disputedCount > 1 ? "s" : ""} disputed by
-            sub store — click to review
+          <span className="text-amber-700 text-sm font-semibold" dir="rtl">
+            {disputedCount} {disputedCount > 1 ? "درخواستیں" : "درخواست"} ذیلی اسٹور کی جانب سے متنازع ہیں — جائزہ لینے کے لیے کلک کریں
           </span>
           <span className="ml-auto text-amber-500 text-xs">View →</span>
         </div>
       )}
 
-      {/* Filter */}
-      <div className="mb-4">
+      <div className="flex h-full py-2 items-end justify-between">
         <select
           value={reqFilter}
-          onChange={(e) => setReqFilter(e.target.value)}
+          onChange={(e) => {
+            setReqFilter(e.target.value);
+            setCurrentPage(1); // Reset to first page on filter change
+          }}
           className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
         >
           <option value="">تمام حالتیں</option>
@@ -551,9 +552,37 @@ export default function MainSubStoreReqs({
           <option value="DISPUTED">متنازع</option>
           <option value="CLOSED">بند شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
@@ -606,16 +635,15 @@ export default function MainSubStoreReqs({
                 </td>
               </tr>
             ) : (
-              filtered.map((r) => {
+              paginatedData.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
                 const isClosed = r.status === "CLOSED";
 
                 return (
-                  <>
+                  <React.Fragment key={r.request_id}>
                     <tr
-                      key={r.request_id}
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
                         isDisputed
                           ? "bg-amber-50/50 hover:bg-amber-50"
@@ -627,7 +655,6 @@ export default function MainSubStoreReqs({
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
-                      {/* Request No */}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-emerald-600 text-xs font-bold">
@@ -640,48 +667,14 @@ export default function MainSubStoreReqs({
                           )}
                         </div>
                       </td>
-
-                      {/* From */}
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.from_store_name}
-                      </td>
-
-                      {/* To */}
-                      <td className="px-4 py-3 text-gray-700">
-                        {r.to_store_name}
-                      </td>
-
-                      {/* Requested By */}
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.requested_by_name || "—"}
-                      </td>
-
-                      {/* Approved By */}
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.approved_by_name || "—"}
-                      </td>
-
-                      {/* Fulfilled By */}
-                      <td className="px-4 py-3 text-gray-500">
-                        {r.fulfilled_by_name || "—"}
-                      </td>
-
-                      {/* Requested At */}
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.created_at} />
-                      </td>
-
-                      {/* Fulfilled At */}
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-
-                      {/* Status */}
-                      <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
-                      </td>
-
-                      {/* Actions */}
+                      <td className="px-4 py-3 text-gray-700">{r.from_store_name}</td>
+                      <td className="px-4 py-3 text-gray-700">{r.to_store_name}</td>
+                      <td className="px-4 py-3 text-gray-500">{r.requested_by_name || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500">{r.approved_by_name || "—"}</td>
+                      <td className="px-4 py-3 text-gray-500">{r.fulfilled_by_name || "—"}</td>
+                      <td className="px-4 py-3"><DateTimeCell ts={r.created_at} /></td>
+                      <td className="px-4 py-3"><DateTimeCell ts={r.fulfilled_at} /></td>
+                      <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span
@@ -693,17 +686,9 @@ export default function MainSubStoreReqs({
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                // Only fulfill if not disputed
-                                if (r.status === "DISPUTED") {
-                                  showToast(
-                                    "Cannot fulfill — dispute resolution required",
-                                    "error",
-                                  );
-                                  return;
-                                }
                                 handleFulfill(r.request_id);
                               }}
-                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-3 py-1 rounded disabled:opacity-40"
+                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
@@ -712,47 +697,40 @@ export default function MainSubStoreReqs({
                         </div>
                       </td>
                     </tr>
-
-                    {/* Expanded detail row */}
                     {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className={`border-b-2 ${
-                          isDisputed
-                            ? "bg-amber-50/20 border-amber-300"
-                            : isReceived
-                              ? "bg-teal-50/20 border-teal-300"
-                              : isClosed
-                                ? "bg-gray-50 border-gray-300"
-                                : "bg-gray-50 border-emerald-200"
-                        }`}
-                      >
+                      <tr className={`border-b-2 ${isDisputed ? "bg-amber-50/20 border-amber-300" : isReceived ? "bg-teal-50/20 border-teal-300" : isClosed ? "bg-gray-50 border-gray-300" : "bg-gray-50 border-emerald-200"}`}>
                         <td colSpan={COL_COUNT} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
-                            detail &&
-                            renderInlineDetail(
-                              detail,
-                              detailLoad,
-                              handleFulfill,
-                              fulfilling,
-                              handleResolved,
-                              showToast,
-                              auth.username,
-                            )
+                            detail && renderInlineDetail(detail, detailLoad, handleFulfill, fulfilling, handleResolved, showToast, auth.username)
                           )}
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Main Pagination */}
+      <div className="mt-4">
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filtered?.length || 0}
+          pageSize={pageSize || 10}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setCurrentPage(1);
+          }}
+        />
       </div>
     </div>
   );

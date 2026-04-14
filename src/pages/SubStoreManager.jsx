@@ -7,26 +7,13 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
-import BlockedUI from "../components/BlockedUI"
+import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
-
-const StatusBadge = ({ status }) => {
-  const styles = {
-    PENDING: "bg-yellow-50 text-yellow-600 border border-yellow-300",
-    APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
-    REJECTED: "bg-red-50 text-red-600 border border-red-300",
-    FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
-    RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300",
-    DISPUTED: "bg-amber-50 text-amber-600 border border-amber-300",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}
-    >
-      {status}
-    </span>
-  );
-};
+import ItemsTable from "../components/ItemsTable";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
+import Pagination from "../components/Pagination";
+import SubStoreFilters from "../components/SubStoreFilters";
+import StatusBadge from "../components/StatusBadge";
 
 const DateTimeCell = ({ ts }) => {
   if (!ts) return <span className="text-gray-300 text-xs">—</span>;
@@ -50,7 +37,9 @@ export default function SubStoreManager() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
-  const [filter, setFilter] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterStore, setFilterStore] = useState("");
+  const [subStores, setSubStores] = useState([]);
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [approveModal, setApproveModal] = useState(null);
@@ -60,24 +49,33 @@ export default function SubStoreManager() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+
+  const handleError = useErrorHandler();
+
+  // const showToastMsg = (message, type) => {
+  //   setToast({ message, type });
+  //   setTimeout(() => setToast(null), 4000);
+  // };
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   
-  const handleError = useErrorHandler()
-  
-  const showToastMsg = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  useEffect(() => {
+    setTimeout(() => setToast(null), 5000)
+  },[toast])
 
   const load = async () => {
     setLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
-      if (filter) params.status = filter;
-      if (auth.store_id) params.store_id = auth.store_id;
+      if (filterStatus) params.status = filterStatus;
+      if (auth.role !== "super admin" && auth.store_id)
+        params.store_id = auth.store_id;
+      if (auth.role === "super admin" && filterStore)
+        params.store_id = filterStore;
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load requests")
+      const msg = handleError(error, "Failed to load requests");
       setError(msg);
     } finally {
       setLoading(false);
@@ -86,7 +84,22 @@ export default function SubStoreManager() {
 
   useEffect(() => {
     load();
-  }, [filter, auth.store_id]);
+  }, [filterStatus, filterStore, auth.store_id]);
+
+  // load sub stores for super admin filter
+  useEffect(() => {
+    if (auth.role === "super admin") {
+      import("../services/api").then(({ getStores }) => {
+        getStores()
+          .then((res) =>
+            setSubStores(
+              res.data.data.filter((s) => s.store_type === "SUB_STORE"),
+            ),
+          )
+          .catch(() => {});
+      });
+    }
+  }, [auth.role]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -99,8 +112,8 @@ export default function SubStoreManager() {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data")
-      setToast(msg)
+      const msg = handleError(error, "Failed to load data");
+      setToast(msg);
     } finally {
       setDL(false);
     }
@@ -118,8 +131,8 @@ export default function SubStoreManager() {
       setApproveModal(r);
       setApproverName(auth.username || ""); // ← auto-fill
     } catch (error) {
-      const msg = handleError(error, "Failed to load items")
-      setToast({ message: msg , type: "error" });
+      const msg = handleError(error, "Failed to load items");
+      setToast({ message: msg, type: "error" });
     }
   };
 
@@ -143,8 +156,8 @@ export default function SubStoreManager() {
       setEditedItems([]);
       load();
     } catch (e) {
-      const msg = handleError(e, "Error approving")
-      setToast({ message: msg ,type: "error",});
+      const msg = handleError(e, "Error approving");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -164,17 +177,22 @@ export default function SubStoreManager() {
       setRejectReason("");
       load();
     } catch (e) {
-      const msg = handleError(e, "Error rejecting")
-      setToast({ message: msg, type: "error",});
+      const msg = handleError(e, "Error rejecting");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
   };
 
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
-  
+
   if (auth.isBlocked) {
-    return <BlockedUI message={auth.message}/>
+    return <BlockedUI message={auth.message} />;
   }
 
   return (
@@ -191,12 +209,12 @@ export default function SubStoreManager() {
 
       {pendingCount > 0 && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold">
-            {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
-            approval
+          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
+            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
+            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
-            onClick={() => setFilter("PENDING")}
+            onClick={() => setFilterStatus("PENDING")}
             className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
           >
             Show Pending
@@ -204,20 +222,48 @@ export default function SubStoreManager() {
         </div>
       )}
 
-      <div className="mb-4">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام حالتیں</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="APPROVED">منظور شدہ</option>
-          <option value="REJECTED">مسترد شدہ</option>
-          <option value="FULFILLED">مکمل شدہ</option>
-          <option value="RECEIVED">وصول شدہ</option>
-          <option value="DISPUTED">متنازع</option>
-        </select>
+      <div className="flex h-full py-2  items-end justify-between">
+        <div className="Filter">
+          <SubStoreFilters
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterStore={filterStore}
+            setFilterStore={setFilterStore}
+            role={auth.role}
+            subStores={subStores}
+          />
+        </div>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={requests}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
@@ -245,7 +291,7 @@ export default function SubStoreManager() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                   </div>
@@ -253,20 +299,20 @@ export default function SubStoreManager() {
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
                     {error}
                   </div>
                 </td>
               </tr>
-            ) : requests.length === 0 ? (
+            ) : paginatedRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
@@ -356,8 +402,6 @@ export default function SubStoreManager() {
                           ) : (
                             detail && (
                               <div className="space-y-3">
-                                {/* Info cards */}
-
                                 {detail.notes && (
                                   <div className="bg-white rounded p-3 border border-gray-200">
                                     <div className="text-gray-400 text-xs mb-1">
@@ -401,79 +445,11 @@ export default function SubStoreManager() {
                                     </div>
                                   )}
 
-                                {/* Items table */}
-                                <div>
-                                  <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                                    Items
-                                  </div>
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                                        <th className="text-left pb-2 pr-4">
-                                          آئٹم نمبر
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          آئٹم کا نام
-                                        </th>
-                                        <th className="text-left pb-2 pr-4">
-                                          پیمائش کی اکائی / UOM
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          درخواست شدہ
-                                        </th>
-                                        <th className="text-center pb-2 pr-4">
-                                          منظور شدہ
-                                        </th>
-                                        <th className="text-center pb-2">
-                                          مکمل شدہ
-                                        </th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {(detail.items || []).map((i) => (
-                                        <tr
-                                          key={i.request_item_id}
-                                          className="border-b border-gray-100"
-                                        >
-                                          <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-                                            {i.item_no}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-800">
-                                            {i.item_name}
-                                          </td>
-                                          <td className="py-2 pr-4 text-gray-400 text-xs">
-                                            {i.item_uom}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-gray-800 text-center">
-                                            {i.requested_qty}
-                                          </td>
-                                          <td className="py-2 pr-4 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.approved_qty != null
-                                                  ? "text-emerald-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.approved_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                          <td className="py-2 font-mono text-center">
-                                            <span
-                                              className={
-                                                i.fulfilled_qty != null
-                                                  ? "text-blue-600"
-                                                  : "text-gray-300"
-                                              }
-                                            >
-                                              {i.fulfilled_qty ?? "—"}
-                                            </span>
-                                          </td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
-                                </div>
+                                <ItemsTable
+                                  items={detail?.items || []}
+                                  isDisputed={isDisputed}
+                                  isReceived={isReceived}
+                                />
                               </div>
                             )
                           )}
@@ -486,6 +462,15 @@ export default function SubStoreManager() {
             )}
           </tbody>
         </table>
+
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* Approve Modal */}
@@ -618,7 +603,7 @@ export default function SubStoreManager() {
                   value={rejecterName}
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>

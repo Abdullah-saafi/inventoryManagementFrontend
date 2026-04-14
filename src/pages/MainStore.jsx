@@ -20,8 +20,8 @@ export default function MainStore() {
   const [tab, setTab] = useState("items");
 
   // ── Data ──────────────────────────────────────────────────────────────────
-  const [requests, setRequests]     = useState([]);
-  const [allItems, setAllItems]     = useState([]);
+  const [requests, setRequests] = useState([]);
+  const [allItems, setAllItems] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [headOffices, setHeadOffices] = useState([]);
   const [hoRequests, setHoRequests] = useState([]);
@@ -79,8 +79,10 @@ export default function MainStore() {
   const refresh = useCallback(() => fetchData(true), [fetchData]);
 
   // ── Badge counts ──────────────────────────────────────────────────────────
-  const pendingApproved = requests.filter((r) => r.status === "APPROVED").length;
-  const pendingHo       = hoRequests.filter((r) => r.status === "PENDING").length;
+  const pendingApproved = requests.filter(
+    (r) => r.status === "APPROVED",
+  ).length;
+  const pendingHo = hoRequests.filter((r) => r.status === "PENDING").length;
 
   
   
@@ -92,9 +94,10 @@ export default function MainStore() {
     <div>
       {/* Page header */}
       <div className="mb-4">
-        <h1 className="text-xl font-black text-gray-900">Main Store</h1>
+        <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
-          Manage sub store requests, track inventory flow, and request from Head Office
+          Manage sub store requests, track inventory flow, and request from Head
+          Office
         </p>
       </div>
 
@@ -102,8 +105,11 @@ export default function MainStore() {
       <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 flex-wrap shadow-sm">
         {TABS.map((t) => {
           const badge =
-            t.id === "requests"  && pendingApproved > 0 ? pendingApproved :
-            t.id === "ho-status" && pendingHo > 0       ? pendingHo       : null;
+            t.id === "requests" && pendingApproved > 0
+              ? pendingApproved
+              : t.id === "ho-status" && pendingHo > 0
+                ? pendingHo
+                : null;
           return (
             <button
               key={t.id}
@@ -113,8 +119,10 @@ export default function MainStore() {
             >
               {t.label}
               {badge && (
-                <span className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                  ${tab === t.id ? "bg-white/20 text-white" : "bg-emerald-600 text-white"}`}>
+                <span
+                  className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
+                  ${tab === t.id ? "bg-white/20 text-white" : "bg-emerald-600 text-white"}`}
+                >
                   {badge}
                 </span>
               )}

@@ -3,18 +3,20 @@ import { getUsers, userStatus } from "../../services/api";
 import { ROLES, ROLE_LABELS } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
 import { useNavigate } from "react-router-dom";
+import Pagination from "../Pagination";
 
-export default function AllUsersTab() { 
-
+export default function AllUsersTab() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [storeFilter, setStoreFilter] = useState("");
   const [message, setMessage] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const handleError = useErrorHandler();
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   const loadUsers = async () => {
     try {
@@ -30,11 +32,11 @@ export default function AllUsersTab() {
     }
   };
 
-  useEffect(()=>{
-    setTimeout(()=>{
-      setMessage("")
-    },7000)
-  },[message])
+  useEffect(() => {
+    setTimeout(() => {
+      setMessage("");
+    }, 7000);
+  }, [message]);
 
   useEffect(() => {
     loadUsers();
@@ -45,7 +47,7 @@ export default function AllUsersTab() {
       setLoading(true);
       const toggledStatus = !currentStatus;
       const response = await userStatus({ id, status: toggledStatus });
-      setMessage(response.data.message)
+      setMessage(response.data.message);
       if (response.status === 200) {
         await loadUsers();
       }
@@ -64,14 +66,23 @@ export default function AllUsersTab() {
   const displayed = users.filter((u) => {
     const q = search.toLowerCase();
     const matchSearch =
-      !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+      !q ||
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q);
     const matchRole = !roleFilter || u.role === roleFilter;
     const matchStore = !storeFilter || u.store_name === storeFilter;
     return matchSearch && matchRole && matchStore;
   });
 
   const hasFilters = search || roleFilter || storeFilter;
-  const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("activated");
+  const isSuccess =
+    message.toLowerCase().includes("success") ||
+    message.toLowerCase().includes("activated");
+
+  const paginatedRequests = displayed.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   return (
     <div>
@@ -90,7 +101,9 @@ export default function AllUsersTab() {
         >
           <option value="">تمام شعبہ جات</option>
           {ROLES.map((r) => (
-            <option key={r.value} value={r.value}>{r.label}</option>
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
           ))}
         </select>
         <select
@@ -100,12 +113,18 @@ export default function AllUsersTab() {
         >
           <option value="">تمام اسٹورز</option>
           {uniqueStoreNames.map((n) => (
-            <option key={n} value={n}>{n}</option>
+            <option key={n} value={n}>
+              {n}
+            </option>
           ))}
         </select>
         {hasFilters && (
           <button
-            onClick={() => { setSearch(""); setRoleFilter(""); setStoreFilter(""); }}
+            onClick={() => {
+              setSearch("");
+              setRoleFilter("");
+              setStoreFilter("");
+            }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
           >
             Clear
@@ -121,21 +140,39 @@ export default function AllUsersTab() {
 
       {/* Message Alert */}
       {message && (
-        <div className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
+        <div
+          className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
           ${isSuccess ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-red-50 border-red-100 text-red-700"}`}
         >
-          <p className="text-xs font-extrabold uppercase tracking-tight">{message}</p>
-          <button onClick={() => setMessage("")} className="text-gray-400">×</button>
+          <p className="text-xs font-extrabold uppercase tracking-tight">
+            {message}
+          </p>
+          <button onClick={() => setMessage("")} className="text-gray-400">
+            ×
+          </button>
         </div>
       )}
 
       {/* Table Container */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm bg-white">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm ">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              {["Name", "Email", "Role", "Store", "Status", "Created", "Action"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider">{h}</th>
+              {[
+                "نام",
+                "ای میل",
+                "کردار",
+                "اسٹور",
+                "حالت",
+                "تخلیق شدہ",
+                "عمل",
+              ].map((h) => (
+                <th
+                  key={h}
+                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
+                >
+                  {h}
+                </th>
               ))}
             </tr>
           </thead>
@@ -150,22 +187,33 @@ export default function AllUsersTab() {
               </tr>
             ) : displayed.length === 0 ? (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">No users found.</td>
+                <td colSpan={7} className="text-center py-12 text-gray-400">
+                  No users found.
+                </td>
               </tr>
             ) : (
-              displayed.map((u) => (
-                <tr key={u.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.is_active ? "opacity-60" : ""}`}>
-                  <td className="px-4 py-3 text-gray-800 font-semibold">{u.name}</td>
+              paginatedRequests.map((u) => (
+                <tr
+                  key={u.id}
+                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!u.is_active ? "opacity-60" : ""}`}
+                >
+                  <td className="px-4 py-3 text-gray-800 font-semibold">
+                    {u.name}
+                  </td>
                   <td className="px-4 py-3 text-gray-500 text-xs">{u.email}</td>
                   <td className="px-4 py-3">
                     <span className="bg-gray-100 border border-gray-200 text-gray-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
                       {ROLE_LABELS[u.role] || u.role}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-700 text-xs">{u.store_name || "—"}</td>
+                  <td className="px-4 py-3 text-gray-700 text-xs">
+                    {u.store_name || "—"}
+                  </td>
                   <td className="px-4 py-3">
-                    <span className={`text-xs font-bold ${u.is_active ? "text-emerald-600" : "text-red-600"}`}>
-                      {u.is_active ? "Active" : "Inactive"}
+                    <span
+                      className={`text-xs font-bold ${u.is_active ? "text-emerald-600" : "text-red-600"}`}
+                    >
+                      {u.is_active ? "فعال" : "غیر فعال"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-[10px]">
@@ -177,14 +225,22 @@ export default function AllUsersTab() {
                         onClick={() => handleAction(u.id, u.is_active)}
                         disabled={loading}
                         className={`text-[10px] uppercase font-bold px-3 py-1 rounded border transition-colors
-                          ${u.is_active
-                            ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
-                            : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
+                          ${
+                            u.is_active
+                              ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100"
                           }`}
                       >
-                        {u.is_active ? "Deactivate" : "Activate"}
+                        {u.is_active ? "غیر فعال کریں" : "فعال کریں"}
                       </button>
-                      <button className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300" onClick={() => {navigate(`/admin/user/${u.id}`)}}>Edit</button>
+                      <button
+                        className="text-[10px] uppercase font-bold text-gray-600 border border-gray-300 bg-gray-200 rounded px-3 py-1 hover:bg-gray-300"
+                        onClick={() => {
+                          navigate(`/admin/user/${u.id}`);
+                        }}
+                      >
+                        ترمیم کریں
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -192,6 +248,14 @@ export default function AllUsersTab() {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={displayed.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
       <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
         {displayed.length} user{displayed.length !== 1 ? "s" : ""} shown

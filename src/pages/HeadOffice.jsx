@@ -4,6 +4,8 @@ import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI"
 import useErrorHandler from "../components/useErrorHandler";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
+import Pagination from "../components/Pagination"
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -281,6 +283,8 @@ export default function HeadOffice() {
   const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Fulfill modal state
   const [fulfillModal, setFulfillModal] = useState(null);
@@ -396,6 +400,11 @@ export default function HeadOffice() {
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message}/>
   }
+  
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
   return (
     <div>
@@ -412,9 +421,8 @@ export default function HeadOffice() {
       {/* ── Alert banners ── */}
       {pendingFulfill > 0 && (
         <div className="mb-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-emerald-700 text-sm font-semibold">
-            {pendingFulfill} approved request{pendingFulfill > 1 ? "s" : ""}{" "}
-            ready to fulfill
+          <span className="text-emerald-700 text-sm font-semibold" dir="rtl">
+            {pendingFulfill} منظور شدہ {pendingFulfill > 1 ? "درخواستیں مکمل کرنے" : "درخواست مکمل کرنے"} کے لیے تیار {pendingFulfill > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilter("APPROVED")}
@@ -442,7 +450,7 @@ export default function HeadOffice() {
       )}
 
       {/* ── Filter ── */}
-      <div className="mb-4">
+      <div className="flex h-full py-2 items-end justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -457,6 +465,37 @@ export default function HeadOffice() {
           <option value="DISPUTED">متنازع</option>
           <option value="CLOSED">بند شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -506,7 +545,7 @@ export default function HeadOffice() {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const canFulfill = r.status === "APPROVED";
                 const isDisputed = r.status === "DISPUTED";
@@ -872,6 +911,14 @@ export default function HeadOffice() {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── Fulfill / Re-dispatch Modal ── */}

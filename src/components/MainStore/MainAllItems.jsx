@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createItem } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
+import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
+import Pagination from "../Pagination";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -27,12 +29,14 @@ export default function MainAllItems({
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
-  const [error, setError] = useState("")
+  const [error, setError] = useState("");
+  const [pageSize, setPageSize] = useState(10);
+
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
-  
-  const handleError = useErrorHandler()
+
+  const handleError = useErrorHandler();
 
   const openAddItem = () => {
     setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
@@ -57,7 +61,7 @@ export default function MainAllItems({
       setShowAddItem(false);
       onRefresh();
     } catch (e) {
-      const msg = handleError(error, "Failed to add item")
+      const msg = handleError(error, "Failed to add item");
       showToast(msg);
     } finally {
       setSavingItem(false);
@@ -100,60 +104,97 @@ export default function MainAllItems({
     );
   });
 
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
   const paginatedItems = filteredItems.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
   return (
     <div>
       {/* Filters + Add button */}
-      <div className="flex flex-wrap items-center gap-2 mb-4">
-        <input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by name or item number..."
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64"
-        />
-        <select
-          value={filterCategory}
-          onChange={(e) => {
-            setFilterCategory(e.target.value);
-            setCurrentPage(1);
-          }}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام زمروں</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        {(search || filterCategory) && (
-          <button
-            onClick={() => {
-              setSearch("");
-              setFilterCategory("");
-              setCurrentPage(1);
-            }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-          >
-            Clear
-          </button>
-        )}
-        <button
-          onClick={openAddItem}
-          className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
-        >
-          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
-        </button>
-      </div>
+      <div className="flex h-full py-2  items-end justify-between">
+        <div className="search&Downlaod flex  py-2 flex-col">
+          <div>
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Search by name or item number..."
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64 mr-3"
+            />
+            <select
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
+            >
+              <option value="">تمام زمروں</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            {(search || filterCategory) && (
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterCategory("");
+                  setCurrentPage(1);
+                }}
+                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
+              >
+                Clear
+              </button>
+            )}
+          </div>
 
+        </div>
+        <div className="Newitem+ ">
+          <button
+            onClick={openAddItem}
+            className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+          >
+            <span className="text-base leading-none">+</span> نئی اشیاء شامل
+            کریں
+          </button>
+          <div className="Temp-downloader py-4">
+            {/* Excel specific Date Downloader */}
+            <div className="downloader flex">
+              <ExcelDownloaderWithDates
+                data={filteredItems}
+                dateKey="created_at"
+                fileName="requests"
+                columns={[
+                  { key: "request_id", label: "درخواست نمبر" },
+                  { key: "requested_by_name", label: "درخواست کنندہ" },
+                  {
+                    key: "created_at",
+                    label: "درخواست کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                  { key: "status", label: "حالت" },
+                  {
+                    key: "approved_at",
+                    label: "منظوری کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                  {
+                    key: "fulfilled_at",
+                    label: "تکمیل کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                  },
+                ]}
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
@@ -257,76 +298,20 @@ export default function MainAllItems({
             )}
           </tbody>
         </table>
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 px-1">
-          <span className="text-gray-400 text-xs">
-            Showing {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
-            {Math.min(currentPage * ITEMS_PER_PAGE, filteredItems.length)} of{" "}
-            {filteredItems.length} items
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setCurrentPage(1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              «
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p - 1)}
-              disabled={currentPage === 1}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              ‹ Prev
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(
-                (p) =>
-                  p === 1 || p === totalPages || Math.abs(p - currentPage) <= 2,
-              )
-              .reduce((acc, p, i, arr) => {
-                if (i > 0 && p - arr[i - 1] > 1) acc.push("...");
-                acc.push(p);
-                return acc;
-              }, [])
-              .map((p, i) =>
-                p === "..." ? (
-                  <span
-                    key={`e-${i}`}
-                    className="px-2 py-1 text-xs text-gray-400"
-                  >
-                    …
-                  </span>
-                ) : (
-                  <button
-                    key={p}
-                    onClick={() => setCurrentPage(p)}
-                    className={`px-2.5 py-1 text-xs rounded border font-mono ${currentPage === p ? "bg-emerald-600 border-emerald-600 text-white font-bold" : "border-gray-300 text-gray-500 hover:bg-gray-100"}`}
-                  >
-                    {p}
-                  </button>
-                ),
-              )}
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              Next ›
-            </button>
-            <button
-              onClick={() => setCurrentPage(totalPages)}
-              disabled={currentPage === totalPages}
-              className="px-2 py-1 text-xs rounded border border-gray-300 text-gray-500 hover:bg-gray-100 disabled:opacity-30"
-            >
-              »
-            </button>
-          </div>
-        </div>
-      )}
+        {/* Pagination */}
+        <Pagination
+          currentPage={currentPage}
+          totalItems={filteredItems.length}
+          pageSize={pageSize}
+          onPageChange={setCurrentPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={(s) => {
+            setPageSize(s);
+            setCurrentPage(1);
+          }}
+        />
+      </div>
 
       {/* Add Item Modal */}
       {showAddItem && (

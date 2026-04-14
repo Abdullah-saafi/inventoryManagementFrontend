@@ -5,10 +5,12 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/api";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
-import BlockedUI from "../components/BlockedUI"
+import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
+import Pagination from "../components/Pagination";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -45,7 +47,6 @@ const DateTimeCell = ({ ts }) => {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
-
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -60,10 +61,12 @@ export default function MainStoreApprover() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
-  
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const { auth } = useAuth();
-  
-  const handleError = useErrorHandler()
+
+  const handleError = useErrorHandler();
 
   const load = async () => {
     setLoading(true);
@@ -74,7 +77,7 @@ export default function MainStoreApprover() {
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load requests")
+      const msg = handleError(error, "Failed to load requests");
       setError(msg);
     } finally {
       setLoading(false);
@@ -96,7 +99,7 @@ export default function MainStoreApprover() {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
     } catch (error) {
-      const msg = handleError(error, "Failed to load data")
+      const msg = handleError(error, "Failed to load data");
       setToast(msg);
     } finally {
       setDL(false);
@@ -115,7 +118,7 @@ export default function MainStoreApprover() {
       setApproveModal(r);
       setApproverName(auth.username || ""); // ← auto-fill, read-only
     } catch (error) {
-      const msg = handleError(error, "Failed to load items")
+      const msg = handleError(error, "Failed to load items");
       setToast({ message: msg, type: "error" });
     }
   };
@@ -140,8 +143,8 @@ export default function MainStoreApprover() {
       setEditedItems([]);
       load();
     } catch (e) {
-      const msg = handleError(e, "Error approving")
-      setToast({ message: msg, type: "error",});
+      const msg = handleError(e, "Error approving");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -161,18 +164,23 @@ export default function MainStoreApprover() {
       setRejectReason("");
       load();
     } catch (e) {
-      const msg = handleError(e, "Error rejecting")
-      setToast({ message: msg, type: "error",});
+      const msg = handleError(e, "Error rejecting");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
   };
 
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
-  
+
   if (auth.isBlocked) {
-    return <BlockedUI message={auth.message}/>
+    return <BlockedUI message={auth.message} />;
   }
+
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   return (
     <div>
@@ -189,9 +197,8 @@ export default function MainStoreApprover() {
       {/* ── Pending alert ── */}
       {pendingCount > 0 && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold">
-            {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
-            approval
+          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
+            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilter("PENDING")}
@@ -203,7 +210,7 @@ export default function MainStoreApprover() {
       )}
 
       {/* ── Filter ── */}
-      <div className="mb-4">
+      <div className="flex h-full py-2 items-end justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -215,6 +222,37 @@ export default function MainStoreApprover() {
           <option value="REJECTED">مسترد شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              // data={request}
+              dateKey="created_at"
+              fileName="requests"
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -264,7 +302,7 @@ export default function MainStoreApprover() {
                 </td>
               </tr>
             ) : (
-              requests.map((r) => {
+              paginatedRequests.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 return (
                   <>
@@ -484,6 +522,14 @@ export default function MainStoreApprover() {
             )}
           </tbody>
         </table>
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── Approve Modal ── */}

@@ -1,20 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 
-/**
- * ExcelDownloaderWithDates
- *
- * Props:
- *  - data             {Array}     local data to filter (if no onFetch)
- *  - dateKey          {string}    which field to filter by, e.g. "created_at"
- *  - fileName         {string}    base filename
- *  - sheetName        {string}
- *  - columns          {Array}     [{ key, label, format }]
- *  - buttonLabel      {string}
- *  - onFetch          {async fn}  (fromDate, toDate) => Array
- *                                 use this when you want to hit your API
- *                                 with date params instead of filtering locally
- */
 export default function ExcelDownloaderWithDates({
   data = [],
   dateKey = "created_at",

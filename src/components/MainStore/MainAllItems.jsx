@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { createItem } from "../../services/api";
-import useErrorHandler from "../useErrorHandler";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 
@@ -23,20 +22,16 @@ export default function MainAllItems({
   onRefresh,
   showToast,
   loading,
-  mainStoreError,
+  error,
 }) {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const ITEMS_PER_PAGE = 10;
-  const [error, setError] = useState("");
   const [pageSize, setPageSize] = useState(10);
 
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
-
-  const handleError = useErrorHandler();
 
   const openAddItem = () => {
     setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
@@ -61,8 +56,7 @@ export default function MainAllItems({
       setShowAddItem(false);
       onRefresh();
     } catch (e) {
-      const msg = handleError(error, "Failed to add item");
-      showToast(msg);
+      showToast(e.response?.data?.message || "Failed to add item", "error");
     } finally {
       setSavingItem(false);
     }
@@ -112,8 +106,8 @@ export default function MainAllItems({
   return (
     <div>
       {/* Filters + Add button */}
-      <div className="flex h-full py-2  items-end justify-between">
-        <div className="search&Downlaod flex  py-2 flex-col">
+      <div className="header  flex items-center justify-between">
+        <div className="search&Downlaod flex  py-2 flex-col ">
           <div>
             <input
               value={search}
@@ -153,15 +147,6 @@ export default function MainAllItems({
             )}
           </div>
 
-        </div>
-        <div className="Newitem+ ">
-          <button
-            onClick={openAddItem}
-            className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
-          >
-            <span className="text-base leading-none">+</span> نئی اشیاء شامل
-            کریں
-          </button>
           <div className="Temp-downloader py-4">
             {/* Excel specific Date Downloader */}
             <div className="downloader flex">
@@ -193,7 +178,15 @@ export default function MainAllItems({
             </div>
           </div>
         </div>
-
+        <div className="Newitem+ ">
+          <button
+            onClick={openAddItem}
+            className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+          >
+            <span className="text-base leading-none">+</span> نئی اشیاء شامل
+            کریں
+          </button>
+        </div>
       </div>
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
@@ -204,7 +197,7 @@ export default function MainAllItems({
                 "آئٹم نمبر",
                 "نام",
                 "زمرہ",
-                "اکائی / UOM",
+                "اکائی",
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
                 "باقی اسٹاک",
@@ -229,9 +222,9 @@ export default function MainAllItems({
                   </div>
                 </td>
               </tr>
-            ) : error || mainStoreError ? (
+            ) : error ? (
               <tr>
-                <td colSpan={9} className="text-center py-12">
+                <td colSpan={7} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
                     {error}
                   </div>

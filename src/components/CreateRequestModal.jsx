@@ -143,16 +143,6 @@ export default function CreateRequestModal({
                         />
                         {item._showDropdown && (
                           <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                            <div
-                              className="px-3 py-2 text-xs text-gray-400 hover:bg-gray-50 cursor-pointer border-b border-gray-100"
-                              onMouseDown={() => {
-                                updateLine(idx, "selected_item_no", "");
-                                updateLine(idx, "item_search", "");
-                                updateLine(idx, "_showDropdown", false);
-                              }}
-                            >
-                              — Not listed / enter manually —
-                            </div>
                             {storeItems
                               .filter((si) => {
                                 const q = (

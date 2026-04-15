@@ -1,7 +1,21 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
 
-export default function ExcelDownloaderWithDates({
+/**
+ * ExcelDownloaderWithDates
+ *
+ * Props:
+ *  - data             {Array}     local data to filter (if no onFetch)
+ *  - dateKey          {string}    which field to filter by, e.g. "created_at"
+ *  - fileName         {string}    base filename
+ *  - sheetName        {string}
+ *  - columns          {Array}     [{ key, label, format }]
+ *  - buttonLabel      {string}
+ *  - onFetch          {async fn}  (fromDate, toDate) => Array
+ *                                 use this when you want to hit your API
+ *                                 with date params instead of filtering locally
+ */
+export default function c({
   data = [],
   dateKey = "created_at",
   fileName = "export",
@@ -36,9 +50,10 @@ export default function ExcelDownloaderWithDates({
         rows = await onFetch(fromDate, toDate);
       } else {
         // Filter local data by date range
-        const from = new Date(fromDate);
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(toDate);
+        const [fy, fm, fd] = fromDate.split("-").map(Number);
+        const [ty, tm, td] = toDate.split("-").map(Number);
+        const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+        const to = new Date(ty, tm - 1, td, 23, 59, 59, 999);
         to.setHours(23, 59, 59, 999);
 
         rows = data.filter((row) => {
@@ -47,7 +62,7 @@ export default function ExcelDownloaderWithDates({
         });
       }
 
-      if (!rows || rows.length === 0) {
+      if (!rows || rows.length < 0) {
         setError(`No data found between ${fromDate} and ${toDate}.`);
         setLoading(false);
         return;

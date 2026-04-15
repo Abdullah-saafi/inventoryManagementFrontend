@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createItem } from "../../services/api";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
+import { useAuth } from "../../context/authContext";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -32,6 +33,10 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
+
+  const { auth } = useAuth();
+
+  const handleError = useErrorHandler();
 
   const openAddItem = () => {
     setNewItem({ ...EMPTY_NEW_ITEM, item_no: generateRandomItemNo() });
@@ -146,37 +151,6 @@ export default function MainAllItems({
               </button>
             )}
           </div>
-
-          <div className="Temp-downloader py-4">
-            {/* Excel specific Date Downloader */}
-            <div className="downloader flex">
-              <ExcelDownloaderWithDates
-                data={filteredItems}
-                dateKey="created_at"
-                fileName="requests"
-                columns={[
-                  { key: "request_id", label: "درخواست نمبر" },
-                  { key: "requested_by_name", label: "درخواست کنندہ" },
-                  {
-                    key: "created_at",
-                    label: "درخواست کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                  },
-                  { key: "status", label: "حالت" },
-                  {
-                    key: "approved_at",
-                    label: "منظوری کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                  },
-                  {
-                    key: "fulfilled_at",
-                    label: "تکمیل کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                  },
-                ]}
-              />
-            </div>
-          </div>
         </div>
         <div className="Newitem+ ">
           <button
@@ -186,6 +160,50 @@ export default function MainAllItems({
             <span className="text-base leading-none">+</span> نئی اشیاء شامل
             کریں
           </button>
+          <div className="Temp-downloader py-4">
+            {/* Excel specific Date Downloader */}
+            <div className="downloader flex">
+              <ExcelDownloaderWithDates
+                data={paginatedItems}
+                dateKey="created_at"
+                fileName={auth.username}
+                columns={[
+                  {
+                    key: "item_id",
+                    label: "آئٹم نمبر",
+                  },
+                  {
+                    key: "item_name",
+                    label: "نام",
+                  },
+                  {
+                    key: "category",
+                    label: "زمرہ",
+                  },
+                  {
+                    key: "item_uom",
+                    label: "اکائی / UOM",
+                  },
+                  {
+                    key: "item_quantity",
+                    label: "مرکزی اسٹور کا اسٹاک",
+                  },
+                  {
+                    key: "sub_qty",
+                    label: "ذیلی اسٹورز کو بھیجا گیا",
+                  },
+                  {
+                    key: "total_qty",
+                    label: "کم از کم اسٹاک",
+                  },
+                  {
+                    key: "min_quantity",
+                    label: "کم از کم اسٹاک",
+                  },
+                ]}
+              />
+            </div>
+          </div>
         </div>
       </div>
       {/* Table */}
@@ -226,7 +244,7 @@ export default function MainAllItems({
               <tr>
                 <td colSpan={7} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
+                    {error || mainStoreError}
                   </div>
                 </td>
               </tr>

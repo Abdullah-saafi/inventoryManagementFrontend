@@ -198,7 +198,8 @@ export default function MainStoreApprover() {
       {pendingCount > 0 && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
-            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
+            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
+            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilter("PENDING")}
@@ -227,9 +228,9 @@ export default function MainStoreApprover() {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              // data={request}
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },

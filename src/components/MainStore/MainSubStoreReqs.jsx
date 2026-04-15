@@ -455,7 +455,7 @@ export default function MainSubStoreReqs({
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
   const [fulfilling, setFulfilling] = useState(null);
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -505,13 +505,18 @@ export default function MainSubStoreReqs({
     onRefresh();
   };
 
-  const filtered = Array.isArray(requests) 
-    ? (reqFilter ? requests.filter((r) => r.status === reqFilter) : requests)
+  const filtered = Array.isArray(requests)
+    ? reqFilter
+      ? requests.filter((r) => r.status === reqFilter)
+      : requests
     : [];
 
   // Pagination Logic
   const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = (filtered || []).slice(startIndex, startIndex + pageSize);
+  const paginatedData = (filtered || []).slice(
+    startIndex,
+    startIndex + pageSize,
+  );
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const COL_COUNT = 10;
@@ -528,7 +533,8 @@ export default function MainSubStoreReqs({
         >
           <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
           <span className="text-amber-700 text-sm font-semibold" dir="rtl">
-            {disputedCount} {disputedCount > 1 ? "درخواستیں" : "درخواست"} ذیلی اسٹور کی جانب سے متنازع ہیں — جائزہ لینے کے لیے کلک کریں
+            {disputedCount} {disputedCount > 1 ? "درخواستیں" : "درخواست"} ذیلی
+            اسٹور کی جانب سے متنازع ہیں — جائزہ لینے کے لیے کلک کریں
           </span>
           <span className="ml-auto text-amber-500 text-xs">View →</span>
         </div>
@@ -556,8 +562,9 @@ export default function MainSubStoreReqs({
         <div className="Temp-downloader">
           <div className="downloader">
             <ExcelDownloaderWithDates
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -667,14 +674,30 @@ export default function MainSubStoreReqs({
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{r.from_store_name}</td>
-                      <td className="px-4 py-3 text-gray-700">{r.to_store_name}</td>
-                      <td className="px-4 py-3 text-gray-500">{r.requested_by_name || "—"}</td>
-                      <td className="px-4 py-3 text-gray-500">{r.approved_by_name || "—"}</td>
-                      <td className="px-4 py-3 text-gray-500">{r.fulfilled_by_name || "—"}</td>
-                      <td className="px-4 py-3"><DateTimeCell ts={r.created_at} /></td>
-                      <td className="px-4 py-3"><DateTimeCell ts={r.fulfilled_at} /></td>
-                      <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {r.from_store_name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {r.to_store_name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.requested_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.approved_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {r.fulfilled_by_name || "—"}
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.created_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <DateTimeCell ts={r.fulfilled_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge status={r.status} />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 items-center">
                           <span
@@ -698,14 +721,25 @@ export default function MainSubStoreReqs({
                       </td>
                     </tr>
                     {isExpanded && (
-                      <tr className={`border-b-2 ${isDisputed ? "bg-amber-50/20 border-amber-300" : isReceived ? "bg-teal-50/20 border-teal-300" : isClosed ? "bg-gray-50 border-gray-300" : "bg-gray-50 border-emerald-200"}`}>
+                      <tr
+                        className={`border-b-2 ${isDisputed ? "bg-amber-50/20 border-amber-300" : isReceived ? "bg-teal-50/20 border-teal-300" : isClosed ? "bg-gray-50 border-gray-300" : "bg-gray-50 border-emerald-200"}`}
+                      >
                         <td colSpan={COL_COUNT} className="px-6 py-4">
                           {detailLoad ? (
                             <div className="flex justify-center py-6">
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
-                            detail && renderInlineDetail(detail, detailLoad, handleFulfill, fulfilling, handleResolved, showToast, auth.username)
+                            detail &&
+                            renderInlineDetail(
+                              detail,
+                              detailLoad,
+                              handleFulfill,
+                              fulfilling,
+                              handleResolved,
+                              showToast,
+                              auth.username,
+                            )
                           )}
                         </td>
                       </tr>

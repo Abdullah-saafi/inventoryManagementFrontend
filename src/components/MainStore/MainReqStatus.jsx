@@ -5,6 +5,7 @@ import GRNModal from "../GRNModal";
 import useErrorHandler from "../useErrorHandler";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
+import { useAuth } from "../../context/authContext";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {
@@ -182,7 +183,13 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
 };
 
 // ── Main component ────────────────────────────────────────────────────────────
-export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStoreError, showToast }) {
+export default function MainReqStatus({
+  hoRequests,
+  onRefresh,
+  loading,
+  mainStoreError,
+  showToast,
+}) {
   const [hoFilter, setHoFilter] = useState("");
   const [hoDetail, setHoDetail] = useState(null);
   const [hoDetailLoad, setHoDL] = useState(false);
@@ -192,8 +199,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  
+
   const handleError = useErrorHandler();
+  const {auth} = useAuth()
 
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {
@@ -218,7 +226,7 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch(error) {
+    } catch (error) {
       const msg = handleError(error, "Failed to load request details");
       showToast(msg);
     } finally {
@@ -234,8 +242,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
         payload.grn_status === "RECEIVED"
           ? "Delivery confirmed — marked as RECEIVED"
           : payload.grn_status === "DISPUTED"
-          ? "Issues reported — request marked DISPUTED"
-          : "Delivery rejected — notified";
+            ? "Issues reported — request marked DISPUTED"
+            : "Delivery rejected — notified";
       showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
       setGrnRequest(null);
       setHoDetail(null);
@@ -255,10 +263,10 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
   const pendingGRN = hoRequests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
-  
+
   const paginatedRequests = filtered.slice(
     (page - 1) * pageSize,
-    page * pageSize
+    page * pageSize,
   );
 
   return (
@@ -267,7 +275,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
       {pendingGRN > 0 && (
         <div className="mb-4 flex items-center gap-2 text-xs text-blue-600 font-semibold">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-          {pendingGRN} deliver{pendingGRN > 1 ? "ies" : "y"} waiting for confirmation
+          {pendingGRN} deliver{pendingGRN > 1 ? "ies" : "y"} waiting for
+          confirmation
         </div>
       )}
 
@@ -292,8 +301,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
 
         <div className="Temp-downloader">
           <ExcelDownloaderWithDates
+            data={paginatedRequests}
             dateKey="created_at"
-            fileName="requests"
+            fileName={auth.username}
             columns={[
               { key: "request_id", label: "درخواست نمبر" },
               { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -367,7 +377,8 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
               </tr>
             ) : (
               paginatedRequests.map((r) => {
-                const isExpanded = hoDetail && hoDetail.request_id === r.request_id;
+                const isExpanded =
+                  hoDetail && hoDetail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
                 const isDisputed = r.status === "DISPUTED";
 
@@ -432,7 +443,9 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
                               {grnLoading ? "…" : "Verify Delivery"}
                             </button>
                           )}
-                          <span className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}>
+                          <span
+                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
+                          >
                             {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                         </div>
@@ -447,7 +460,12 @@ export default function MainReqStatus({ hoRequests, onRefresh, loading, mainStor
                               <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                             </div>
                           ) : (
-                            hoDetail && renderInlineDetail(hoDetail, () => openGRN(r), grnLoading)
+                            hoDetail &&
+                            renderInlineDetail(
+                              hoDetail,
+                              () => openGRN(r),
+                              grnLoading,
+                            )
                           )}
                         </td>
                       </tr>

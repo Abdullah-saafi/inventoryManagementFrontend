@@ -76,7 +76,7 @@ export default function SubStoreManager() {
       setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
-      setError(msg);
+      // setError(msg);
     } finally {
       setLoading(false);
     }
@@ -240,7 +240,7 @@ export default function SubStoreManager() {
             <ExcelDownloaderWithDates
               data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -601,6 +601,7 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={rejecterName}
+                  readOnly
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
                   className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"

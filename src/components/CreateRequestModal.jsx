@@ -216,6 +216,7 @@ export default function CreateRequestModal({
                         </label>
                         <input
                           value={item.item_no}
+                          readOnly
                           onChange={(e) =>
                             updateLine(idx, "item_no", e.target.value)
                           }
@@ -228,6 +229,7 @@ export default function CreateRequestModal({
                         </label>
                         <input
                           value={item.item_name}
+                          readOnly
                           onChange={(e) =>
                             updateLine(idx, "item_name", e.target.value)
                           }
@@ -240,6 +242,7 @@ export default function CreateRequestModal({
                         </label>
                         <input
                           value={item.item_uom}
+                          readOnly
                           onChange={(e) =>
                             updateLine(idx, "item_uom", e.target.value)
                           }

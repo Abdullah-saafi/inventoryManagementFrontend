@@ -6,6 +6,7 @@ import useErrorHandler from "../useErrorHandler";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import { useAuth } from "../../context/authContext";
+import useErrorHandler from "../useErrorHandler";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {

@@ -233,7 +233,7 @@ export default function MainAllItems({
               <tr>
                 <td colSpan={9} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
+                    {error || mainStoreError}
                   </div>
                 </td>
               </tr>

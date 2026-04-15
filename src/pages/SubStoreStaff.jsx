@@ -139,7 +139,7 @@ export default function SubStore() {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      shwToa(msg);
+      showToastMsg(msg);
     } finally {
       setGrnLoading(false);
     }

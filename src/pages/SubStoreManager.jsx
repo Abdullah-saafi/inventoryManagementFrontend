@@ -76,7 +76,7 @@ export default function SubStoreManager() {
       setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
-      setError(msg);
+      // setError(msg);
     } finally {
       setLoading(false);
     }

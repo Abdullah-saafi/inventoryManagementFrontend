@@ -315,7 +315,7 @@ export default function SubStore() {
           <ExcelDownloaderWithDates
             data={requests}
             dateKey="created_at"
-            fileName="requests"
+            fileName={auth.username}
             columns={[
               { key: "request_id", label: "درخواست نمبر" },
               { key: "requested_by_name", label: "درخواست کنندہ" },

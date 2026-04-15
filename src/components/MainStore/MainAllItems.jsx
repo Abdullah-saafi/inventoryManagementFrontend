@@ -3,6 +3,7 @@ import { createItem } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
+import { useAuth } from "../../context/authContext";
 
 const EMPTY_NEW_ITEM = {
   item_no: "",
@@ -35,6 +36,8 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
+  
+  const {auth} = useAuth()
 
   const handleError = useErrorHandler();
 
@@ -152,7 +155,6 @@ export default function MainAllItems({
               </button>
             )}
           </div>
-
         </div>
         <div className="Newitem+ ">
           <button
@@ -166,43 +168,33 @@ export default function MainAllItems({
             {/* Excel specific Date Downloader */}
             <div className="downloader flex">
               <ExcelDownloaderWithDates
-                data={filteredItems}
+                data={paginatedItems}
                 dateKey="created_at"
-                fileName="requests"
+                fileName={auth.username}
                 columns={[
-                  { key: "item_No", label:  "آئٹم نمبر" },
-                  { key: "item_name", label:  "نام" },
+                  { key: "request_id", label: "درخواست نمبر" },
+                  { key: "requested_by_name", label: "درخواست کنندہ" },
                   {
-                    key: "category",
-                    label:  "زمرہ",
+                    key: "created_at",
+                    label: "درخواست کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                   },
-                  { key: "UOM", label: "اکائ" },
+                  { key: "status", label: "حالت" },
                   {
-                    key: "Stock",
-                    label:  "مرکزی اسٹور کا اسٹاک",
-                  },
-                  {
-                    key: "given_to_sub_store",
-                    label:  "ذیلی اسٹورز کو بھیجا گیا",
+                    key: "approved_at",
+                    label: "منظوری کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                   },
                   {
-                    key: "remaining_stock",
-                    label:  "باقی اسٹاک"
+                    key: "fulfilled_at",
+                    label: "تکمیل کی تاریخ",
+                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
                   },
-                  {
-                    key: "minimum_stock",
-                    label:  "کم از کم اسٹاک"
-                  },
-                  {
-                    key: "status",
-                    label:  "حالت",
-                  }
                 ]}
               />
             </div>
           </div>
         </div>
-
       </div>
       {/* Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">

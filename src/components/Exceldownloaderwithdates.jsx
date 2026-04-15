@@ -15,7 +15,7 @@ import * as XLSX from "xlsx";
  *                                 use this when you want to hit your API
  *                                 with date params instead of filtering locally
  */
-export default function ExcelDownloaderWithDates({
+export default function c({
   data = [],
   dateKey = "created_at",
   fileName = "export",
@@ -53,7 +53,7 @@ export default function ExcelDownloaderWithDates({
         const [fy, fm, fd] = fromDate.split("-").map(Number);
         const [ty, tm, td] = toDate.split("-").map(Number);
         const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
-        const to   = new Date(ty, tm - 1, td, 23, 59, 59, 999);
+        const to = new Date(ty, tm - 1, td, 23, 59, 59, 999);
         to.setHours(23, 59, 59, 999);
 
         rows = data.filter((row) => {
@@ -62,7 +62,7 @@ export default function ExcelDownloaderWithDates({
         });
       }
 
-      if (!rows || rows.length === 0) {
+      if (!rows || rows.length < 0) {
         setError(`No data found between ${fromDate} and ${toDate}.`);
         setLoading(false);
         return;

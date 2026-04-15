@@ -170,24 +170,33 @@ export default function MainAllItems({
                 dateKey="created_at"
                 fileName="requests"
                 columns={[
-                  { key: "request_id", label: "درخواست نمبر" },
-                  { key: "requested_by_name", label: "درخواست کنندہ" },
+                  { key: "item_No", label:  "آئٹم نمبر" },
+                  { key: "item_name", label:  "نام" },
                   {
-                    key: "created_at",
-                    label: "درخواست کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                    key: "category",
+                    label:  "زمرہ",
                   },
-                  { key: "status", label: "حالت" },
+                  { key: "UOM", label: "اکائ" },
                   {
-                    key: "approved_at",
-                    label: "منظوری کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                    key: "Stock",
+                    label:  "مرکزی اسٹور کا اسٹاک",
                   },
                   {
-                    key: "fulfilled_at",
-                    label: "تکمیل کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                    key: "given_to_sub_store",
+                    label:  "ذیلی اسٹورز کو بھیجا گیا",
                   },
+                  {
+                    key: "remaining_stock",
+                    label:  "باقی اسٹاک"
+                  },
+                  {
+                    key: "minimum_stock",
+                    label:  "کم از کم اسٹاک"
+                  },
+                  {
+                    key: "status",
+                    label:  "حالت",
+                  }
                 ]}
               />
             </div>

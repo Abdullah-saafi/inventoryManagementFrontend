@@ -50,9 +50,10 @@ export default function ExcelDownloaderWithDates({
         rows = await onFetch(fromDate, toDate);
       } else {
         // Filter local data by date range
-        const from = new Date(fromDate);
-        from.setHours(0, 0, 0, 0);
-        const to = new Date(toDate);
+        const [fy, fm, fd] = fromDate.split("-").map(Number);
+        const [ty, tm, td] = toDate.split("-").map(Number);
+        const from = new Date(fy, fm - 1, fd, 0, 0, 0, 0);
+        const to   = new Date(ty, tm - 1, td, 23, 59, 59, 999);
         to.setHours(23, 59, 59, 999);
 
         rows = data.filter((row) => {

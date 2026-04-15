@@ -121,6 +121,7 @@ export default function SubStoreManager() {
 
   const openApprove = async (r) => {
     try {
+      setActioning(true)
       const res = await getRequestById(r.request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
@@ -133,6 +134,8 @@ export default function SubStoreManager() {
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
       setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false)
     }
   };
 
@@ -364,24 +367,26 @@ export default function SubStoreManager() {
                           {r.status === "PENDING" && (
                             <>
                               <button
+                                disabled={actioning}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openApprove(r);
                                 }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1"
+                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                Approve
+                                {actioning? "..." : "Approve"}
                               </button>
                               <button
+                                disabled={actioning}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setRejectModal(r);
                                   setRejecterName(auth.username || "");
                                   setRejectReason("");
                                 }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1"
+                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
                               >
-                                Reject
+                                {actioning? "..." : "Reject"}
                               </button>
                             </>
                           )}
@@ -557,6 +562,7 @@ export default function SubStoreManager() {
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
                 <button
+                  disabled={actioning}
                   onClick={() => setApproveModal(null)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >

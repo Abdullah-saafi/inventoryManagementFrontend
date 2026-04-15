@@ -11,7 +11,6 @@ import useErrorHandler from "../useErrorHandler";
 import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-import useErrorHandler from "../useErrorHandler";
 
 // ── Date + time cell ──────────────────────────────────────────────────────────
 const DateTimeCell = ({ ts }) => {

@@ -36,8 +36,8 @@ export default function MainAllItems({
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
-  
-  const {auth} = useAuth()
+
+  const { auth } = useAuth();
 
   const handleError = useErrorHandler();
 
@@ -172,23 +172,37 @@ export default function MainAllItems({
                 dateKey="created_at"
                 fileName={auth.username}
                 columns={[
-                  { key: "request_id", label: "درخواست نمبر" },
-                  { key: "requested_by_name", label: "درخواست کنندہ" },
                   {
-                    key: "created_at",
-                    label: "درخواست کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
-                  },
-                  { key: "status", label: "حالت" },
-                  {
-                    key: "approved_at",
-                    label: "منظوری کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                    key: "item_id",
+                    label: "آئٹم نمبر",
                   },
                   {
-                    key: "fulfilled_at",
-                    label: "تکمیل کی تاریخ",
-                    format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                    key: "item_name",
+                    label: "نام",
+                  },
+                  {
+                    key: "category",
+                    label: "زمرہ",
+                  },
+                  {
+                    key: "item_uom",
+                    label: "اکائی / UOM",
+                  },
+                  {
+                    key: "item_quantity",
+                    label: "مرکزی اسٹور کا اسٹاک",
+                  },
+                  {
+                    key: "sub_qty",
+                    label: "ذیلی اسٹورز کو بھیجا گیا",
+                  },
+                  {
+                    key: "total_qty",
+                    label: "کم از کم اسٹاک",
+                  },
+                  {
+                    key: "min_quantity",
+                    label: "کم از کم اسٹاک",
                   },
                 ]}
               />

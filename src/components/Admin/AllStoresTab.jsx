@@ -31,7 +31,7 @@ export default function AllStoresTab() {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     setTimeout(() => {
       setMessage("");

@@ -1,9 +1,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { getRequests, getStores, getItems } from "../services/api";
-import MainAllItems from "../components/Mainallitems";
-import MainSubStoreReqs from "../components/Mainsubstorereqs";
-import MainReqStatus from "../components/Mainreqstatus";
-import MainReqToHO from "../components/Mainreqtoho";
+import MainAllItems from "../components/MainStore/MainAllItems";
+import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
+import MainReqStatus from "../components/MainStore/MainReqStatus";
+import MainReqToHO from "../components/MainStore/MainReqToHO";
+import { useAuth } from "../context/authContext";
+import useErrorHandler from "../components/useErrorHandler";
+import BlockedUI from "../components/BlockedUI"
+import Toast from "../components/Toast";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
@@ -24,16 +28,23 @@ export default function MainStore() {
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [toast, setToast] = useState(null);
+  const [mainStoreError, setMainStoreError]     = useState("");
+  const [toast, setToast]     = useState(null);
 
   // ── Toast helper ──────────────────────────────────────────────────────────
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
+  
+  // ── Auth And Error ──────────────────────────────────────────────────────────
+  
+  const { auth } = useAuth()
+  
+  const handleError = useErrorHandler()
+  
+  // ── Fetch data (silent = no spinner, used for refreshes) ────────────────── 
 
-  // ── Fetch data (silent = no spinner, used for refreshes) ──────────────────
   const fetchData = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -51,8 +62,9 @@ export default function MainStore() {
       const allStores = sRes.data.data;
       setMainStores(allStores.filter((s) => s.store_type === "MAIN_STORE"));
       setHeadOffices(allStores.filter((s) => s.store_type === "HEAD_OFFICE"));
-    } catch {
-      setError("Failed to load data");
+    } catch(error) {
+      const msg = handleError(error, "Failed to load data")
+      setMainStoreError(msg);
     } finally {
       if (!silent) setLoading(false);
     }
@@ -72,25 +84,17 @@ export default function MainStore() {
   ).length;
   const pendingHo = hoRequests.filter((r) => r.status === "PENDING").length;
 
-  // ── Early returns ─────────────────────────────────────────────────────────
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
+  
+  
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message}/>
+  }
 
   return (
     <div>
       {/* Page header */}
       <div className="mb-4">
-        <h1 className="text-xl font-black text-gray-900">Main Store</h1>
+        <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
         <p className="text-gray-500 text-sm mt-0.5">
           Manage sub store requests, track inventory flow, and request from Head
           Office
@@ -134,6 +138,8 @@ export default function MainStore() {
           mainStores={mainStores}
           onRefresh={refresh}
           showToast={showToast}
+          loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 
@@ -142,46 +148,35 @@ export default function MainStore() {
           requests={requests}
           onRefresh={refresh}
           showToast={showToast}
+          loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 
       {tab === "ho-status" && (
-        <MainReqStatus hoRequests={hoRequests} onRefresh={refresh} />
+        <MainReqStatus
+          hoRequests={hoRequests}
+          showToast={showToast}
+          onRefresh={refresh}
+          loading={loading}
+          mainStoreError={mainStoreError}
+        />
       )}
 
       {tab === "ho-create" && (
         <MainReqToHO
           mainStores={mainStores}
           headOffices={headOffices}
-          onSubmitted={() => {
-            setTab("ho-status");
-            refresh();
-          }}
+          hoRequests={hoRequests}   
+          refresh={refresh}
           showToast={showToast}
+          loading={loading}
+          mainStoreError={mainStoreError}
         />
       )}
 
       {/* Toast */}
-      {toast && (
-        <div
-          className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-xl text-sm font-medium
-          ${
-            toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : toast.type === "error"
-                ? "bg-red-50 border-red-200 text-red-700"
-                : "bg-blue-50 border-blue-200 text-blue-700"
-          }`}
-        >
-          <span>{toast.message}</span>
-          <button
-            onClick={() => setToast(null)}
-            className="opacity-60 hover:opacity-100"
-          >
-            ×
-          </button>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
   );
 }

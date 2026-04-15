@@ -7,8 +7,10 @@ import {
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 import ItemsTable from "../components/ItemsTable";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import SubStoreFilters from "../components/SubStoreFilters";
 import StatusBadge from "../components/StatusBadge";
@@ -47,8 +49,19 @@ export default function SubStoreManager() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
+
+  const handleError = useErrorHandler();
+
+  // const showToastMsg = (message, type) => {
+  //   setToast({ message, type });
+  //   setTimeout(() => setToast(null), 4000);
+  // };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  useEffect(() => {
+    setTimeout(() => setToast(null), 5000)
+  },[toast])
 
   const load = async () => {
     setLoading(true);
@@ -61,9 +74,9 @@ export default function SubStoreManager() {
         params.store_id = filterStore;
       const r = await getRequests(params);
       setRequests(r.data.data);
-      setPage(1);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests");
+      // setError(msg);
     } finally {
       setLoading(false);
     }
@@ -98,7 +111,9 @@ export default function SubStoreManager() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      setToast(msg);
     } finally {
       setDL(false);
     }
@@ -114,9 +129,10 @@ export default function SubStoreManager() {
         })),
       );
       setApproveModal(r);
-      setApproverName(auth.username || "");
-    } catch {
-      setToast({ message: "Failed to load items", type: "error" });
+      setApproverName(auth.username || ""); // ← auto-fill
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items");
+      setToast({ message: msg, type: "error" });
     }
   };
 
@@ -140,10 +156,8 @@ export default function SubStoreManager() {
       setEditedItems([]);
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error approving",
-        type: "error",
-      });
+      const msg = handleError(e, "Error approving");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -163,10 +177,8 @@ export default function SubStoreManager() {
       setRejectReason("");
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error rejecting",
-        type: "error",
-      });
+      const msg = handleError(e, "Error rejecting");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -177,20 +189,11 @@ export default function SubStoreManager() {
     page * pageSize,
   );
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message} />;
+  }
 
   return (
     <div>
@@ -206,9 +209,9 @@ export default function SubStoreManager() {
 
       {pendingCount > 0 && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold">
-            {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
-            approval
+          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
+            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
+            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilterStatus("PENDING")}
@@ -219,7 +222,7 @@ export default function SubStoreManager() {
         </div>
       )}
 
-      <div className="flex h-full py-2  items-center justify-between">
+      <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
           <SubStoreFilters
             filterStatus={filterStatus}
@@ -237,7 +240,7 @@ export default function SubStoreManager() {
             <ExcelDownloaderWithDates
               data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -286,7 +289,23 @@ export default function SubStoreManager() {
             </tr>
           </thead>
           <tbody>
-            {paginatedRequests.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
@@ -483,7 +502,7 @@ export default function SubStoreManager() {
                   readOnly
                   onChange={(e) => setApproverName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>
@@ -582,9 +601,10 @@ export default function SubStoreManager() {
                 </label>
                 <input
                   value={rejecterName}
+                  readOnly
                   onChange={(e) => setRejecterName(e.target.value)}
                   placeholder="Manager name"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400"
+                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
                 />
               </div>
               <div>

@@ -5,19 +5,19 @@ import {
   createRequest,
   getRequests,
   getRequestById,
+  submitGRN,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
-import API from "../services/api";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 import SubStoreHeader from "../components/SubStoreHeader";
 import SubStoreFilters from "../components/SubStoreFilters";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import RequestRow from "../components/RequestRow";
 import CreateRequestModal from "../components/CreateRequestModal";
 import Pagination from "../components/Pagination";
-
-const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -61,6 +61,7 @@ export default function SubStore() {
   });
 
   const { auth } = useAuth();
+  const handleError = useErrorHandler();
 
   const load = async () => {
     setPageLoading(true);
@@ -80,9 +81,9 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-      setPage(1); // reset to first page on fresh load
-    } catch {
-      setError("Failed to load data");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      setError(msg);
     } finally {
       setPageLoading(false);
     }
@@ -96,7 +97,11 @@ export default function SubStore() {
     if (form.to_store_id) {
       getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
+        .catch((e) => {
+          setStoreItems([]);
+          const msg = handleError(e, "Failed to set store items");
+          setError(msg);
+        });
     } else {
       setStoreItems([]);
     }
@@ -118,7 +123,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to get request");
+      showToastMsg(msg);
     } finally {
       setDL(false);
     }
@@ -130,8 +137,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      showToastMsg("Failed to load request details", "error");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details");
+      showToastMsg(msg);
     } finally {
       setGrnLoading(false);
     }
@@ -155,16 +163,14 @@ export default function SubStore() {
       setDetail(null);
       load();
     } catch (e) {
-      showToastMsg(
-        e.response?.data?.message || "Failed to submit GRN",
-        "error",
-      );
+      const msg = handleError(e, "Failed to submit GRN");
+      showToastMsg(msg);
     } finally {
       setGrnSubmitting(false);
     }
   };
 
-  const showToastMsg = (message, type = "success") => {
+  const showToastMsg = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
@@ -239,24 +245,12 @@ export default function SubStore() {
       });
       load();
     } catch (e) {
-      showToastMsg(e.response?.data?.message || "Failed to submit", "error");
+      const msg = handleError(e, "Failed to submit");
+      showToastMsg(msg, "error");
     } finally {
       setCreating(false);
     }
   };
-
-  if (pageLoading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
 
   const pendingGRN = requests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
@@ -276,6 +270,10 @@ export default function SubStore() {
     });
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message} />;
+  }
 
   // ── Paginated slice ──────────────────────────────────────────
   const paginatedRequests = requests.slice(
@@ -301,7 +299,7 @@ export default function SubStore() {
           setShowCreate(true);
         }}
       />
-      <div className="flex items-center justify-between">
+      <div className="flex items-end justify-between py-2">
         <div className="Filter">
           <SubStoreFilters
             filterStatus={filterStatus}
@@ -317,7 +315,7 @@ export default function SubStore() {
           <ExcelDownloaderWithDates
             data={requests}
             dateKey="created_at"
-            fileName="requests"
+            fileName={auth.username}
             columns={[
               { key: "request_id", label: "درخواست نمبر" },
               { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -366,7 +364,23 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {paginatedRequests.length === 0 ? (
+            {pageLoading ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedRequests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.

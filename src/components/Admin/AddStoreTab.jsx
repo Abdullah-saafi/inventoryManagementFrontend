@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom"; // 1. Import context
-import { addStore } from "../services/api";
-import { inputClass, labelClass } from "../services/constants";
-import useErrorHandler from "../components/useErrorHandler";
+import { addStore } from "../../services/api";
+import { inputClass, labelClass } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
 
 export default function AddStoreTab() {
   // 2. Get loadStores from Admin.jsx context
@@ -27,7 +27,7 @@ export default function AddStoreTab() {
 
   const handleSubmit = async () => {
     if (!form.store_code || !form.store_name) {
-      return setMessage("Store code and store name are required");
+      return setMessage("اسٹور کوڈ اور اسٹور کا نام درکار ہے");
     }
 
     setLoading(true);
@@ -38,7 +38,7 @@ export default function AddStoreTab() {
       const res = await addStore({ ...form, store_type: "SUB_STORE" });
       
       const createdName = res.data?.data?.store_name || "Store";
-      setMessage(`Success: Sub store "${createdName}" created successfully`);
+      setMessage(`اسٹور کامیابی سے بن گیا ہے`);
       
       // Reset form
       setForm({ store_code: "", store_name: "", address: "", phone: "" });
@@ -137,7 +137,7 @@ export default function AddStoreTab() {
             {loading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              "Create Sub Store"
+              "اسٹور بنائیں"
             )}
           </button>
 

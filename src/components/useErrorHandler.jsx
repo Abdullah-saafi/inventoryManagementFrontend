@@ -8,7 +8,10 @@ const useErrorHandler = () => {
     const handleError = (error, customMessage) => {
         const errorMsg = error.response?.data?.message || "Server Error"
         
-        if(error.response?.status === 400 || error.response?.status === 401){
+        const status = error.response?.status
+        if(status === 401){
+            return errorMsg
+        } else if(status === 400 && errorMsg.includes("Session") || status === 401 && errorMsg.includes("Invalid" || "expired")){
             setAuth({
                 accessToken: null,
                 username: null,
@@ -19,7 +22,7 @@ const useErrorHandler = () => {
             })
             navigate("/login")
             return errorMsg
-        } else if (error.response?.status === 403 && errorMsg.includes("inactive") || error.response?.status === 400 && errorMsg.includes("inactive") ){
+        } else if (status === 403 && errorMsg.includes("inactive") || status === 400 && errorMsg.includes("inactive") ){
             setAuth(prev => ({...prev, isBlocked: true, message: errorMsg}))
             return errorMsg
         }

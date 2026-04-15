@@ -10,13 +10,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Admin from "./pages/Admin";
 import Unauthorized from "./pages/Unauthorized";
 import { ContextProvider } from "./context/authContext";
-import AddUserTab from "./components/AddUserTab";
-import AllUsersTab from "./components/AllUsersTab";
-import AllStoresTab from "./components/AllStoresTab";
-import AddStoreTab from "./components/AddStoreTab";
+import AddUserTab from "./components/Admin/AddUserTab";
+import AllUsersTab from "./components/Admin/AllUsersTab";
+import AllStoresTab from "./components/Admin/AllStoresTab";
+import AddStoreTab from "./components/Admin/AddStoreTab";
 import NotFound from "./pages/NotFound";
-import EditUser from "./components/EditUser";
-import EditStore from "./components/EditStore";
+import EditUser from "./components/Admin/EditUser";
+import EditStore from "./components/Admin/EditStore";
 
 export default function App() {
   return (

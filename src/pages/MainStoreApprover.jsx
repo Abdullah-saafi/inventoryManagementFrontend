@@ -5,8 +5,11 @@ import {
   approveRequest,
   rejectRequest,
 } from "../services/api";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -44,8 +47,6 @@ const DateTimeCell = ({ ts }) => {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
-  const { auth } = useAuth();
-
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -60,10 +61,12 @@ export default function MainStoreApprover() {
   const [rejectModal, setRejectModal] = useState(null);
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
-
-  // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const { auth } = useAuth();
+
+  const handleError = useErrorHandler();
 
   const load = async () => {
     setLoading(true);
@@ -73,8 +76,9 @@ export default function MainStoreApprover() {
       // No store_id filter — main store approver sees all MAIN_TO_HO requests
       const r = await getRequests(params);
       setRequests(r.data.data);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests");
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -82,11 +86,6 @@ export default function MainStoreApprover() {
 
   useEffect(() => {
     load();
-  }, [filter]);
-
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setPage(1);
   }, [filter]);
 
   const openDetail = async (r) => {
@@ -99,7 +98,9 @@ export default function MainStoreApprover() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      setToast(msg);
     } finally {
       setDL(false);
     }
@@ -116,8 +117,9 @@ export default function MainStoreApprover() {
       );
       setApproveModal(r);
       setApproverName(auth.username || ""); // ← auto-fill, read-only
-    } catch {
-      setToast({ message: "Failed to load items", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items");
+      setToast({ message: msg, type: "error" });
     }
   };
 
@@ -141,10 +143,8 @@ export default function MainStoreApprover() {
       setEditedItems([]);
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error approving",
-        type: "error",
-      });
+      const msg = handleError(e, "Error approving");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
@@ -164,31 +164,19 @@ export default function MainStoreApprover() {
       setRejectReason("");
       load();
     } catch (e) {
-      setToast({
-        message: e.response?.data?.message || "Error rejecting",
-        type: "error",
-      });
+      const msg = handleError(e, "Error rejecting");
+      setToast({ message: msg, type: "error" });
     } finally {
       setActioning(false);
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-      </div>
-    );
-  if (error)
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-600 text-sm">
-        {error}
-      </div>
-    );
-
   const pendingCount = requests.filter((r) => r.status === "PENDING").length;
 
-  // Paginated slice
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message} />;
+  }
+
   const paginatedRequests = requests.slice(
     (page - 1) * pageSize,
     page * pageSize,
@@ -209,9 +197,9 @@ export default function MainStoreApprover() {
       {/* ── Pending alert ── */}
       {pendingCount > 0 && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold">
-            {pendingCount} request{pendingCount > 1 ? "s" : ""} waiting for your
-            approval
+          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
+            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
+            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilter("PENDING")}
@@ -223,7 +211,7 @@ export default function MainStoreApprover() {
       )}
 
       {/* ── Filter ── */}
-      <div className="mb-4">
+      <div className="flex h-full py-2 items-end justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -235,6 +223,37 @@ export default function MainStoreApprover() {
           <option value="REJECTED">مسترد شدہ</option>
           <option value="FULFILLED">مکمل شدہ</option>
         </select>
+
+        <div className="Temp-downloader">
+          {/* Excel specific Date Downloader */}
+          <div className="downloader">
+            <ExcelDownloaderWithDates
+              data={requests}
+              dateKey="created_at"
+              fileName={auth.username}
+              columns={[
+                { key: "request_id", label: "درخواست نمبر" },
+                { key: "requested_by_name", label: "درخواست کنندہ" },
+                {
+                  key: "created_at",
+                  label: "درخواست کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                { key: "status", label: "حالت" },
+                {
+                  key: "approved_at",
+                  label: "منظوری کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+                {
+                  key: "fulfilled_at",
+                  label: "تکمیل کی تاریخ",
+                  format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+                },
+              ]}
+            />
+          </div>
+        </div>
       </div>
 
       {/* ── Table ── */}
@@ -261,7 +280,23 @@ export default function MainStoreApprover() {
             </tr>
           </thead>
           <tbody>
-            {requests.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="flex justify-center">
+                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={7} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
+            ) : requests.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found.
@@ -488,18 +523,14 @@ export default function MainStoreApprover() {
             )}
           </tbody>
         </table>
-
-        {/* ── Pagination ── */}
-        {requests.length > 0 && (
-          <Pagination
-            currentPage={page}
-            totalItems={requests.length}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            pageSizeOptions={[10, 25, 50]}
-            onPageSizeChange={setPageSize}
-          />
-        )}
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── Approve Modal ── */}

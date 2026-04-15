@@ -7,9 +7,9 @@ export default function Toast({ toast, onClose }) {
         ${
           toast.type === "success"
             ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-            : toast.type === "warn"
+            : toast.type === "warn" 
             ? "bg-amber-50 border-amber-200 text-amber-700"
-            : "bg-red-50 border-red-200 text-red-700"
+            : toast.type === "error" ? "bg-red-50 border-red-200 text-red-700" : "bg-emerald-50 border-emerald-200 text-emerald-700"
         }
       `}
     >

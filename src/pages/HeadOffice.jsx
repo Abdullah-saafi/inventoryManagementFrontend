@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
-import { getRequests, getRequestById } from "../services/api";
+import {
+  getRequests,
+  getRequestById,
+  headOfficeFulfillRequest,
+  acceptReturn,
+  resendItems,
+} from "../services/api";
 import { useAuth } from "../context/authContext";
 import Toast from "../components/Toast";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates ";
-import API from "../services/api";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-
-const fulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-const acceptReturn = (id, data) =>
-  API.patch(`/requests/${id}/accept-return`, data);
-const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 const StatusBadge = ({ status }) => {
@@ -72,6 +74,8 @@ const DisputeResolutionPanel = ({
   const [processing, setProcessing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
 
+  const handleError = useErrorHandler();
+
   const disputedItems = (request.items || []).filter(
     (i) =>
       (i.item_condition && i.item_condition !== "OK") ||
@@ -86,10 +90,8 @@ const DisputeResolutionPanel = ({
       showToast("Return accepted — stock restored to Head Office");
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to accept return",
-        "error",
-      );
+      const msg = handleError(e, "Failed to accept return");
+      showToast(msg, "error");
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -107,10 +109,8 @@ const DisputeResolutionPanel = ({
       );
       onResolved();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Failed to create resend request",
-        "error",
-      );
+      const msg = handleError(e, "Failed to create resend request");
+      showToast(msg, "error");
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -281,8 +281,6 @@ const DisputeResolutionPanel = ({
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function HeadOffice() {
-  const { auth } = useAuth();
-
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -290,8 +288,6 @@ export default function HeadOffice() {
   const [filter, setFilter] = useState("");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
-
-  // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -302,6 +298,9 @@ export default function HeadOffice() {
   const [fulfillerName, setFulfillerName] = useState("");
   const [fulfillNotes, setFulfillNotes] = useState("");
   const [actioning, setActioning] = useState(false);
+
+  const { auth } = useAuth();
+  const handleError = useErrorHandler();
 
   const showToast = (message, type = "success") => {
     setToast({ message, type });
@@ -315,8 +314,9 @@ export default function HeadOffice() {
       if (filter) params.status = filter;
       const r = await getRequests(params);
       setRequests(r.data.data);
-    } catch {
-      setError("Failed to load requests");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load requests");
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -324,11 +324,6 @@ export default function HeadOffice() {
 
   useEffect(() => {
     load();
-  }, [filter]);
-
-  // Reset to page 1 when filter changes
-  useEffect(() => {
-    setPage(1);
   }, [filter]);
 
   const openDetail = async (r) => {
@@ -341,7 +336,9 @@ export default function HeadOffice() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data", "error");
+      setToast(msg);
     } finally {
       setDL(false);
     }
@@ -360,8 +357,9 @@ export default function HeadOffice() {
       setFulfillMode(mode);
       setFulfillerName(auth.username || "");
       setFulfillNotes("");
-    } catch {
-      showToast("Failed to load items", "error");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load items");
+      showToast(msg, "error");
     }
   };
 
@@ -370,7 +368,7 @@ export default function HeadOffice() {
     if (fulfillMode === "refulfill" && !fulfillNotes.trim()) return;
     setActioning(true);
     try {
-      await fulfillRequest(fulfillModal.request_id, {
+      await headOfficeFulfillRequest(fulfillModal.request_id, {
         fulfilled_by_name: fulfillerName,
         notes: fulfillNotes,
         fulfilled_items: fulfilledItems.map((i) => ({
@@ -389,10 +387,8 @@ export default function HeadOffice() {
       setFulfilledItems([]);
       load();
     } catch (e) {
-      showToast(
-        e.response?.data?.message || "Error fulfilling request",
-        "error",
-      );
+      const msg = handleError(e, "Error fulfilling request");
+      showToast(msg, "error");
     } finally {
       setActioning(false);
     }
@@ -406,7 +402,10 @@ export default function HeadOffice() {
   const pendingFulfill = requests.filter((r) => r.status === "APPROVED").length;
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
 
-  // Paginated slice
+  if (auth.isBlocked) {
+    return <BlockedUI message={auth.message} />;
+  }
+
   const paginatedRequests = requests.slice(
     (page - 1) * pageSize,
     page * pageSize,
@@ -427,9 +426,10 @@ export default function HeadOffice() {
       {/* ── Alert banners ── */}
       {pendingFulfill > 0 && (
         <div className="mb-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-emerald-700 text-sm font-semibold">
-            {pendingFulfill} approved request{pendingFulfill > 1 ? "s" : ""}{" "}
-            ready to fulfill
+          <span className="text-emerald-700 text-sm font-semibold" dir="rtl">
+            {pendingFulfill} منظور شدہ{" "}
+            {pendingFulfill > 1 ? "درخواستیں مکمل کرنے" : "درخواست مکمل کرنے"}{" "}
+            کے لیے تیار {pendingFulfill > 1 ? "ہیں" : "ہے"}
           </span>
           <button
             onClick={() => setFilter("APPROVED")}
@@ -457,7 +457,7 @@ export default function HeadOffice() {
       )}
 
       {/* ── Filter ── */}
-      <div className="flex h-full py-2  items-center justify-between">
+      <div className="flex h-full py-2 items-end justify-between">
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -477,9 +477,9 @@ export default function HeadOffice() {
           {/* Excel specific Date Downloader */}
           <div className="downloader">
             <ExcelDownloaderWithDates
-              // data={request}
+              data={requests}
               dateKey="created_at"
-              fileName="requests"
+              fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
                 { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -918,18 +918,14 @@ export default function HeadOffice() {
             )}
           </tbody>
         </table>
-
-        {/* ── Pagination ── */}
-        {!loading && !error && requests.length > 0 && (
-          <Pagination
-            currentPage={page}
-            totalItems={requests.length}
-            pageSize={pageSize}
-            onPageChange={setPage}
-            pageSizeOptions={[10, 25, 50]}
-            onPageSizeChange={setPageSize}
-          />
-        )}
+        <Pagination
+          currentPage={page}
+          totalItems={requests.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          pageSizeOptions={[10, 25, 50]}
+          onPageSizeChange={setPageSize}
+        />
       </div>
 
       {/* ── Fulfill / Re-dispatch Modal ── */}

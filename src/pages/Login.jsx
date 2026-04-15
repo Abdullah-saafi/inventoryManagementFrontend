@@ -17,8 +17,8 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        if (!form.email) return setMessage("Email is required")
-        if (!form.password) return setMessage("Password is required")
+        if (!form.email) return setMessage("ای میل درکار ہے۔")
+        if (!form.password) return setMessage("پاس ورڈ درکار ہے۔")
         
         try {
             setLoading(true)
@@ -89,7 +89,7 @@ const Login = () => {
             {/* Left Side: Login Form */}
             <div id="container" className="w-full max-w-[500px] h-screen bg-white p-8 flex flex-col justify-center items-center shadow-2xl border-r border-gray-200">
                 <h1 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">Login</h1>
-                <p className="text-gray-500 mb-8 text-sm">Welcome back! Please enter your details.</p>
+                <p className="text-gray-500 mb-8 text-sm">خوش آمدید! براہ کرم اپنی تفصیلات درج کریں۔</p>
 
                 {(message || auth?.message) && (
                     <div className="w-full p-3 mb-4 rounded bg-red-50 border border-red-200 text-red-600 text-sm text-center font-medium">

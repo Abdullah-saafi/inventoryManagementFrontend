@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { editStoreById, getStoreById } from "../services/api";
-import { inputClass, labelClass } from "../services/constants";
-import useErrorHandler from "../components/useErrorHandler";
-import { useAuth } from "../context/authContext";
+import { editStoreById, getStoreById } from "../../services/api";
+import { inputClass, labelClass } from "../../services/constants";
+import useErrorHandler from "../useErrorHandler";
+import { useAuth } from "../../context/authContext";
 
 const EditStore = () => {
   const { id } = useParams();

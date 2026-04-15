@@ -91,7 +91,8 @@ export default function Pagination({
         <button
           onClick={() => go(currentPage - 1)}
           disabled={currentPage === 1}
-          className="flex items-center justify-center h-8 rounded-md border border-gray-200 bg-white hover:bg-gray-100 p-4 cursor-pointer"
+          className={`flex items-center justify-center h-8 rounded-md border border-gray-200 bg-white p-4 
+              ${currentPage === 1 ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-100 cursor-pointer'}`}
           aria-label="Previous page"
         >
           Previous
@@ -124,7 +125,8 @@ export default function Pagination({
         <button
           onClick={() => go(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="flex items-center justify-center  h-8 rounded-md border border-gray-200 bg-white hover:bg-gray-100 p-4 cursor-pointer"
+          className={`flex items-center justify-center h-8 rounded-md border border-gray-200 bg-white p-4 
+              ${currentPage === totalPages ? 'cursor-not-allowed opacity-50' : 'hover:bg-gray-100 cursor-pointer'}`}
           aria-label="Next page"
         >
           Next

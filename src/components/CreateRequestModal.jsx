@@ -246,6 +246,7 @@ export default function CreateRequestModal({
                         </label>
                         <input
                           type="number"
+                          min={1}
                           value={item.requested_qty}
                           onChange={(e) =>
                             updateLine(

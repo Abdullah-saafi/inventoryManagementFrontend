@@ -247,6 +247,7 @@ export default function SubStore() {
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
       showToastMsg(msg, "error");
+      console.log(msg,"error")
     } finally {
       setCreating(false);
     }
@@ -437,8 +438,7 @@ export default function SubStore() {
       )}
       {toast && (
         <Toast
-          message={toast.message}
-          type={toast.type}
+          toast={toast}
           onClose={() => setToast(null)}
         />
       )}

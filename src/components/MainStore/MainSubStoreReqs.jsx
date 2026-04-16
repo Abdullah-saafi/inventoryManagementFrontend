@@ -53,6 +53,8 @@ const DisputeResolutionPanel = ({
 }) => {
   const [processing, setProcessing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
+  
+  const handleError = useErrorHandler()
 
   const disputedItems = (request.items || []).filter(
     (i) =>
@@ -69,7 +71,7 @@ const DisputeResolutionPanel = ({
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to accept return");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -88,7 +90,7 @@ const DisputeResolutionPanel = ({
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to create resend request");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -450,7 +452,6 @@ export default function MainSubStoreReqs({
   loading,
   mainStoreError,
 }) {
-  const [error, setError] = useState("");
   const [reqFilter, setReqFilter] = useState("APPROVED");
   const [detail, setDetail] = useState(null);
   const [detailLoad, setDL] = useState(false);
@@ -475,7 +476,7 @@ export default function MainSubStoreReqs({
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast(msg);
+      showToast(msg,"error");
     } finally {
       setDL(false);
     }
@@ -494,7 +495,7 @@ export default function MainSubStoreReqs({
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setFulfilling(null);
     }
@@ -616,7 +617,7 @@ export default function MainSubStoreReqs({
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {loading || fulfilling ? (
               <tr>
                 <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
@@ -624,11 +625,11 @@ export default function MainSubStoreReqs({
                   </div>
                 </td>
               </tr>
-            ) : error || mainStoreError ? (
+            ) : mainStoreError ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={10} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
+                    {mainStoreError}
                   </div>
                 </td>
               </tr>
@@ -667,11 +668,6 @@ export default function MainSubStoreReqs({
                           <span className="font-mono text-emerald-600 text-xs font-bold">
                             {r.request_no}
                           </span>
-                          {isDisputed && (
-                            <span className="bg-amber-100 text-amber-600 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200">
-                              ACTION NEEDED
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-700">

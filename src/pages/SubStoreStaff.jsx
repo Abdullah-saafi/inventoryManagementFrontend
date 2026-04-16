@@ -51,6 +51,9 @@ export default function SubStore() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   // ─────────────────────────────────────────────────────────────
+  
+  const { auth } = useAuth();
+  const handleError = useErrorHandler();
 
   const [form, setForm] = useState({
     from_store_id: "",
@@ -60,8 +63,6 @@ export default function SubStore() {
     items: [{ ...EMPTY_LINE }],
   });
 
-  const { auth } = useAuth();
-  const handleError = useErrorHandler();
 
   const load = async () => {
     setPageLoading(true);
@@ -125,7 +126,7 @@ export default function SubStore() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to get request");
-      showToastMsg(msg);
+      showToastMsg(msg, "error");
     } finally {
       setDL(false);
     }
@@ -139,7 +140,7 @@ export default function SubStore() {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToastMsg(msg);
+      showToastMsg(msg, "error");
     } finally {
       setGrnLoading(false);
     }
@@ -164,7 +165,7 @@ export default function SubStore() {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToastMsg(msg);
+      showToastMsg(msg, "error");
     } finally {
       setGrnSubmitting(false);
     }
@@ -247,7 +248,6 @@ export default function SubStore() {
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
       showToastMsg(msg, "error");
-      console.log(msg,"error")
     } finally {
       setCreating(false);
     }

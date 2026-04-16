@@ -155,7 +155,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setDL(false);
     }
@@ -169,7 +169,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setGrnLoading(false);
     }
@@ -191,7 +191,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setGrnSubmitting(false);
     }
@@ -255,7 +255,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setCreating(false);
     }
@@ -299,7 +299,6 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
           <p className="text-gray-400 text-sm">{myStoreName}</p>
           {pendingGRN > 0 && (
             <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
@@ -476,11 +475,6 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
                             </span>
                           )}
-                          {needsGRN && (
-                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
-                              ACTION NEEDED
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -518,7 +512,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
                           <span
                             className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
-                            {isExpanded ? "▲ چھپائیں" : "▼ تفصیلات"}
+                            {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                         </div>
                       </td>
@@ -689,20 +683,6 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
                                   </tbody>
                                 </table>
                               </div>
-
-                              {needsGRN && (
-                                <div className="pt-2 border-t border-gray-200">
-                                  <button
-                                    onClick={(e) => openGRN(e, r)}
-                                    disabled={grnLoading}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
-                                  >
-                                    {grnLoading
-                                      ? "Loading…"
-                                      : "Verify Delivery"}
-                                  </button>
-                                </div>
-                              )}
                             </div>
                           )}
                         </td>
@@ -1044,7 +1024,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
                   onClick={() => setShowCreate(false)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
                 >
-                  منسوخ کریں
+                  Cancel
                 </button>
                 <button
                   onClick={handleCreate}

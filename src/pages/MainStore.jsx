@@ -28,7 +28,7 @@ export default function MainStore() {
 
   // ── UI ────────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true);
-  const [mainStoreError, setMainStoreError]     = useState("");
+  const [mainStoreError, setMainStoreError] = useState("");
   const [toast, setToast]     = useState(null);
 
   // ── Toast helper ──────────────────────────────────────────────────────────

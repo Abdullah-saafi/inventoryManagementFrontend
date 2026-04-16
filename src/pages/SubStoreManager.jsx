@@ -72,7 +72,7 @@ export default function SubStoreManager() {
       setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
-      // setError(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -109,7 +109,7 @@ export default function SubStoreManager() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast(msg);
+      setToast({ message: msg, type:"error"});
     } finally {
       setDL(false);
     }
@@ -134,6 +134,22 @@ export default function SubStoreManager() {
       setActioning(false)
     }
   };
+  
+  const openReject = async (r) => {
+    try {
+      setActioning(true);
+      const res = await getRequestById(r.request_id);
+      setRejectModal(res.data.data);
+      setRejecterName(auth.username || "");
+      setRejectReason("");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false);
+    }
+  };
+
 
   const handleApprove = async () => {
     if (!approverName.trim()) return;
@@ -170,7 +186,7 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      setToast({ message: "Request rejected", type: "info" });
+      setToast({ message: "Request rejected"});
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
@@ -358,7 +374,7 @@ export default function SubStoreManager() {
                           <span
                             className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
-                            {isExpanded ? "▲ Hide" : "▼ Details"}
+                            {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                           {r.status === "PENDING" && (
                             <>
@@ -376,9 +392,7 @@ export default function SubStoreManager() {
                                 disabled={actioning}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setRejectModal(r);
-                                  setRejecterName(auth.username || "");
-                                  setRejectReason("");
+                                  openReject(r)
                                 }}
                                 className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
                               >

@@ -346,6 +346,7 @@ export default function HeadOffice() {
 
   const openFulfill = async (r, mode = "fulfill") => {
     try {
+      setActioning(true);
       const res = await getRequestById(r.request_id);
       setFulfilledItems(
         (res.data.data.items || []).map((i) => ({
@@ -360,6 +361,8 @@ export default function HeadOffice() {
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
       showToast(msg, "error");
+    } finally {
+      setActioning(false);
     }
   };
 
@@ -592,11 +595,6 @@ export default function HeadOffice() {
                               READY
                             </span>
                           )}
-                          {isDisputed && (
-                            <span className="bg-amber-100 text-amber-700 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200 animate-pulse">
-                              ACTION NEEDED
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -623,24 +621,14 @@ export default function HeadOffice() {
                           </span>
                           {canFulfill && (
                             <button
+                              disabled={actioning}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openFulfill(r, "fulfill");
                               }}
-                              className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 font-semibold"
+                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                             >
-                              Fulfill
-                            </button>
-                          )}
-                          {isDisputed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openFulfill(r, "refulfill");
-                              }}
-                              className="text-xs bg-amber-500 hover:bg-amber-400 text-white rounded px-2 py-1 ml-1 font-semibold"
-                            >
-                              Re-dispatch
+                              {actioning ? "..." : "Fulfill"}
                             </button>
                           )}
                         </div>
@@ -885,21 +873,6 @@ export default function HeadOffice() {
                                   />
                                 )}
 
-                                {/* Fulfill button inside expanded panel */}
-                                {canFulfill && (
-                                  <div className="pt-2 border-t border-gray-200">
-                                    <button
-                                      onClick={() => {
-                                        setDetail(null);
-                                        openFulfill(detail, "fulfill");
-                                      }}
-                                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
-                                    >
-                                      Fulfill This Request
-                                    </button>
-                                  </div>
-                                )}
-
                                 {detail.status === "FULFILLED" && (
                                   <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
                                     ✓ Fulfilled — waiting for Main Store to
@@ -966,8 +939,7 @@ export default function HeadOffice() {
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
-                  Dispatch items to <strong>Main Store</strong>. Adjust
-                  quantities if needed. Main Store will verify receipt.
+                  اشیاء <strong>مین اسٹور</strong> کو روانہ کریں۔ اگر ضرورت ہو تو مقدار درست کر لیں۔ مین اسٹور وصولی کی تصدیق کرے گا۔
                 </div>
               )}
 

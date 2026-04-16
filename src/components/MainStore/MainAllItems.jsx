@@ -24,7 +24,7 @@ export default function MainAllItems({
   onRefresh,
   showToast,
   loading,
-  error,
+  mainStoreError,
 }) {
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
@@ -62,7 +62,8 @@ export default function MainAllItems({
       setShowAddItem(false);
       onRefresh();
     } catch (e) {
-      showToast(e.response?.data?.message || "Failed to add item", "error");
+      const msg = handleError(e,"Failed to add item")
+      showToast(msg, "error");
     } finally {
       setSavingItem(false);
     }
@@ -241,11 +242,11 @@ export default function MainAllItems({
                   </div>
                 </td>
               </tr>
-            ) : error ? (
+            ) : mainStoreError ? (
               <tr>
-                <td colSpan={7} className="text-center py-12">
+                <td colSpan={10} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error || mainStoreError}
+                    {mainStoreError}
                   </div>
                 </td>
               </tr>

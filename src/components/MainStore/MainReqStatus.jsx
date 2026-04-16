@@ -163,21 +163,6 @@ const renderInlineDetail = (d, onOpenGRN, grnLoading) => {
           </tbody>
         </table>
       </div>
-
-      {needsGRN && (
-        <div className="pt-2 border-t border-gray-200">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onOpenGRN();
-            }}
-            disabled={grnLoading}
-            className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-4 py-2 rounded-lg disabled:opacity-40"
-          >
-            {grnLoading ? "Loading…" : "Verify Delivery"}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
@@ -215,7 +200,7 @@ export default function MainReqStatus({
       setHoDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setHoDL(false);
     }
@@ -228,7 +213,7 @@ export default function MainReqStatus({
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setGrnLoading(false);
     }
@@ -250,7 +235,7 @@ export default function MainReqStatus({
       if (onRefresh) onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToast(msg);
+      showToast(msg, "error");
     } finally {
       setGrnSubmitting(false);
     }
@@ -402,11 +387,6 @@ export default function MainReqStatus({
                           {r.item_count > 0 && (
                             <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                            </span>
-                          )}
-                          {needsGRN && (
-                            <span className="bg-blue-100 text-blue-600 text-xs font-bold rounded px-1.5 py-0.5 border border-blue-200 animate-pulse">
-                              ACTION NEEDED
                             </span>
                           )}
                         </div>

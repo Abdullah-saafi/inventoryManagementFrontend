@@ -108,6 +108,7 @@ export default function MainStoreApprover() {
 
   const openApprove = async (r) => {
     try {
+      setActioning(true);
       const res = await getRequestById(r.request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
@@ -116,10 +117,27 @@ export default function MainStoreApprover() {
         })),
       );
       setApproveModal(r);
-      setApproverName(auth.username || ""); // ← auto-fill, read-only
+      setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
       setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false);
+    }
+  };
+
+  const openReject = async (r) => {
+    try {
+      setActioning(true);
+      const res = await getRequestById(r.request_id);
+      setRejectModal(res.data.data);
+      setRejecterName(auth.username || "");
+      setRejectReason("");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false);
     }
   };
 
@@ -342,29 +360,29 @@ export default function MainStoreApprover() {
                           <span
                             className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
                           >
-                            {isExpanded ? "▲ چھپائیں" : "▼ تفصیلات"}
+                            {isExpanded ? "▲ Hide" : "▼ View"}
                           </span>
                           {r.status === "PENDING" && (
                             <>
                               <button
+                                disabled={loading}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openApprove(r);
                                 }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1"
+                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                Approve
+                                {actioning ? "..." : "Approve"}
                               </button>
                               <button
+                                disabled={loading}
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setRejectModal(r);
-                                  setRejecterName(auth.username || "");
-                                  setRejectReason("");
+                                  openReject(r);
                                 }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1"
+                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40 disabled:cursor-not-allowed"
                               >
-                                Reject
+                                {actioning ? "..." : "Reject"}
                               </button>
                             </>
                           )}
@@ -479,31 +497,6 @@ export default function MainStoreApprover() {
                                   </table>
                                 </div>
 
-                                {detail.status === "PENDING" && (
-                                  <div className="flex gap-2 pt-2 border-t border-gray-200">
-                                    <button
-                                      onClick={() => {
-                                        setDetail(null);
-                                        openApprove(detail);
-                                      }}
-                                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
-                                    >
-                                      Approve
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setDetail(null);
-                                        setRejectModal(detail);
-                                        setRejecterName(auth.username || "");
-                                        setRejectReason("");
-                                      }}
-                                      className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded"
-                                    >
-                                      Reject
-                                    </button>
-                                  </div>
-                                )}
-
                                 {detail.status === "APPROVED" && (
                                   <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
                                     ✓ Approved by{" "}
@@ -554,9 +547,9 @@ export default function MainStoreApprover() {
             </div>
             <div className="p-5 space-y-4">
               <div className="bg-emerald-50 border border-emerald-200 rounded p-3 text-emerald-700 text-xs">
-                Once approved, this request will be visible to{" "}
-                <strong>Head Office</strong> who will dispatch the items and
-                update Main Store inventory.
+                منظوری کے بعد، یہ درخواست <strong>ہیڈ آفس</strong> کو نظر آئے گی
+                جو اشیاء روانہ کرے گا اور مین اسٹور کی انوینٹری کو اپ ڈیٹ کرے
+                گا۔
               </div>
               <div>
                 <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">

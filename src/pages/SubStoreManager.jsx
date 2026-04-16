@@ -52,16 +52,12 @@ export default function SubStoreManager() {
 
   const handleError = useErrorHandler();
 
-  // const showToastMsg = (message, type) => {
-  //   setToast({ message, type });
-  //   setTimeout(() => setToast(null), 4000);
-  // };
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  
+
   useEffect(() => {
-    setTimeout(() => setToast(null), 5000)
-  },[toast])
+    setTimeout(() => setToast(null), 5000);
+  }, [toast]);
 
   const load = async () => {
     setLoading(true);

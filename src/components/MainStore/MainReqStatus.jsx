@@ -201,7 +201,7 @@ export default function MainReqStatus({
   const [grnSubmitting, setGrnSubmitting] = useState(false);
 
   const handleError = useErrorHandler();
-  const {auth} = useAuth()
+  const { auth } = useAuth();
 
   const openHoDetail = async (r) => {
     if (hoDetail && hoDetail.request_id === r.request_id) {

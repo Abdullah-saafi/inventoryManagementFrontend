@@ -63,7 +63,6 @@ export default function SubStore() {
     items: [{ ...EMPTY_LINE }],
   });
 
-
   const load = async () => {
     setPageLoading(true);
     try {
@@ -126,7 +125,7 @@ export default function SubStore() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to get request");
-      showToastMsg(msg, "error");
+      setToast({ message: msg, type:"error"});
     } finally {
       setDL(false);
     }
@@ -140,7 +139,7 @@ export default function SubStore() {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToastMsg(msg, "error");
+      setToast({ message: msg, type:"error"});
     } finally {
       setGrnLoading(false);
     }
@@ -156,24 +155,16 @@ export default function SubStore() {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToastMsg(
-        label,
-        payload.grn_status === "RECEIVED" ? "success" : "warn",
-      );
+      setToast({message: label , type: payload.grn_status === "RECEIVED" ? "success" : "warn",});
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToastMsg(msg, "error");
+      setToast({ message: msg, type:"error"});
     } finally {
       setGrnSubmitting(false);
     }
-  };
-
-  const showToastMsg = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
   };
 
   const addLine = () => {
@@ -224,7 +215,7 @@ export default function SubStore() {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToastMsg("Please fill all required fields", "error");
+      return setToast({message:"Please fill all required fields", type: "error"});
     setCreating(true);
     try {
       const payload = {
@@ -235,7 +226,7 @@ export default function SubStore() {
         ),
       };
       await createRequest(payload);
-      showToastMsg("Request submitted successfully", "success");
+      setToast({message:"Request submitted successfully", type:"success"});
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -247,7 +238,7 @@ export default function SubStore() {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      showToastMsg(msg, "error");
+      setToast({ message: msg, type:"error"});
     } finally {
       setCreating(false);
     }
@@ -310,6 +301,12 @@ export default function SubStore() {
             role={auth.role}
             subStores={subStores}
           />
+          <button
+            onClick={load}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+          >
+            ↻ Refresh
+          </button>
         </div>
         {/* Excel specific Date Downloader */}
         <div className="downloader">

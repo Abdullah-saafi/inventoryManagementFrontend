@@ -14,21 +14,7 @@ import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import SubStoreFilters from "../components/SubStoreFilters";
 import StatusBadge from "../components/StatusBadge";
-
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import DateTimeCell from "../components/DateTimeCell"
 
 export default function SubStoreManager() {
   const { auth } = useAuth();
@@ -56,7 +42,7 @@ export default function SubStoreManager() {
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    setTimeout(() => setToast(null), 5000);
+    setTimeout(() => setToast(null), 7000);
   }, [toast]);
 
   const load = async () => {
@@ -247,6 +233,12 @@ export default function SubStoreManager() {
             role={auth.role}
             subStores={subStores}
           />
+          <button
+            onClick={load}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+          >
+            ↻ Refresh
+          </button>
         </div>
 
         <div className="Temp-downloader">

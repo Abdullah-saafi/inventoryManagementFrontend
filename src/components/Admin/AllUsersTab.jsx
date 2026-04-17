@@ -4,6 +4,7 @@ import { ROLES, ROLE_LABELS } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
 import { useNavigate } from "react-router-dom";
 import Pagination from "../Pagination";
+import Toast from "../Toast"
 
 export default function AllUsersTab() {
   const [users, setUsers] = useState([]);
@@ -11,7 +12,8 @@ export default function AllUsersTab() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [storeFilter, setStoreFilter] = useState("");
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("")
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -26,17 +28,15 @@ export default function AllUsersTab() {
       setUsers(userData);
     } catch (error) {
       const msg = handleError(error, "Failed to get users");
-      setMessage(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
-    setTimeout(() => {
-      setMessage("");
-    }, 7000);
-  }, [message]);
+    setTimeout(() => setToast(null), 7000);
+  }, [toast]);
 
   useEffect(() => {
     loadUsers();
@@ -47,13 +47,13 @@ export default function AllUsersTab() {
       setLoading(true);
       const toggledStatus = !currentStatus;
       const response = await userStatus({ id, status: toggledStatus });
-      setMessage(response.data.message);
+      setToast({message: response.data.message, type:"success"});
       if (response.status === 200) {
         await loadUsers();
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update user");
-      setMessage(msg);
+      setToast({message: msg, type:"error"});
     } finally {
       setLoading(false);
     }
@@ -75,9 +75,6 @@ export default function AllUsersTab() {
   });
 
   const hasFilters = search || roleFilter || storeFilter;
-  const isSuccess =
-    message.toLowerCase().includes("success") ||
-    message.toLowerCase().includes("activated");
 
   const paginatedRequests = displayed.slice(
     (page - 1) * pageSize,
@@ -138,21 +135,6 @@ export default function AllUsersTab() {
         </button>
       </div>
 
-      {/* Message Alert */}
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
-          ${isSuccess ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-red-50 border-red-100 text-red-700"}`}
-        >
-          <p className="text-xs font-extrabold uppercase tracking-tight">
-            {message}
-          </p>
-          <button onClick={() => setMessage("")} className="text-gray-400">
-            ×
-          </button>
-        </div>
-      )}
-
       {/* Table Container */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm ">
         <table className="w-full text-sm">
@@ -182,6 +164,14 @@ export default function AllUsersTab() {
                 <td colSpan={7} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
                   </div>
                 </td>
               </tr>
@@ -260,6 +250,10 @@ export default function AllUsersTab() {
       <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
         {displayed.length} user{displayed.length !== 1 ? "s" : ""} shown
       </div>
+      <Toast
+        toast={toast}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 }

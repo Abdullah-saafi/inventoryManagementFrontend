@@ -22,7 +22,7 @@ export default function MainAllItems({
   allItems,
   mainStores,
   onRefresh,
-  showToast,
+  setToast,
   loading,
   mainStoreError,
 }) {
@@ -30,13 +30,11 @@ export default function MainAllItems({
   const [filterCategory, setFilterCategory] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
   const [showAddItem, setShowAddItem] = useState(false);
   const [newItem, setNewItem] = useState(EMPTY_NEW_ITEM);
   const [savingItem, setSavingItem] = useState(false);
 
   const { auth } = useAuth();
-
   const handleError = useErrorHandler();
 
   const openAddItem = () => {
@@ -54,22 +52,24 @@ export default function MainAllItems({
       !newItem.item_uom ||
       !newItem.store_id
     )
-      return showToast("Item No, Name, UOM and Store are required", "error");
+      return setToast({
+        message: "Item No, Name, UOM and Store are required",
+        type: "error",
+      });
     setSavingItem(true);
     try {
       await createItem(newItem);
-      showToast("Item added successfully");
+      setToast({ message: "Item added successfully", type: "success" });
       setShowAddItem(false);
       onRefresh();
     } catch (e) {
-      const msg = handleError(e,"Failed to add item")
-      showToast(msg, "error");
+      const msg = handleError(e, "Failed to add item");
+      setToast({ message: msg, type: "error" });
     } finally {
       setSavingItem(false);
     }
   };
 
-  // Group raw rows by item_no, split main vs sub qty
   const groupedItems = Object.values(
     allItems.reduce((acc, row) => {
       const qty = parseFloat(row.item_quantity || 0);
@@ -112,104 +112,87 @@ export default function MainAllItems({
 
   return (
     <div>
-      {/* Filters + Add button */}
-      <div className="header  flex items-center justify-between">
-        <div className="search&Downlaod flex  py-2 flex-col ">
-          <div>
-            <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search by name or item number..."
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm placeholder-gray-400 focus:outline-none focus:border-emerald-500 w-64 mr-3"
-            />
-            <select
-              value={filterCategory}
-              onChange={(e) => {
-                setFilterCategory(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
-            >
-              <option value="">تمام زمروں</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-            {(search || filterCategory) && (
-              <button
-                onClick={() => {
-                  setSearch("");
-                  setFilterCategory("");
-                  setCurrentPage(1);
-                }}
-                className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="Newitem+ ">
-          <button
-            onClick={openAddItem}
-            className="ml-auto bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5"
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={openAddItem}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded flex items-center gap-1.5 shadow-sm ml-auto"
+        >
+          <span className="text-base leading-none">+</span> نئی اشیاء شامل کریں
+        </button>
+      </div>
+
+      <div className="flex items-end justify-between py-2">
+        <div className="">
+          <input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search by name or item number..."
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 w-64 shadow-sm mr-2"
+          />
+          <select
+            value={filterCategory}
+            onChange={(e) => {
+              setFilterCategory(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
           >
-            <span className="text-base leading-none">+</span> نئی اشیاء شامل
-            کریں
+            <option value="">تمام زمروں</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+          {(search || filterCategory) && (
+            <button
+              onClick={() => {
+                setSearch("");
+                setFilterCategory("");
+                setCurrentPage(1);
+              }}
+              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            >
+              Clear
+            </button>
+          )}
+          <button
+            onClick={() => {
+              setSearch("")
+              setFilterCategory("")
+              setCurrentPage(1)
+              onRefresh()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
           </button>
-          <div className="Temp-downloader py-4">
-            {/* Excel specific Date Downloader */}
-            <div className="downloader flex">
-              <ExcelDownloaderWithDates
-                data={paginatedItems}
-                dateKey="created_at"
-                fileName={auth.username}
-                columns={[
-                  {
-                    key: "item_id",
-                    label: "آئٹم نمبر",
-                  },
-                  {
-                    key: "item_name",
-                    label: "نام",
-                  },
-                  {
-                    key: "category",
-                    label: "زمرہ",
-                  },
-                  {
-                    key: "item_uom",
-                    label: "اکائی / UOM",
-                  },
-                  {
-                    key: "item_quantity",
-                    label: "مرکزی اسٹور کا اسٹاک",
-                  },
-                  {
-                    key: "sub_qty",
-                    label: "ذیلی اسٹورز کو بھیجا گیا",
-                  },
-                  {
-                    key: "total_qty",
-                    label: "کم از کم اسٹاک",
-                  },
-                  {
-                    key: "min_quantity",
-                    label: "کم از کم اسٹاک",
-                  },
-                ]}
-              />
-            </div>
-          </div>
+        </div>
+
+        <div className="downloader">
+          <ExcelDownloaderWithDates
+            data={paginatedItems}
+            dateKey="created_at"
+            fileName={auth.username}
+            columns={[
+              { key: "item_id", label: "آئٹم نمبر" },
+              { key: "item_name", label: "نام" },
+              { key: "category", label: "زمرہ" },
+              { key: "item_uom", label: "اکائی / UOM" },
+              { key: "item_quantity", label: "مرکزی اسٹور کا اسٹاک" },
+              { key: "sub_qty", label: "ذیلی اسٹورز کو بھیجا گیا" },
+              { key: "total_qty", label: "باقی اسٹاک" },
+              { key: "min_quantity", label: "کم از کم اسٹاک" },
+            ]}
+          />
         </div>
       </div>
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+
+      {/* Table Section */}
+      <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm mt-1">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -262,7 +245,7 @@ export default function MainAllItems({
                 return (
                   <tr
                     key={i.item_no}
-                    className="border-b border-gray-100 hover:bg-gray-50"
+                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <span className="font-mono text-emerald-600 text-xs">
@@ -312,7 +295,6 @@ export default function MainAllItems({
           </tbody>
         </table>
 
-        {/* Pagination */}
         <Pagination
           currentPage={currentPage}
           totalItems={filteredItems.length}
@@ -326,7 +308,7 @@ export default function MainAllItems({
         />
       </div>
 
-      {/* Add Item Modal */}
+      {/* Add Item Modal Code Remains Unchanged below */}
       {showAddItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4">
@@ -468,14 +450,14 @@ export default function MainAllItems({
             <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-gray-200">
               <button
                 onClick={() => setShowAddItem(false)}
-                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSaveItem}
                 disabled={savingItem}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
               >
                 {savingItem ? "Saving..." : "Save Item"}
               </button>

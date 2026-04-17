@@ -11,39 +11,8 @@ import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import Pagination from "../components/Pagination";
-
-// ── Status badge ──────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const styles = {
-    PENDING: "bg-yellow-50 text-yellow-600 border border-yellow-300",
-    APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
-    REJECTED: "bg-red-50 text-red-600 border border-red-300",
-    FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-// ── Date + time cell ──────────────────────────────────────────────────────────
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import StatusBadge from "../components/StatusBadge"
+import DateTimeCell from "../components/DateTimeCell"
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainStoreApprover() {
@@ -73,7 +42,6 @@ export default function MainStoreApprover() {
     try {
       const params = { direction: "MAIN_TO_HO" };
       if (filter) params.status = filter;
-      // No store_id filter — main store approver sees all MAIN_TO_HO requests
       const r = await getRequests(params);
       setRequests(r.data.data);
     } catch (error) {
@@ -87,6 +55,10 @@ export default function MainStoreApprover() {
   useEffect(() => {
     load();
   }, [filter]);
+  
+  useEffect(() => {
+    setTimeout(() => setToast(null), 5000);
+  }, [toast]);
 
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
@@ -100,7 +72,7 @@ export default function MainStoreApprover() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast(msg);
+      setToast({message: msg, type:"error"});
     } finally {
       setDL(false);
     }
@@ -230,17 +202,30 @@ export default function MainStoreApprover() {
 
       {/* ── Filter ── */}
       <div className="flex h-full py-2 items-end justify-between">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام حالتیں</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="APPROVED">منظور شدہ</option>
-          <option value="REJECTED">مسترد شدہ</option>
-          <option value="FULFILLED">مکمل شدہ</option>
-        </select>
+        <div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+          >
+            <option value="">تمام حالتیں</option>
+            <option value="PENDING">زیر التواء</option>
+            <option value="APPROVED">منظور شدہ</option>
+            <option value="REJECTED">مسترد شدہ</option>
+            <option value="FULFILLED">مکمل شدہ</option>
+          </select>
+          
+          <button
+            onClick={() => {
+              setFilter("")
+              setPage(1)
+              load()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
+          </button>
+        </div>
 
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}

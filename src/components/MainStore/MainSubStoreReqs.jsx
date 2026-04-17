@@ -11,22 +11,7 @@ import useErrorHandler from "../useErrorHandler";
 import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-
-// ── Date + time cell ──────────────────────────────────────────────────────────
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import DateTimeCell from "../DateTimeCell";
 
 // ── Condition badge ───────────────────────────────────────────────────────────
 const ConditionBadge = ({ condition }) => {
@@ -48,7 +33,7 @@ const ConditionBadge = ({ condition }) => {
 const DisputeResolutionPanel = ({
   request,
   onResolved,
-  showToast,
+  setToast,
   managerName,
 }) => {
   const [processing, setProcessing] = useState(null);
@@ -67,11 +52,11 @@ const DisputeResolutionPanel = ({
     setProcessing("return");
     try {
       await acceptReturn(request.request_id, { resolved_by_name: managerName });
-      showToast("Return accepted — stock restored to main store");
+      setToast({message: "Return accepted — stock restored to main store", type: "success"});
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to accept return");
-      showToast(msg, "error");
+      setToast({message: msg, type:"error"});
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -84,13 +69,11 @@ const DisputeResolutionPanel = ({
       const res = await resendItems(request.request_id, {
         resolved_by_name: managerName,
       });
-      showToast(
-        res.data?.message || "New request created and ready to fulfill",
-      );
+      setToast({message: res.data?.message || "New request created and ready to fulfill"});
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to create resend request");
-      showToast(msg, "error");
+      setToast({message: msg, type:"error"});
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -262,7 +245,7 @@ const renderInlineDetail = (
   onFulfill,
   fulfillingId,
   onResolved,
-  showToast,
+  setToast,
   managerName,
 ) => {
   const isDisputed = d.status === "DISPUTED";
@@ -436,7 +419,7 @@ const renderInlineDetail = (
         <DisputeResolutionPanel
           request={d}
           onResolved={onResolved}
-          showToast={showToast}
+          setToast={setToast}
           managerName={managerName}
         />
       )}
@@ -448,7 +431,7 @@ const renderInlineDetail = (
 export default function MainSubStoreReqs({
   requests,
   onRefresh,
-  showToast,
+  setToast,
   loading,
   mainStoreError,
 }) {
@@ -476,7 +459,7 @@ export default function MainSubStoreReqs({
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      showToast(msg,"error");
+      setToast({message: msg, type:"error"});
     } finally {
       setDL(false);
     }
@@ -486,16 +469,16 @@ export default function MainSubStoreReqs({
     setFulfilling(requestId);
     try {
       if (status === "DISPUTED") {
-        showToast("Cannot fulfill — dispute resolution required", "error");
+        setToast({message: "Cannot fulfill — dispute resolution required",type:"error"});
         return;
       }
       await fulfillRequest(requestId);
-      showToast("Request fulfilled and inventory updated");
+      setToast({message: "Request fulfilled and inventory updated", type: "success"});
       setDetail(null);
       onRefresh();
     } catch (e) {
       const msg = handleError(e, "Failed to fulfill");
-      showToast(msg, "error");
+      setToast({message: msg, type:"error"});
     } finally {
       setFulfilling(null);
     }
@@ -542,23 +525,37 @@ export default function MainSubStoreReqs({
       )}
 
       <div className="flex h-full py-2 items-end justify-between">
-        <select
-          value={reqFilter}
-          onChange={(e) => {
-            setReqFilter(e.target.value);
-            setCurrentPage(1); // Reset to first page on filter change
-          }}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام حالتیں</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="APPROVED">منظور شدہ</option>
-          <option value="REJECTED">مسترد شدہ</option>
-          <option value="FULFILLED">مکمل شدہ</option>
-          <option value="RECEIVED">وصول شدہ</option>
-          <option value="DISPUTED">متنازع</option>
-          <option value="CLOSED">بند شدہ</option>
-        </select>
+        <div>
+          <select
+            value={reqFilter}
+            onChange={(e) => {
+              setReqFilter(e.target.value);
+              setCurrentPage(1); // Reset to first page on filter change
+            }}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+          >
+            <option value="">تمام حالتیں</option>
+            <option value="PENDING">زیر التواء</option>
+            <option value="APPROVED">منظور شدہ</option>
+            <option value="REJECTED">مسترد شدہ</option>
+            <option value="FULFILLED">مکمل شدہ</option>
+            <option value="RECEIVED">وصول شدہ</option>
+            <option value="DISPUTED">متنازع</option>
+            <option value="CLOSED">بند شدہ</option>
+          </select>
+          
+          <button
+            onClick={() => {
+              setReqFilter("APPROVED")
+              setCurrentPage(1)
+              onRefresh()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3 mb-1.5"
+          >
+            ↻ Refresh
+          </button>
+            
+        </div>
 
         <div className="Temp-downloader">
           <div className="downloader">
@@ -733,7 +730,7 @@ export default function MainSubStoreReqs({
                               handleFulfill,
                               fulfilling,
                               handleResolved,
-                              showToast,
+                              setToast,
                               auth.username,
                             )
                           )}

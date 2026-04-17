@@ -12,41 +12,8 @@ import useErrorHandler from "../useErrorHandler";
 import GRNModal from "../GRNModal";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const s = {
-    PENDING: "border-yellow-400 text-yellow-600 bg-yellow-50",
-    APPROVED: "border-emerald-400 text-emerald-600 bg-emerald-50",
-    REJECTED: "border-red-400 text-red-600 bg-red-50",
-    FULFILLED: "border-blue-400 text-blue-600 bg-blue-50",
-    RECEIVED: "border-teal-400 text-teal-600 bg-teal-50",
-    DISPUTED: "border-amber-400 text-amber-600 bg-amber-50",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono border ${s[status] || "border-gray-300 text-gray-500 bg-gray-50"}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-// ─── FIX 3: Date + Time cell ──────────────────────────────────────────────────
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import StatusBadge from "../StatusBadge";
+import DateTimeCell from "../DateTimeCell";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -58,7 +25,7 @@ const EMPTY_LINE = {
   requested_qty: 1,
 };
 
-export default function MainReqToHO({ loading, mainStoreError, showToast }) {
+export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
@@ -115,6 +82,10 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setPageLoading(false);
     }
   };
+  
+  useEffect(() => {
+    setTimeout(() => setToast(null), 5000);
+  }, []);
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
@@ -155,7 +126,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg, "error");
+      setToast({message: msg, type: "error"});
     } finally {
       setDL(false);
     }
@@ -169,7 +140,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       setGrnRequest(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load request details");
-      showToast(msg, "error");
+      setToast({message: msg, type: "error"});
     } finally {
       setGrnLoading(false);
     }
@@ -185,13 +156,13 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToast(label, payload.grn_status === "RECEIVED" ? "success" : "warn");
+      setToast({message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn"});
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit GRN");
-      showToast(msg, "error");
+      setToast({ message: msg, type: "error"});
     } finally {
       setGrnSubmitting(false);
     }
@@ -231,7 +202,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
     );
     if (!from_store_id || !to_store_id || !requested_by_name || invalid)
-      return showToast("Please fill all required fields", "error");
+      return setToast({message: "Please fill all required fields", type: "error"});
 
     setCreating(true);
     try {
@@ -243,7 +214,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
         ),
       };
       await createRequest(payload);
-      showToast("Request submitted successfully", "success");
+      setToast({message: "Request submitted successfully", type: "success"});
       setShowCreate(false);
       setForm({
         from_store_id: "",
@@ -255,7 +226,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
       load();
     } catch (e) {
       const msg = handleError(e, "Failed to submit");
-      showToast(msg, "error");
+      setToast({message: msg, type: "error"});
     } finally {
       setCreating(false);
     }
@@ -340,7 +311,7 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mx-3"
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
           >
             <option value="">All Status</option>
             <option value="PENDING">Pending</option>
@@ -350,21 +321,17 @@ export default function MainReqToHO({ loading, mainStoreError, showToast }) {
             <option value="RECEIVED">Received</option>
             <option value="DISPUTED">Disputed</option>
           </select>
-
-          {auth.role === "super admin" && (
-            <select
-              value={filterStore}
-              onChange={(e) => setFilterStore(e.target.value)}
-              className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-            >
-              <option value="">All Sub Stores</option>
-              {subStores.map((s) => (
-                <option key={s.store_id} value={s.store_id}>
-                  {s.store_name}
-                </option>
-              ))}
-            </select>
-          )}
+          
+          <button
+            onClick={() => {
+              setFilterStatus("")
+              setPage(1)
+              load()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
+          </button>
         </div>
 
         <div className="Temp-downloader">

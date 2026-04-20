@@ -273,9 +273,7 @@ const renderInlineDetail = (
       {/* Emergency banner inside detail */}
       {d.is_emergency && (
         <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
-          <span className="text-red-500 text-sm font-bold">
-            🚨 ہنگامی درخواست
-          </span>
+          <span className="text-red-500 text-sm font-bold">ہنگامی درخواست</span>
           <span className="text-red-400 text-xs">
             — سب اسٹور منیجر کی منظوری کے بغیر براہ راست بھیجی گئی
           </span>
@@ -605,6 +603,8 @@ export default function MainSubStoreReqs({
               fileName={auth.username}
               columns={[
                 { key: "request_id", label: "درخواست نمبر" },
+                { key: "i.item_no", label: "test" },
+                // {}
                 { key: "requested_by_name", label: "درخواست کنندہ" },
                 {
                   key: "created_at",

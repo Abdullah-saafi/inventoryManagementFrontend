@@ -17,6 +17,7 @@ import AddStoreTab from "./components/Admin/AddStoreTab";
 import NotFound from "./pages/NotFound";
 import EditUser from "./components/Admin/EditUser";
 import EditStore from "./components/Admin/EditStore";
+import Assets from "./pages/Assets";
 
 export default function App() {
   return (
@@ -37,6 +38,18 @@ export default function App() {
               >
                 <Route path="/substore-staff" element={<SubStoreStaff />} />
               </Route>
+
+              {/* test */}
+
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={["sub-store", "super admin"]} />
+                }
+              >
+                <Route path="/assets" element={<Assets />} />
+              </Route>
+
+              {/* test */}
 
               {/* Sub Store Manager — 1st level approval */}
               <Route
@@ -96,7 +109,7 @@ export default function App() {
                   <Route path="user" element={<AddUserTab />} />
                   <Route path="user/:id" element={<EditUser />} />
                   <Route path="store" element={<AddStoreTab />} />
-                  <Route path="store/:id" element={<EditStore/>} />
+                  <Route path="store/:id" element={<EditStore />} />
                   <Route path="all-users" element={<AllUsersTab />} />
                   <Route path="all-stores" element={<AllStoresTab />} />
                 </Route>
@@ -104,7 +117,7 @@ export default function App() {
 
               {/* Default redirect */}
               {/* <Route path="/" element={<Navigate to="/login" replace />} /> */}
-              <Route path="*" element={<NotFound/>} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
         </div>

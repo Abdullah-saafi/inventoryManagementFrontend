@@ -7,6 +7,7 @@ import { useState } from "react";
 
 const links = [
   { to: "/substore-staff", label: "اسٹور", roles: ["sub-store"] },
+  { to: "/assets", label: "test", roles: ["assets"] },
   {
     to: "/substore-manager",
     label: "اسٹور نگران",

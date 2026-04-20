@@ -10,7 +10,7 @@ import Toast from "../components/Toast";
 
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
-  { id: "requests", label: "تمام اسٹورز کی درخواستیں" },
+  { id: "requests", label: "زیلی اسٹورز کی درخواستیں" },
   { id: "ho-create", label: "نئی مرکزی دفتر کی درخواست" },
 ];
 

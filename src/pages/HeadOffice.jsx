@@ -12,41 +12,8 @@ import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-
-// ── Status badge ──────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const styles = {
-    PENDING: "bg-yellow-50 text-yellow-600 border border-yellow-300",
-    APPROVED: "bg-emerald-50 text-emerald-600 border border-emerald-300",
-    REJECTED: "bg-red-50 text-red-600 border border-red-300",
-    FULFILLED: "bg-blue-50 text-blue-600 border border-blue-300",
-    RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300",
-    DISPUTED: "bg-amber-50 text-amber-600 border border-amber-300",
-    CLOSED: "bg-gray-100 text-gray-500 border border-gray-300",
-  };
-  return (
-    <span
-      className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${styles[status] || "bg-gray-50 text-gray-500 border border-gray-200"}`}
-    >
-      {status}
-    </span>
-  );
-};
-
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import StatusBadge from "../components/StatusBadge";
+import DateTimeCell from "../components/DateTimeCell";
 
 // ── Condition badge ───────────────────────────────────────────────────────────
 const ConditionBadge = ({ condition }) => {
@@ -68,7 +35,7 @@ const ConditionBadge = ({ condition }) => {
 const DisputeResolutionPanel = ({
   request,
   onResolved,
-  showToast,
+  setToast,
   managerName,
 }) => {
   const [processing, setProcessing] = useState(null);
@@ -87,11 +54,14 @@ const DisputeResolutionPanel = ({
     setProcessing("return");
     try {
       await acceptReturn(request.request_id, { resolved_by_name: managerName });
-      showToast("Return accepted — stock restored to Head Office");
+      setToast({
+        message: "Return accepted — stock restored to Head Office",
+        type: "success",
+      });
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to accept return");
-      showToast(msg, "error");
+      setToast({ message: msg, type: "error" });
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -104,13 +74,14 @@ const DisputeResolutionPanel = ({
       const res = await resendItems(request.request_id, {
         resolved_by_name: managerName,
       });
-      showToast(
-        res.data?.message || "New request created and ready to fulfill",
-      );
+      setToast({
+        message:
+          res.data?.message || "New request created and ready to fulfill",
+      });
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to create resend request");
-      showToast(msg, "error");
+      setToast({ message: msg, type: "error" });
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -302,10 +273,9 @@ export default function HeadOffice() {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
+  useEffect(() => {
+    setTimeout(() => setToast(null), 5000);
+  }, [toast]);
 
   const load = async () => {
     setLoading(true);
@@ -338,7 +308,7 @@ export default function HeadOffice() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data", "error");
-      setToast(msg);
+      setToast({ message: msg, type: "error" });
     } finally {
       setDL(false);
     }
@@ -346,6 +316,7 @@ export default function HeadOffice() {
 
   const openFulfill = async (r, mode = "fulfill") => {
     try {
+      setActioning(true);
       const res = await getRequestById(r.request_id);
       setFulfilledItems(
         (res.data.data.items || []).map((i) => ({
@@ -359,7 +330,9 @@ export default function HeadOffice() {
       setFulfillNotes("");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
-      showToast(msg, "error");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false);
     }
   };
 
@@ -376,11 +349,11 @@ export default function HeadOffice() {
           fulfilled_qty: i.fulfilled_qty,
         })),
       });
-      showToast(
-        fulfillMode === "refulfill"
+      setToast({
+        message : fulfillMode === "refulfill"
           ? "Re-dispatched — Main Store will verify the corrected delivery"
           : "Request fulfilled — Main Store will verify delivery",
-      );
+      });
       setFulfillModal(null);
       setFulfillerName("");
       setFulfillNotes("");
@@ -388,7 +361,7 @@ export default function HeadOffice() {
       load();
     } catch (e) {
       const msg = handleError(e, "Error fulfilling request");
-      showToast(msg, "error");
+      setToast({message: msg, type: "error"});
     } finally {
       setActioning(false);
     }
@@ -458,20 +431,32 @@ export default function HeadOffice() {
 
       {/* ── Filter ── */}
       <div className="flex h-full py-2 items-end justify-between">
-        <select
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام حالتیں</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="APPROVED">منظور شدہ</option>
-          <option value="REJECTED">مسترد شدہ</option>
-          <option value="FULFILLED">مکمل شدہ</option>
-          <option value="RECEIVED">موصول شدہ</option>
-          <option value="DISPUTED">متنازع</option>
-          <option value="CLOSED">بند شدہ</option>
-        </select>
+        <div>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+          >
+            <option value="">تمام حالتیں</option>
+            <option value="PENDING">زیر التواء</option>
+            <option value="APPROVED">منظور شدہ</option>
+            <option value="REJECTED">مسترد شدہ</option>
+            <option value="FULFILLED">مکمل شدہ</option>
+            <option value="RECEIVED">موصول شدہ</option>
+            <option value="DISPUTED">متنازع</option>
+            <option value="CLOSED">بند شدہ</option>
+          </select>
+          <button
+            onClick={() => {
+              setFilter("")
+              setPage(1)
+              load()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
+          </button>
+        </div>
 
         <div className="Temp-downloader">
           {/* Excel specific Date Downloader */}
@@ -587,16 +572,6 @@ export default function HeadOffice() {
                               {r.item_count} item{r.item_count > 1 ? "s" : ""}
                             </span>
                           )}
-                          {canFulfill && (
-                            <span className="bg-emerald-100 text-emerald-700 text-xs font-bold rounded px-1.5 py-0.5 border border-emerald-200 animate-pulse">
-                              READY
-                            </span>
-                          )}
-                          {isDisputed && (
-                            <span className="bg-amber-100 text-amber-700 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200 animate-pulse">
-                              ACTION NEEDED
-                            </span>
-                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600">
@@ -623,24 +598,14 @@ export default function HeadOffice() {
                           </span>
                           {canFulfill && (
                             <button
+                              disabled={actioning}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 openFulfill(r, "fulfill");
                               }}
-                              className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 font-semibold"
+                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
                             >
-                              Fulfill
-                            </button>
-                          )}
-                          {isDisputed && (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                openFulfill(r, "refulfill");
-                              }}
-                              className="text-xs bg-amber-500 hover:bg-amber-400 text-white rounded px-2 py-1 ml-1 font-semibold"
-                            >
-                              Re-dispatch
+                              {actioning ? "..." : "Fulfill"}
                             </button>
                           )}
                         </div>
@@ -880,24 +845,9 @@ export default function HeadOffice() {
                                   <DisputeResolutionPanel
                                     request={detail}
                                     onResolved={handleResolved}
-                                    showToast={showToast}
+                                    setToast={setToast}
                                     managerName={auth.username}
                                   />
-                                )}
-
-                                {/* Fulfill button inside expanded panel */}
-                                {canFulfill && (
-                                  <div className="pt-2 border-t border-gray-200">
-                                    <button
-                                      onClick={() => {
-                                        setDetail(null);
-                                        openFulfill(detail, "fulfill");
-                                      }}
-                                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded"
-                                    >
-                                      Fulfill This Request
-                                    </button>
-                                  </div>
                                 )}
 
                                 {detail.status === "FULFILLED" && (
@@ -966,8 +916,8 @@ export default function HeadOffice() {
                 </div>
               ) : (
                 <div className="bg-blue-50 border border-blue-200 rounded p-3 text-blue-700 text-xs">
-                  Dispatch items to <strong>Main Store</strong>. Adjust
-                  quantities if needed. Main Store will verify receipt.
+                  اشیاء <strong>مین اسٹور</strong> کو روانہ کریں۔ اگر ضرورت ہو
+                  تو مقدار درست کر لیں۔ مین اسٹور وصولی کی تصدیق کرے گا۔
                 </div>
               )}
 

@@ -29,12 +29,6 @@ export default function MainStore() {
   const [mainStoreError, setMainStoreError] = useState("");
   const [toast, setToast] = useState(null);
 
-  // ── Toast helper ──────────────────────────────────────────────────────────
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
-  };
-
   // ── Auth And Error ──────────────────────────────────────────────────────────
 
   const { auth } = useAuth();
@@ -68,13 +62,17 @@ export default function MainStore() {
     }
   }, []);
 
-  // Initial load — show spinner
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);
 
-  // Silent refresh — no spinner, no flicker
-  const refresh = useCallback(() => fetchData(true), [fetchData]);
+  useEffect(() => {
+      setTimeout(() => {
+        setToast(null);
+      }, 3000); 
+  }, [toast]);
+
+  const refresh = useCallback(() => fetchData(false), [fetchData]);
 
   // ── Badge counts ──────────────────────────────────────────────────────────
   const pendingApproved = requests.filter(
@@ -162,7 +160,7 @@ export default function MainStore() {
           allItems={allItems}
           mainStores={mainStores}
           onRefresh={refresh}
-          showToast={showToast}
+          setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />
@@ -172,7 +170,7 @@ export default function MainStore() {
         <MainSubStoreReqs
           requests={requests}
           onRefresh={refresh}
-          showToast={showToast}
+          setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />
@@ -181,7 +179,7 @@ export default function MainStore() {
       {tab === "ho-status" && (
         <MainReqStatus
           hoRequests={hoRequests}
-          showToast={showToast}
+          setToast={setToast}
           onRefresh={refresh}
           loading={loading}
           mainStoreError={mainStoreError}
@@ -194,7 +192,7 @@ export default function MainStore() {
           headOffices={headOffices}
           hoRequests={hoRequests}
           refresh={refresh}
-          showToast={showToast}
+          setToast={setToast}
           loading={loading}
           mainStoreError={mainStoreError}
         />

@@ -10,54 +10,15 @@ import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
 import API from "../services/api";
 import Toast from "../components/Toast";
-import StatusBadge from "../components/StatusBadge";
-import SubStoreFilters from "../components/SubStoreFilters";
-import Pagination from "../components/Pagination";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
+import SubStoreHeader from "../components/SubStoreHeader";
+import StoreFilters from "../components/StoreFilters";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
+import RequestRow from "../components/RequestRow";
 import CreateRequestModal from "../components/CreateRequestModal";
-
-const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
-
-// ─── Date + Time cell ─────────────────────────────────────────────────────────
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
-
-// ─── Type badge ───────────────────────────────────────────────────────────────
-const TypeBadge = ({ hasItems, hasAssets }) => {
-  if (hasItems && hasAssets)
-    return (
-      <div className="flex flex-col gap-0.5">
-        <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded px-1.5 py-0.5">
-          📦 Items
-        </span>
-        <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded px-1.5 py-0.5">
-          🖥️ Assets
-        </span>
-      </div>
-    );
-  if (hasAssets)
-    return (
-      <span className="inline-flex items-center gap-1 bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold rounded px-1.5 py-0.5">
-        🖥️ Assets
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded px-1.5 py-0.5">
-      📦 Items
-    </span>
-  );
-};
+import Pagination from "../components/Pagination";
+import PendingRequestIndicator from "../components/PendingRequestIndicator";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -83,7 +44,7 @@ export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
@@ -98,13 +59,35 @@ export default function SubStore() {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+<<<<<<< HEAD
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
 
   // ─── Load ─────────────────────────────────────────────────────────────────
+=======
+
+  // ── Pagination state ─────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  // ─────────────────────────────────────────────────────────────
+  
+  const { auth } = useAuth();
+  const handleError = useErrorHandler();
+
+  const pageType = "subStore"
+
+  const [form, setForm] = useState({
+    from_store_id: "",
+    to_store_id: "",
+    requested_by_name: "",
+    notes: "",
+    items: [{ ...EMPTY_LINE }],
+  });
+
+>>>>>>> FreshBranch
   const load = async () => {
-    setPageLoading(true);
+    setLoading(true);
     try {
       const params = { direction: "MAIN_TO_HO" };
       if (filterStatus) params.status = filterStatus;
@@ -124,9 +107,13 @@ export default function SubStore() {
     } catch {
       setError("Failed to load data");
     } finally {
-      setPageLoading(false);
+      setLoading(false);
     }
   };
+
+    useEffect(() => {
+      setTimeout(() => setToast(null), 7000);
+    }, [toast]);
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
@@ -159,7 +146,13 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
+<<<<<<< HEAD
     } catch {
+=======
+    } catch (error) {
+      const msg = handleError(error, "Failed to get request");
+      setToast({ message: msg, type:"error"});
+>>>>>>> FreshBranch
     } finally {
       setDL(false);
     }
@@ -172,8 +165,14 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
+<<<<<<< HEAD
     } catch {
       showToastMsg("Failed to load request details", "error");
+=======
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details");
+      setToast({ message: msg, type:"error"});
+>>>>>>> FreshBranch
     } finally {
       setGrnLoading(false);
     }
@@ -189,23 +188,26 @@ export default function SubStore() {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      showToastMsg(
-        label,
-        payload.grn_status === "RECEIVED" ? "success" : "warn",
-      );
+      setToast({message: label , type: payload.grn_status === "RECEIVED" ? "success" : "warn",});
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
+<<<<<<< HEAD
       showToastMsg(
         e.response?.data?.message || "Failed to submit GRN",
         "error",
       );
+=======
+      const msg = handleError(e, "Failed to submit GRN");
+      setToast({ message: msg, type:"error"});
+>>>>>>> FreshBranch
     } finally {
       setGrnSubmitting(false);
     }
   };
 
+<<<<<<< HEAD
   const showToastMsg = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
@@ -216,6 +218,27 @@ export default function SubStore() {
     setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
   const removeLine = (idx) =>
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+=======
+  const addLine = () => {
+    setForm((f) => {
+      const allItems = [...storeItems, ...f.items];
+      const nextItemNo = getNextItemNo(allItems);
+      return {
+        ...f,
+        items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
+      };
+    });
+  };
+  const removeLine = (idx) => {
+    setForm((f) => {
+      const items = f.items.filter((_, i) => i !== idx);
+      return {
+        ...f,
+        items: items.length ? items : [{ ...EMPTY_LINE }],
+      };
+    });
+  };
+>>>>>>> FreshBranch
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
@@ -236,6 +259,7 @@ export default function SubStore() {
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
+<<<<<<< HEAD
     e?.preventDefault();
     const {
       from_store_id,
@@ -259,6 +283,15 @@ export default function SubStore() {
     )
       return showToastMsg("Check item details", "error");
 
+=======
+    e.preventDefault();
+    const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const invalid = items.some(
+      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name || invalid)
+      return setToast({message:"Please fill all required fields", type: "error"});
+>>>>>>> FreshBranch
     setCreating(true);
     try {
       const payload = {
@@ -274,12 +307,17 @@ export default function SubStore() {
         requested_assets: requested_assets.map((a) => a.asset_id),
       };
       await createRequest(payload);
-      showToastMsg("Request submitted successfully", "success");
+      setToast({message:"Request submitted successfully", type:"success"});
       setShowCreate(false);
       setForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
+<<<<<<< HEAD
       showToastMsg(e.response?.data?.message || "Failed to submit", "error");
+=======
+      const msg = handleError(e, "Failed to submit");
+      setToast({ message: msg, type:"error"});
+>>>>>>> FreshBranch
     } finally {
       setCreating(false);
     }
@@ -295,6 +333,7 @@ export default function SubStore() {
 
   return (
     <div>
+<<<<<<< HEAD
       {/* ── Header ── */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -307,6 +346,72 @@ export default function SubStore() {
               your confirmation
             </div>
           )}
+=======
+      <SubStoreHeader
+        setFilterStatus={setFilterStatus}
+        pageType={pageType}
+        username={auth.username}
+        pendingGRN={pendingGRN}
+        onNewRequest={() => {
+          const nextItemNo = getNextItemNo(storeItems);
+          setForm({
+            from_store_id: auth.store_id || "",
+            to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+            requested_by_name: auth.username || "",
+            notes: "",
+            items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+          });
+          setShowCreate(true);
+        }}
+      />
+      {pendingGRN > 0 && (
+          <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType}/>
+        )}
+      <div className="flex items-end justify-between py-2">
+        <div className="Filter">
+          <StoreFilters
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            filterStore={filterStore}
+            setFilterStore={setFilterStore}
+            role={auth.role}
+            subStores={subStores}
+          />
+          <button
+            onClick={load}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+          >
+            ↻ Refresh
+          </button>
+        </div>
+        {/* Excel specific Date Downloader */}
+        <div className="downloader">
+          <ExcelDownloaderWithDates
+            data={requests}
+            dateKey="created_at"
+            fileName={auth.username}
+            columns={[
+              { key: "request_id", label: "درخواست نمبر" },
+              { key: "requested_by_name", label: "درخواست کنندہ" },
+              {
+                key: "created_at",
+                label: "درخواست کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              { key: "status", label: "حالت" },
+              {
+                key: "approved_at",
+                label: "منظوری کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+              {
+                key: "fulfilled_at",
+                label: "تکمیل کی تاریخ",
+                format: (v) => (v ? new Date(v).toLocaleDateString() : "—"),
+              },
+            ]}
+          />
+>>>>>>> FreshBranch
         </div>
         <button
           onClick={() => {
@@ -354,9 +459,15 @@ export default function SubStore() {
                 "درخواست کنندہ",
                 "درخواست کا وقت",
                 "حالت",
+<<<<<<< HEAD
                 "منظوری کا وقت",
                 "مکمل ہونے کا وقت",
                 "",
+=======
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
+                "عملیات",
+>>>>>>> FreshBranch
               ].map((h) => (
                 <th
                   key={h}
@@ -368,7 +479,7 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {pageLoading ? (
+            {loading ? (
               <tr>
                 <td colSpan={8} className="text-center py-12">
                   <div className="flex justify-center">
@@ -391,6 +502,7 @@ export default function SubStore() {
                 </td>
               </tr>
             ) : (
+<<<<<<< HEAD
               paginated.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
                 const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -496,6 +608,20 @@ export default function SubStore() {
                   </>
                 );
               })
+=======
+              paginatedRequests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  openGRN={openGRN}
+                  grnLoading={grnLoading}
+                  pageType={pageType}
+                />
+              ))
+>>>>>>> FreshBranch
             )}
           </tbody>
         </table>

@@ -4,14 +4,17 @@ import useErrorHandler from "../useErrorHandler";
 import { getStores, storeStatus } from "../../services/api";
 import { useNavigate, useOutletContext } from "react-router-dom";
 import Pagination from "../Pagination";
+import Toast from "../Toast";
 
 export default function AllStoresTab() {
+  
   const { loadStores: refreshAdminStores } = useOutletContext();
 
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [stores, setStores] = useState([]);
-  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState("")
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -26,17 +29,15 @@ export default function AllStoresTab() {
       setStores(response.data.data || []);
     } catch (error) {
       const msg = handleError(error, "Failed to load stores");
-      setMessage(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setTimeout(() => {
-      setMessage("");
-    }, 7000);
-  }, [message]);
+    setTimeout(() => setToast(null), 7000);
+  }, [toast]);
 
   useEffect(() => {
     loadStores();
@@ -51,13 +52,13 @@ export default function AllStoresTab() {
       if (response.status === 200) {
         await loadStores();
         if (refreshAdminStores) refreshAdminStores();
-        setMessage(
-          `Store ${status ? "activated" : "deactivated"} successfully`,
-        );
+        setToast({
+          message: `Store ${status ? "activated" : "deactivated"} successfully`, type : "success"
+          });
       }
     } catch (error) {
       const msg = handleError(error, "Failed to update store status");
-      setMessage(msg);
+      setToast({message: msg, type: "error"});
     } finally {
       setLoading(false);
     }
@@ -74,7 +75,6 @@ export default function AllStoresTab() {
   });
 
   const hasFilters = search || typeFilter;
-  const isSuccess = message.toLowerCase().includes("success");
 
   const paginatedRequests = displayed.slice(
     (page - 1) * pageSize,
@@ -119,29 +119,6 @@ export default function AllStoresTab() {
         </button>
       </div>
 
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded-lg border flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300
-          ${
-            isSuccess
-              ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-              : "bg-red-50 border-red-100 text-red-700"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <p className="text-[10px] font-black uppercase tracking-tight">
-              {message}
-            </p>
-          </div>
-          <button
-            onClick={() => setMessage("")}
-            className="text-gray-400 hover:text-gray-600 text-lg"
-          >
-            ×
-          </button>
-        </div>
-      )}
-
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full">
           <thead>
@@ -173,6 +150,14 @@ export default function AllStoresTab() {
                   </div>
                 </td>
               </tr>
+            ) : error ? (
+              <tr>
+                <td colSpan={9} className="text-center py-12">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
+                    {error}
+                  </div>
+                </td>
+              </tr>
             ) : displayed.length === 0 ? (
               <tr>
                 <td colSpan={7} className="text-center py-12 text-gray-400">
@@ -180,7 +165,7 @@ export default function AllStoresTab() {
                 </td>
               </tr>
             ) : (
-              displayed.map((s) => (
+              paginatedRequests.map((s) => (
                 <tr
                   key={s.store_id}
                   className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${!s.is_active ? "opacity-60" : ""}`}
@@ -255,6 +240,10 @@ export default function AllStoresTab() {
       <div className="mt-2 text-gray-400 text-[10px] uppercase font-bold px-1">
         {displayed.length} store{displayed.length !== 1 ? "s" : ""} shown
       </div>
+      <Toast
+        toast={toast}
+        onClose={() => setToast(null)}
+      />
     </div>
   );
 }

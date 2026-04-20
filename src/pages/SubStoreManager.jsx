@@ -12,26 +12,14 @@ import useErrorHandler from "../components/useErrorHandler";
 import ItemsTable from "../components/ItemsTable";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
-import SubStoreFilters from "../components/SubStoreFilters";
+import StoreFilters from "../components/StoreFilters";
 import StatusBadge from "../components/StatusBadge";
-
-const DateTimeCell = ({ ts }) => {
-  if (!ts) return <span className="text-gray-300 text-xs">—</span>;
-  const d = new Date(ts);
-  return (
-    <div>
-      <div className="text-gray-600 text-xs font-mono">
-        {d.toLocaleDateString()}
-      </div>
-      <div className="text-gray-400 text-xs font-mono">
-        {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-      </div>
-    </div>
-  );
-};
+import DateTimeCell from "../components/DateTimeCell"
+import PendingRequestIndicator from "../components/PendingRequestIndicator";
+import RequestRow from "../components/RequestRow";
+import ApproveRejectModal from "../components/ApproveRejectModal";
 
 export default function SubStoreManager() {
-  const { auth } = useAuth();
 
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,13 +38,16 @@ export default function SubStoreManager() {
   const [rejecterName, setRejecterName] = useState("");
   const [rejectReason, setRejectReason] = useState("");
 
+  const { auth } = useAuth();
   const handleError = useErrorHandler();
+
+  const pageType = "subStoreManager"
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
   useEffect(() => {
-    setTimeout(() => setToast(null), 5000);
+    setTimeout(() => setToast(null), 7000);
   }, [toast]);
 
   const load = async () => {
@@ -72,7 +63,7 @@ export default function SubStoreManager() {
       setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
-      // setError(msg);
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -82,7 +73,6 @@ export default function SubStoreManager() {
     load();
   }, [filterStatus, filterStore, auth.store_id]);
 
-  // load sub stores for super admin filter
   useEffect(() => {
     if (auth.role === "super admin") {
       import("../services/api").then(({ getStores }) => {
@@ -92,7 +82,7 @@ export default function SubStoreManager() {
               res.data.data.filter((s) => s.store_type === "SUB_STORE"),
             ),
           )
-          .catch(() => {});
+          .catch(() => { });
       });
     }
   }, [auth.role]);
@@ -109,7 +99,7 @@ export default function SubStoreManager() {
       setDetail(res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load data");
-      setToast(msg);
+      setToast({ message: msg, type: "error" });
     } finally {
       setDL(false);
     }
@@ -126,7 +116,7 @@ export default function SubStoreManager() {
         })),
       );
       setApproveModal(r);
-      setApproverName(auth.username || ""); // ← auto-fill
+      setApproverName(auth.username || "");
     } catch (error) {
       const msg = handleError(error, "Failed to load items");
       setToast({ message: msg, type: "error" });
@@ -134,6 +124,22 @@ export default function SubStoreManager() {
       setActioning(false)
     }
   };
+
+  const openReject = async (r) => {
+    try {
+      setActioning(true);
+      const res = await getRequestById(r.request_id);
+      setRejectModal(res.data.data);
+      setRejecterName(auth.username || "");
+      setRejectReason("");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setActioning(false);
+    }
+  };
+
 
   const handleApprove = async () => {
     if (!approverName.trim()) return;
@@ -170,7 +176,7 @@ export default function SubStoreManager() {
         approved_by_name: rejecterName,
         rejection_reason: rejectReason,
       });
-      setToast({ message: "Request rejected", type: "info" });
+      setToast({ message: "Request rejected" });
       setRejectModal(null);
       setRejecterName("");
       setRejectReason("");
@@ -207,23 +213,12 @@ export default function SubStoreManager() {
       </div>
 
       {pendingCount > 0 && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
-          <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
-            {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی
-            منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
-          </span>
-          <button
-            onClick={() => setFilterStatus("PENDING")}
-            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
-          >
-            Show Pending
-          </button>
-        </div>
+        <PendingRequestIndicator pendingCount={pendingCount} setFilterStatus={setFilterStatus} filterStatus={filterStatus} />
       )}
 
       <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
-          <SubStoreFilters
+          <StoreFilters
             filterStatus={filterStatus}
             setFilterStatus={setFilterStatus}
             filterStore={filterStore}
@@ -231,6 +226,12 @@ export default function SubStoreManager() {
             role={auth.role}
             subStores={subStores}
           />
+          <button
+            onClick={load}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
+          >
+            ↻ Refresh
+          </button>
         </div>
 
         <div className="Temp-downloader">
@@ -311,155 +312,19 @@ export default function SubStoreManager() {
                 </td>
               </tr>
             ) : (
-              paginatedRequests.map((r) => {
-                const isExpanded = detail && detail.request_id === r.request_id;
-                const isDisputed = r.status === "DISPUTED";
-                const isReceived = r.status === "RECEIVED";
-                return (
-                  <>
-                    <tr
-                      key={r.request_id}
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        isDisputed
-                          ? "bg-amber-50/40 hover:bg-amber-50"
-                          : isReceived
-                            ? "bg-teal-50/30 hover:bg-teal-50"
-                            : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
-                      onClick={() => openDetail(r)}
-                    >
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-emerald-600 text-xs font-bold">
-                          {r.request_no}
-                        </span>
-                        {r.item_count > 0 && (
-                          <span className="ml-2 bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
-                            {r.item_count} item{r.item_count > 1 ? "s" : ""}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-gray-600">
-                        {r.requested_by_name || "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.requested_at || r.created_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={r.status} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.approved_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <DateTimeCell ts={r.fulfilled_at} />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 items-center">
-                          <span
-                            className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
-                          >
-                            {isExpanded ? "▲ Hide" : "▼ Details"}
-                          </span>
-                          {r.status === "PENDING" && (
-                            <>
-                              <button
-                                disabled={actioning}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openApprove(r);
-                                }}
-                                className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {actioning? "..." : "Approve"}
-                              </button>
-                              <button
-                                disabled={actioning}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setRejectModal(r);
-                                  setRejecterName(auth.username || "");
-                                  setRejectReason("");
-                                }}
-                                className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
-                              >
-                                {actioning? "..." : "Reject"}
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-
-                    {isExpanded && (
-                      <tr
-                        key={r.request_id + "-detail"}
-                        className="bg-gray-50 border-b-2 border-emerald-200"
-                      >
-                        <td colSpan={7} className="px-6 py-4">
-                          {detailLoad ? (
-                            <div className="flex justify-center py-6">
-                              <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                            </div>
-                          ) : (
-                            detail && (
-                              <div className="space-y-3">
-                                {detail.notes && (
-                                  <div className="bg-white rounded p-3 border border-gray-200">
-                                    <div className="text-gray-400 text-xs mb-1">
-                                      NOTES
-                                    </div>
-                                    <div className="text-gray-700 text-sm">
-                                      {detail.notes}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {detail.rejection_reason && (
-                                  <div className="bg-red-50 border border-red-200 rounded p-3">
-                                    <div className="text-red-500 text-xs font-semibold mb-1">
-                                      REJECTION REASON
-                                    </div>
-                                    <div className="text-red-600 text-sm">
-                                      {detail.rejection_reason}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {(isDisputed || isReceived) &&
-                                  detail.grn_note && (
-                                    <div
-                                      className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}
-                                    >
-                                      <div className="text-xs font-bold uppercase tracking-wider mb-1">
-                                        {isDisputed
-                                          ? "⚠ Sub Store Reported Issues"
-                                          : "✓ Sub Store Confirmed Receipt"}
-                                      </div>
-                                      <div>{detail.grn_note}</div>
-                                      {detail.grn_at && (
-                                        <div className="text-xs opacity-60 mt-1">
-                                          {new Date(
-                                            detail.grn_at,
-                                          ).toLocaleString()}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-
-                                <ItemsTable
-                                  items={detail?.items || []}
-                                  isDisputed={isDisputed}
-                                  isReceived={isReceived}
-                                />
-                              </div>
-                            )
-                          )}
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })
+              paginatedRequests.map((r) => (
+                <RequestRow
+                  key={r.request_id}
+                  r={r}
+                  pageType="subStoreManager"
+                  detail={detail}
+                  detailLoad={detailLoad}
+                  openDetail={openDetail}
+                  actioning={actioning}
+                  openApprove={openApprove}
+                  openReject={openReject}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -476,171 +341,33 @@ export default function SubStoreManager() {
 
       {/* Approve Modal */}
       {approveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setApproveModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Approve — {approveModal.request_no}
-              </h2>
-              <button
-                onClick={() => setApproveModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                <input
-                  value={approverName}
-                  readOnly
-                  onChange={(e) => setApproverName(e.target.value)}
-                  placeholder="Manager name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
-                  Adjust quantities if needed
-                </div>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-gray-400 text-xs">
-                      <th className="text-left pb-2">Item</th>
-                      <th className="text-center pb-2">Requested</th>
-                      <th className="text-center pb-2">Approve Qty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {editedItems.map((i, idx) => (
-                      <tr
-                        key={i.request_item_id}
-                        className="border-b border-gray-100"
-                      >
-                        <td className="py-2">
-                          <div className="text-gray-800 text-sm">
-                            {i.item_name}
-                          </div>
-                          <div className="text-gray-400 text-xs font-mono">
-                            {i.item_no} · {i.item_uom}
-                          </div>
-                        </td>
-                        <td className="py-2 font-mono text-gray-500 text-center">
-                          {i.requested_qty}
-                        </td>
-                        <td className="py-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={i.approved_qty}
-                            onChange={(e) => {
-                              const u = [...editedItems];
-                              u[idx] = {
-                                ...u[idx],
-                                approved_qty: +e.target.value,
-                              };
-                              setEditedItems(u);
-                            }}
-                            className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-gray-800 text-sm text-center focus:outline-none focus:border-emerald-500"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  disabled={actioning}
-                  onClick={() => setApproveModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApprove}
-                  disabled={actioning || !approverName.trim()}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {actioning ? "Processing..." : "Confirm Approve"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ApproveRejectModal
+         setApproveModal={setApproveModal}
+         approveModal={approveModal}
+         approverName={approverName}
+         setApproverName={setApproverName}
+         editedItems={editedItems}
+         setEditedItems={setEditedItems}
+         actioning={actioning}
+         setApproveModal={setApproveModal}
+         handleApprove={handleApprove}
+         action={"Approve"}
+         />
       )}
 
       {/* Reject Modal */}
       {rejectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setRejectModal(null)}
-          />
-          <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-md shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-              <h2 className="text-gray-900 font-bold">
-                Reject — {rejectModal.request_no}
-              </h2>
-              <button
-                onClick={() => setRejectModal(null)}
-                className="text-gray-400 hover:text-gray-700 text-xl"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Your Name *
-                </label>
-                <input
-                  value={rejecterName}
-                  readOnly
-                  onChange={(e) => setRejecterName(e.target.value)}
-                  placeholder="Manager name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded px-3 py-2 text-gray-500 text-sm cursor-not-allowed outline-none"
-                />
-              </div>
-              <div>
-                <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
-                  Rejection Reason *
-                </label>
-                <textarea
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  rows={3}
-                  placeholder="Explain why this request is rejected"
-                  className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-red-400 resize-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2 border-t border-gray-200">
-                <button
-                  onClick={() => setRejectModal(null)}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold px-4 py-2 rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={
-                    actioning || !rejecterName.trim() || !rejectReason.trim()
-                  }
-                  className="bg-red-500 hover:bg-red-400 text-white text-sm font-semibold px-4 py-2 rounded disabled:opacity-40"
-                >
-                  {actioning ? "Rejecting..." : "Confirm Reject"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <ApproveRejectModal
+         setRejectModal={setRejectModal}
+         rejectModal={rejectModal}
+         rejecterName={rejecterName}
+         setRejecterName={setRejecterName}
+         rejectReason={rejectReason}
+         setRejectReason={setRejectReason}
+         actioning={actioning}
+         handleReject={handleReject}
+         action={"Reject"}
+         />
       )}
 
       <Toast toast={toast} onClose={() => setToast(null)} />

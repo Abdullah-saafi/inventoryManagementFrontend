@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom"; // 1. Import context
+import { useOutletContext } from "react-router-dom"; 
 import { addStore } from "../../services/api";
 import { inputClass, labelClass } from "../../services/constants";
 import useErrorHandler from "../useErrorHandler";
 
 export default function AddStoreTab() {
-  // 2. Get loadStores from Admin.jsx context
-  const { loadStores } = useOutletContext();
+
+  const { loadStores } = useOutletContext(); 
 
   const [form, setForm] = useState({
     store_code: "",

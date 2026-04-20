@@ -17,6 +17,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
+        if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
         if (!form.email) return setMessage("ای میل درکار ہے۔")
         if (!form.password) return setMessage("پاس ورڈ درکار ہے۔")
         
@@ -55,12 +56,12 @@ const Login = () => {
     }
 
     const handleChange = (e) => {
-        if (message) setMessage(null)
-        if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
+        if (message){
+             setMessage(null)
+        }
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 
-    // UPDATED: Light theme input wrapper logic
     const inputWrapperClass = (fieldError) => `
         flex items-center w-full rounded-lg overflow-hidden border-2 transition-all duration-200
         ${fieldError 
@@ -68,7 +69,6 @@ const Login = () => {
             : 'border-gray-300 bg-white focus-within:border-emerald-500'}
     `
     
-    // Adjusted for light theme input text
     const autofillFix = "autofill:shadow-[inset_0_0_0px_1000px_#ffffff] [-webkit-text-fill-color:black]";
     const hasError = !!(message || auth?.message);
 

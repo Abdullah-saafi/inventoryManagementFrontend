@@ -17,7 +17,6 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        // if (message) setMessage(null)
         if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
         if (!form.email) return setMessage("ای میل درکار ہے۔")
         if (!form.password) return setMessage("پاس ورڈ درکار ہے۔")
@@ -57,8 +56,9 @@ const Login = () => {
     }
 
     const handleChange = (e) => {
-        if (message) setMessage(null)
-        // if (auth?.message) setAuth(prev => ({ ...prev, message: null }))
+        if (message){
+             setMessage(null)
+        }
         setForm({ ...form, [e.target.name]: e.target.value })
     }
 

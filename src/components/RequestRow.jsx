@@ -9,6 +9,10 @@ export default function RequestRow({
   openDetail,
   openGRN,
   grnLoading,
+  pageType,
+  actioning,
+  openApprove,
+  openReject
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -18,13 +22,12 @@ export default function RequestRow({
   return (
     <>
       <tr
-        className={`border-b border-gray-100 cursor-pointer transition-colors ${
-          needsGRN
+        className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
             ? "bg-blue-50/40 hover:bg-blue-50"
             : isDisputed
               ? "bg-amber-50/40 hover:bg-amber-50"
               : "hover:bg-gray-50"
-        } ${isExpanded ? "bg-gray-50" : ""}`}
+          } ${isExpanded ? "bg-gray-50" : ""}`}
         onClick={() => openDetail(r)}
       >
         <td className="px-4 py-3">
@@ -56,7 +59,7 @@ export default function RequestRow({
         </td>
         <td className="px-4 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
-            {needsGRN && (
+            {(needsGRN && pageType === "subStore") && (
               <button
                 onClick={(e) => openGRN(e, r)}
                 disabled={grnLoading}
@@ -64,6 +67,31 @@ export default function RequestRow({
               >
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
+            )}
+            
+            {(r.status === "PENDING" && pageType === "subStoreManager") && (
+              <>
+                <button
+                  disabled={actioning}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openApprove(r);
+                  }}
+                  className="text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded px-2 py-1 ml-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {actioning ? "..." : "Approve"}
+                </button>
+                <button
+                  disabled={actioning}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openReject(r)
+                  }}
+                  className="text-xs bg-red-500 hover:bg-red-400 text-white rounded px-2 py-1 disabled:opacity-40"
+                >
+                  {actioning ? "..." : "Reject"}
+                </button>
+              </>
             )}
             <span
               className={`text-xs ${isExpanded ? "text-emerald-600" : "text-gray-400"}`}
@@ -83,33 +111,30 @@ export default function RequestRow({
               </div>
             ) : (
               <div className="space-y-3">
-                {(isDisputed || isReceived) && detail?.grn_note && (
-                  <div
-                    className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}
-                  >
-                    <div className="text-xs font-bold uppercase tracking-wider mb-1">
-                      {isDisputed
-                        ? "⚠ Sub Store Reported Issues"
-                        : "✓ Sub Store Confirmed Receipt"}
-                    </div>
-                    <div>{detail.grn_note}</div>
-                    {detail.grn_at && (
-                      <div className="text-xs opacity-60 mt-1">
-                        {new Date(detail.grn_at).toLocaleString()}
-                      </div>
-                    )}
+                {detail?.notes && (
+                  <div className="bg-white rounded p-3 border border-gray-200">
+                    <div className="text-gray-400 text-xs mb-1 uppercase font-bold">Notes</div>
+                    <div className="text-gray-700 text-sm">{detail.notes}</div>
                   </div>
                 )}
+
                 {detail?.rejection_reason && (
                   <div className="bg-red-50 border border-red-200 rounded p-3">
-                    <div className="text-red-500 text-xs font-semibold mb-1">
-                      REJECTION REASON
-                    </div>
-                    <div className="text-red-600 text-sm">
-                      {detail.rejection_reason}
-                    </div>
+                    <div className="text-red-500 text-xs font-bold mb-1 uppercase">Rejection Reason</div>
+                    <div className="text-red-600 text-sm">{detail.rejection_reason}</div>
                   </div>
                 )}
+
+                {(isDisputed || isReceived) && detail?.grn_note && (
+                  <div className={`rounded-xl p-3 border text-sm ${isDisputed ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-teal-50 border-teal-200 text-teal-700"}`}>
+                    <div className="text-xs font-bold uppercase tracking-wider mb-1">
+                      {isDisputed ? "⚠ Sub Store Reported Issues" : "✓ Sub Store Confirmed Receipt"}
+                    </div>
+                    <div>{detail.grn_note}</div>
+                    {detail.grn_at && <div className="text-xs opacity-60 mt-1">{new Date(detail.grn_at).toLocaleString()}</div>}
+                  </div>
+                )}
+
                 <div>
                   <div className="text-gray-500 text-xs uppercase font-semibold mb-2">
                     Items

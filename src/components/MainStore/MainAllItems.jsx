@@ -308,7 +308,6 @@ export default function MainAllItems({
         />
       </div>
 
-      {/* Add Item Modal Code Remains Unchanged below */}
       {showAddItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 w-full max-w-lg mx-4">

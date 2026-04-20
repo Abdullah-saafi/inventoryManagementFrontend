@@ -1,4 +1,4 @@
-export default function SubStoreFilters({
+export default function StoreFilters({
   filterStatus,
   setFilterStatus,
   filterStore,

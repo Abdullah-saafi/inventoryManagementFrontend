@@ -62,7 +62,6 @@ export default function MainStore() {
     }
   }, []);
 
-  // Initial load — show spinner
   useEffect(() => {
     fetchData(false);
   }, [fetchData]);

@@ -13,11 +13,12 @@ import Toast from "../components/Toast";
 import BlockedUI from "../components/BlockedUI";
 import useErrorHandler from "../components/useErrorHandler";
 import SubStoreHeader from "../components/SubStoreHeader";
-import SubStoreFilters from "../components/SubStoreFilters";
+import StoreFilters from "../components/StoreFilters";
 import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import RequestRow from "../components/RequestRow";
 import CreateRequestModal from "../components/CreateRequestModal";
 import Pagination from "../components/Pagination";
+import PendingRequestIndicator from "../components/PendingRequestIndicator";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -33,7 +34,7 @@ export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
@@ -55,6 +56,8 @@ export default function SubStore() {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
+  const pageType = "subStore"
+
   const [form, setForm] = useState({
     from_store_id: "",
     to_store_id: "",
@@ -64,7 +67,7 @@ export default function SubStore() {
   });
 
   const load = async () => {
-    setPageLoading(true);
+    setLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
@@ -85,9 +88,13 @@ export default function SubStore() {
       const msg = handleError(error, "Failed to load data");
       setError(msg);
     } finally {
-      setPageLoading(false);
+      setLoading(false);
     }
   };
+
+    useEffect(() => {
+      setTimeout(() => setToast(null), 7000);
+    }, [toast]);
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
@@ -277,6 +284,8 @@ export default function SubStore() {
   return (
     <div>
       <SubStoreHeader
+        setFilterStatus={setFilterStatus}
+        pageType={pageType}
         username={auth.username}
         pendingGRN={pendingGRN}
         onNewRequest={() => {
@@ -291,9 +300,12 @@ export default function SubStore() {
           setShowCreate(true);
         }}
       />
+      {pendingGRN > 0 && (
+          <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType}/>
+        )}
       <div className="flex items-end justify-between py-2">
         <div className="Filter">
-          <SubStoreFilters
+          <StoreFilters
             filterStatus={filterStatus}
             setFilterStatus={setFilterStatus}
             filterStore={filterStore}
@@ -350,7 +362,7 @@ export default function SubStore() {
                 "حالت",
                 "منظوری کی تاریخ",
                 "تکمیل کی تاریخ",
-                "",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -362,7 +374,7 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {pageLoading ? (
+            {loading ? (
               <tr>
                 <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
@@ -394,6 +406,7 @@ export default function SubStore() {
                   openDetail={openDetail}
                   openGRN={openGRN}
                   grnLoading={grnLoading}
+                  pageType={pageType}
                 />
               ))
             )}

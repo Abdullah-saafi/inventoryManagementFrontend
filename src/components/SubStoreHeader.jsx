@@ -1,4 +1,6 @@
-export default function SubStoreHeader({ username, pendingGRN, onNewRequest }) {
+import Indicator from "./PendingRequestIndicator";
+
+export default function SubStoreHeader({ username, pendingGRN, onNewRequest,}) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div>
@@ -6,13 +8,6 @@ export default function SubStoreHeader({ username, pendingGRN, onNewRequest }) {
         <p className="text-gray-500 text-sm mt-0.5">
           Manage requests, track inventory, and Request from Main Store.
         </p>
-        {pendingGRN > 0 && (
-          <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-            {pendingGRN} delivery{pendingGRN > 1 ? "ies" : ""} waiting for your
-            confirmation
-          </div>
-        )}
       </div>
       <button
         onClick={onNewRequest}

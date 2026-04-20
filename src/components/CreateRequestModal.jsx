@@ -15,7 +15,14 @@ export default function CreateRequestModal({
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
       <div className="relative bg-white border border-gray-200 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-gray-900 font-bold">نئی اشیاء کی درخواست</h2>
+            {form.is_emergency && (
+              <span className="inline-flex items-center gap-1 bg-red-600 text-white text-xs font-bold px-2.5 py-1 rounded-full animate-pulse">
+                🚨 Urgent
+              </span>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-700 text-xl"
@@ -24,7 +31,52 @@ export default function CreateRequestModal({
           </button>
         </div>
 
+        {/* Emergency banner */}
+        {form.is_emergency && (
+          <div className="bg-red-50 border-b border-red-200 px-5 py-3 flex items-center gap-2">
+            <span className="text-red-600 text-sm font-semibold">
+              ⚠️ یہ درخواست براہ راست مرکزی اسٹور کو بھیجی جائے گی — سب اسٹور
+              منیجر کی منظوری ضروری نہیں
+            </span>
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="p-5 space-y-4">
+          {/* Emergency toggle */}
+          <div
+            onClick={() =>
+              setForm((f) => ({ ...f, is_emergency: !f.is_emergency }))
+            }
+            className={`flex items-center justify-between rounded-lg px-4 py-3 cursor-pointer border-2 transition-all select-none
+              ${
+                form.is_emergency
+                  ? "bg-red-50 border-red-400"
+                  : "bg-gray-50 border-gray-200 hover:border-red-300"
+              }`}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🚨</span>
+              <div>
+                <p
+                  className={`text-sm font-bold ${form.is_emergency ? "text-red-700" : "text-gray-700"}`}
+                >
+                  ہنگامی درخواست (Emergency Request)
+                </p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  سب اسٹور منیجر کی منظوری کے بغیر مرکزی اسٹور کو بھیجیں
+                </p>
+              </div>
+            </div>
+            {/* Toggle switch */}
+            <div
+              className={`relative w-11 h-6 rounded-full transition-colors ${form.is_emergency ? "bg-red-500" : "bg-gray-300"}`}
+            >
+              <div
+                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.is_emergency ? "translate-x-5" : "translate-x-0.5"}`}
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -276,9 +328,18 @@ export default function CreateRequestModal({
             <button
               type="submit"
               disabled={creating || !form.to_store_id}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50"
+              className={`text-white text-sm font-bold px-8 py-2 rounded-lg transition-all disabled:opacity-50
+                ${
+                  form.is_emergency
+                    ? "bg-red-600 hover:bg-red-500"
+                    : "bg-emerald-600 hover:bg-emerald-500"
+                }`}
             >
-              {creating ? "Submitting..." : "Submit Request"}
+              {creating
+                ? "Submitting..."
+                : form.is_emergency
+                  ? "🚨 Submit Emergency Request"
+                  : "Submit Request"}
             </button>
           </div>
         </form>

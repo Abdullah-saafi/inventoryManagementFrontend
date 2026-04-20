@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from "react";
 import { getRequests, getStores, getItems } from "../services/api";
 import MainAllItems from "../components/MainStore/MainAllItems";
 import MainSubStoreReqs from "../components/MainStore/MainSubStoreReqs";
-import MainReqStatus from "../components/MainStore/MainReqStatus";
 import MainReqToHO from "../components/MainStore/MainReqToHO";
 import { useAuth } from "../context/authContext";
 import useErrorHandler from "../components/useErrorHandler";
@@ -12,7 +11,6 @@ import Toast from "../components/Toast";
 const TABS = [
   { id: "items", label: "تمام اشیاء" },
   { id: "requests", label: "تمام اسٹورز کی درخواستیں" },
-  { id: "ho-status", label: "مرکزی دفتر کی درخواستوں کی حالت" },
   { id: "ho-create", label: "نئی مرکزی دفتر کی درخواست" },
 ];
 
@@ -99,35 +97,64 @@ export default function MainStore() {
       </div>
 
       {/* Tab navigation */}
-      <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center gap-1 flex-wrap shadow-sm">
-        {TABS.map((t) => {
-          const badge =
-            t.id === "requests" && pendingApproved > 0
-              ? pendingApproved
-              : t.id === "ho-status" && pendingHo > 0
-                ? pendingHo
-                : null;
-          return (
+      <nav className="bg-white border border-gray-200 rounded-lg mb-6 px-2 py-1.5 flex items-center shadow-sm">
+        {/* Left tabs */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {TABS.filter((t) => t.id !== "ho-create").map((t) => {
+            const badge =
+              t.id === "requests" && pendingApproved > 0
+                ? pendingApproved
+                : t.id === "ho-status" && pendingHo > 0
+                  ? pendingHo
+                  : null;
+
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
+            ${
+              tab === t.id
+                ? "bg-emerald-600 text-white"
+                : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+            }`}
+              >
+                {t.label}
+                {badge && (
+                  <span
+                    className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
+                ${
+                  tab === t.id
+                    ? "bg-white/20 text-white"
+                    : "bg-emerald-600 text-white"
+                }`}
+                  >
+                    {badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Right tab (ho-create) */}
+        <div className="ml-auto">
+          {TABS.filter((t) => t.id === "ho-create").map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-                ${tab === t.id ? "bg-emerald-600 text-white" : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"}`}
+          ${
+            tab === t.id
+              ? "bg-emerald-600 text-white"
+              : "text-gray-500 hover:text-gray-800 hover:bg-gray-100"
+          }`}
             >
               {t.label}
-              {badge && (
-                <span
-                  className={`text-xs font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none
-                  ${tab === t.id ? "bg-white/20 text-white" : "bg-emerald-600 text-white"}`}
-                >
-                  {badge}
-                </span>
-              )}
             </button>
-          );
-        })}
+          ))}
+        </div>
       </nav>
-
       {/* ── TAB CONTENT ──────────────────────────────────────────────────── */}
       {tab === "items" && (
         <MainAllItems

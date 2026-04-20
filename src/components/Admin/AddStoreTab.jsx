@@ -36,16 +36,15 @@ export default function AddStoreTab() {
     try {
       // Force SUB_STORE type as per your requirement
       const res = await addStore({ ...form, store_type: "SUB_STORE" });
-      
+
       const createdName = res.data?.data?.store_name || "Store";
       setMessage(`اسٹور کامیابی سے بن گیا ہے`);
-      
+
       // Reset form
       setForm({ store_code: "", store_name: "", address: "", phone: "" });
-      
+
       // 3. Refresh the global stores list in Admin.jsx
       if (loadStores) await loadStores();
-      
     } catch (e) {
       const msg = handleError(e, "Failed to create store");
       setMessage(msg);
@@ -54,12 +53,13 @@ export default function AddStoreTab() {
     }
   };
 
-  const isSuccess = message.toLowerCase().includes("success") || message.toLowerCase().includes("successfully");
+  const isSuccess =
+    message.toLowerCase().includes("success") ||
+    message.toLowerCase().includes("successfully");
 
   return (
     <div className="max-w-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm space-y-4">
-        
         {/* Basic Info Grid */}
         <div className="grid grid-cols-2 gap-3">
           <div>
@@ -109,7 +109,7 @@ export default function AddStoreTab() {
             onChange={(e) => {
               // Ensure only numbers are entered
               const val = e.target.value.replace(/\D/g, "");
-              setForm(f => ({ ...f, phone: val }));
+              setForm((f) => ({ ...f, phone: val }));
               if (message) setMessage("");
             }}
             placeholder="e.g. 03451234567"
@@ -122,7 +122,9 @@ export default function AddStoreTab() {
           <div className="flex gap-2">
             <span>💡</span>
             <p>
-              اسٹور بنانے کے بعد، نمائندہ بنانے والے سیکشن سے اس اسٹور کے لیے نمائندہ بنائیں تاکہ اسٹور کے لیے انوینٹری اور دیگر انتظامی کام انجام دے سکیں۔
+              اسٹور بنانے کے بعد، نمائندہ بنانے والے سیکشن سے اس اسٹور کے لیے
+              نمائندہ بنائیں تاکہ اسٹور کے لیے انوینٹری اور دیگر انتظامی کام
+              انجام دے سکیں۔
             </p>
           </div>
         </div>
@@ -145,9 +147,11 @@ export default function AddStoreTab() {
           {message && (
             <div
               className={`p-3 rounded-lg text-[10px] uppercase font-black border text-center animate-in fade-in slide-in-from-top-1 duration-300
-                ${isSuccess
-                  ? "bg-emerald-50 border-emerald-100 text-emerald-700"
-                  : "bg-red-50 border-red-100 text-red-700"}`}
+                ${
+                  isSuccess
+                    ? "bg-emerald-50 border-emerald-100 text-emerald-700"
+                    : "bg-red-50 border-red-100 text-red-700"
+                }`}
             >
               {message}
             </div>

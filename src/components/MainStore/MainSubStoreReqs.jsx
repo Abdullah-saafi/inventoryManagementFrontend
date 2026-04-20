@@ -255,6 +255,18 @@ const renderInlineDetail = (
 
   return (
     <div className="space-y-4">
+      {/* Emergency banner inside detail */}
+      {d.is_emergency && (
+        <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-2">
+          <span className="text-red-500 text-sm font-bold">
+            🚨 ہنگامی درخواست
+          </span>
+          <span className="text-red-400 text-xs">
+            — سب اسٹور منیجر کی منظوری کے بغیر براہ راست بھیجی گئی
+          </span>
+        </div>
+      )}
+
       {isReceived && (
         <div className="bg-teal-50 border border-teal-200 rounded-xl p-3">
           <div className="text-teal-600 text-xs font-bold uppercase tracking-wider mb-1">
@@ -503,6 +515,12 @@ export default function MainSubStoreReqs({
   );
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
+
+  // Count emergency requests that are APPROVED (waiting to be fulfilled)
+  const emergencyCount = requests.filter(
+    (r) => r.is_emergency && r.status === "APPROVED",
+  ).length;
+
   const COL_COUNT = 10;
 
   return (
@@ -524,38 +542,44 @@ export default function MainSubStoreReqs({
         </div>
       )}
 
-      <div className="flex h-full py-2 items-end justify-between">
-        <div>
-          <select
-            value={reqFilter}
-            onChange={(e) => {
-              setReqFilter(e.target.value);
-              setCurrentPage(1); // Reset to first page on filter change
-            }}
-            className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-          >
-            <option value="">تمام حالتیں</option>
-            <option value="PENDING">زیر التواء</option>
-            <option value="APPROVED">منظور شدہ</option>
-            <option value="REJECTED">مسترد شدہ</option>
-            <option value="FULFILLED">مکمل شدہ</option>
-            <option value="RECEIVED">وصول شدہ</option>
-            <option value="DISPUTED">متنازع</option>
-            <option value="CLOSED">بند شدہ</option>
-          </select>
-          
-          <button
-            onClick={() => {
-              setReqFilter("APPROVED")
-              setCurrentPage(1)
-              onRefresh()
-            }}
-            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3 mb-1.5"
-          >
-            ↻ Refresh
-          </button>
-            
+      {/* Emergency alert banner */}
+      {emergencyCount > 0 && reqFilter !== "APPROVED" && (
+        <div
+          className="mb-4 flex items-center gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-red-100 transition-colors animate-pulse"
+          onClick={() => {
+            setReqFilter("APPROVED");
+            setCurrentPage(1);
+          }}
+        >
+          <span className="text-lg">🚨</span>
+          <span className="text-red-700 text-sm font-semibold" dir="rtl">
+            {emergencyCount} ہنگامی{" "}
+            {emergencyCount > 1 ? "درخواستیں" : "درخواست"} فوری توجہ کی ضرورت ہے
+          </span>
+          <span className="ml-auto text-red-500 text-xs font-bold">
+            فوری دیکھیں →
+          </span>
         </div>
+      )}
+
+      <div className="flex h-full py-2 items-end justify-between">
+        <select
+          value={reqFilter}
+          onChange={(e) => {
+            setReqFilter(e.target.value);
+            setCurrentPage(1);
+          }}
+          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
+        >
+          <option value="">تمام حالتیں</option>
+          <option value="PENDING">زیر التواء</option>
+          <option value="APPROVED">منظور شدہ</option>
+          <option value="REJECTED">مسترد شدہ</option>
+          <option value="FULFILLED">مکمل شدہ</option>
+          <option value="RECEIVED">وصول شدہ</option>
+          <option value="DISPUTED">متنازع</option>
+          <option value="CLOSED">بند شدہ</option>
+        </select>
 
         <div className="Temp-downloader">
           <div className="downloader">
@@ -645,26 +669,40 @@ export default function MainSubStoreReqs({
                 const isDisputed = r.status === "DISPUTED";
                 const isReceived = r.status === "RECEIVED";
                 const isClosed = r.status === "CLOSED";
+                const isEmergency = r.is_emergency;
 
                 return (
                   <React.Fragment key={r.request_id}>
                     <tr
                       className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        isDisputed
-                          ? "bg-amber-50/50 hover:bg-amber-50"
-                          : isReceived
-                            ? "bg-teal-50/30 hover:bg-teal-50"
-                            : isClosed
-                              ? "bg-gray-50/50 hover:bg-gray-100"
-                              : "hover:bg-gray-50"
+                        isEmergency && r.status === "APPROVED"
+                          ? "bg-red-50/60 hover:bg-red-50"
+                          : isDisputed
+                            ? "bg-amber-50/50 hover:bg-amber-50"
+                            : isReceived
+                              ? "bg-teal-50/30 hover:bg-teal-50"
+                              : isClosed
+                                ? "bg-gray-50/50 hover:bg-gray-100"
+                                : "hover:bg-gray-50"
                       } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-emerald-600 text-xs font-bold">
                             {r.request_no}
                           </span>
+                          {/* Emergency badge */}
+                          {isEmergency && (
+                            <span className="bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5 border border-red-700 animate-pulse">
+                              🚨 Urgent
+                            </span>
+                          )}
+                          {isDisputed && (
+                            <span className="bg-amber-100 text-amber-600 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200">
+                              ACTION NEEDED
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-700">
@@ -704,7 +742,11 @@ export default function MainSubStoreReqs({
                                 e.stopPropagation();
                                 handleFulfill(r.request_id);
                               }}
-                              className="bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40"
+                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${
+                                isEmergency
+                                  ? "bg-red-600 hover:bg-red-500"
+                                  : "bg-blue-600 hover:bg-blue-500"
+                              }`}
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
@@ -715,7 +757,17 @@ export default function MainSubStoreReqs({
                     </tr>
                     {isExpanded && (
                       <tr
-                        className={`border-b-2 ${isDisputed ? "bg-amber-50/20 border-amber-300" : isReceived ? "bg-teal-50/20 border-teal-300" : isClosed ? "bg-gray-50 border-gray-300" : "bg-gray-50 border-emerald-200"}`}
+                        className={`border-b-2 ${
+                          isEmergency && r.status === "APPROVED"
+                            ? "bg-red-50/20 border-red-300"
+                            : isDisputed
+                              ? "bg-amber-50/20 border-amber-300"
+                              : isReceived
+                                ? "bg-teal-50/20 border-teal-300"
+                                : isClosed
+                                  ? "bg-gray-50 border-gray-300"
+                                  : "bg-gray-50 border-emerald-200"
+                        }`}
                       >
                         <td colSpan={COL_COUNT} className="px-6 py-4">
                           {detailLoad ? (

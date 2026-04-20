@@ -34,7 +34,7 @@ export default function AllStoresTab() {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
   }, [toast]);

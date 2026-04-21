@@ -9,10 +9,14 @@ const PendingRequestIndicator = ({pendingCount, setFilterStatus, filterStatus, p
             منظوری کی منتظر {pendingCount > 1 ? "ہیں" : "ہے"}
           </span>
           <button
-            onClick={() => setFilterStatus(pageType === "subStore" ? "FULFILLED" : pageType === "mainSubStoreReqs" ?  "APPROVED" : "PENDING")}
+            onClick={() => {
+              setFilterStatus(pageType === "subStore" ? "FULFILLED" : pageType === "subStoreManager" ?  "PENDING" : "APPROVED")
+              console.log("status",filterStatus);
+              
+            }}
             className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1"
           >
-            Show Pending
+            {pageType === "subStore" ? "Show Fulfilled" : pageType === "subStoreManager" ? "Show Pending" : pageType === "mainSubStoreReqs" ? "Show Approved" : "abc"}
           </button>
         </div>
     {/* {disputedCount > 0(

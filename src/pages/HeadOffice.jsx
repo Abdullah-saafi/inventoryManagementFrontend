@@ -397,7 +397,7 @@ export default function HeadOffice() {
       </div>
 
       {/* ── Alert banners ── */}
-      {pendingFulfill > 0 && (
+      {pendingFulfill > 0 && filter !== "APPROVED" && (
         <div className="mb-3 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-emerald-700 text-sm font-semibold" dir="rtl">
             {pendingFulfill} منظور شدہ{" "}

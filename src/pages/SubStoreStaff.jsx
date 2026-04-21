@@ -15,6 +15,8 @@ import StatusBadge from "../components/StatusBadge";
 import SubStoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
+import PendingRequestIndicator from "../components/PendingRequestIndicator";
+import SubStoreHeader from "../components/SubStoreHeader";
 
 const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
 
@@ -103,6 +105,7 @@ export default function SubStore() {
   const [form, setForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
+  const pageType = "subStore"
 
   // ─── Load ─────────────────────────────────────────────────────────────────
   const load = async () => {
@@ -297,35 +300,26 @@ export default function SubStore() {
 
   return (
     <div>
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <p className="text-gray-400 text-sm">{myStoreName}</p>
-          {pendingGRN > 0 && (
-            <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-              {pendingGRN} delivery{pendingGRN > 1 ? "ies" : ""} waiting for
-              your confirmation
-            </div>
-          )}
-        </div>
-        <button
-          onClick={() => {
-            setForm({
-              ...EMPTY_FORM,
-              from_store_id: auth.store_id || "",
-              to_store_id:
-                mainStores.length === 1 ? mainStores[0].store_id : "",
-              requested_by_name: auth.username || "",
-            });
-            setShowCreate(true);
-          }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
-        >
-          نئی درخواست
-        </button>
-      </div>
+      <SubStoreHeader
+        setFilterStatus={setFilterStatus}
+        pageType={pageType}
+        username={auth.username}
+        pendingGRN={pendingGRN}
+        onNewRequest={() => {
+          const nextItemNo = getNextItemNo(storeItems);
+          setForm({
+            from_store_id: auth.store_id || "",
+            to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+            requested_by_name: auth.username || "",
+            notes: "",
+            items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+          });
+          setShowCreate(true);
+        }}
+      />
+      {pendingGRN > 0 && filterStatus !== "FULFILLED" && (
+          <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType}/>
+        )}
 
       {/* ── Filters ── */}
       <div className="flex flex-wrap gap-2 mb-4 items-center h-full py-2 justify-between">

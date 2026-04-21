@@ -107,11 +107,13 @@ export default function MainSubStoreReqs({
 
   return (
     <div>
-      <PendingRequestIndicator
-        pendingCount={approvedCount}
-        setFilterStatus={setReqFilter}
-        pageType={pageType}
-      />
+      {approvedCount > 0 && reqFilter !== "APPROVED" && (
+        <PendingRequestIndicator
+          pendingCount={approvedCount}
+          setFilterStatus={setReqFilter}
+          pageType={pageType}
+        />
+      )}
 
       {disputedCount > 0 && reqFilter !== "DISPUTED" && (
         <div
@@ -135,20 +137,21 @@ export default function MainSubStoreReqs({
       {/* Emergency alert banner */}
       {emergencyCount > 0 && reqFilter !== "APPROVED" && (
         <div
-          className="mb-4 flex items-center gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-red-100 transition-colors animate-pulse"
-          onClick={() => {
-            setReqFilter("APPROVED");
-            setCurrentPage(1);
-          }}
+          className="mb-4 flex items-center gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-red-100 transition-colors"
         >
-          <span className="text-lg">🚨</span>
           <span className="text-red-700 text-sm font-semibold" dir="rtl">
             {emergencyCount} ہنگامی{" "}
             {emergencyCount > 1 ? "درخواستیں" : "درخواست"} فوری توجہ کی ضرورت ہے
           </span>
-          <span className="ml-auto text-red-500 text-xs font-bold">
-            فوری دیکھیں →
-          </span>
+          <button
+            onClick={() => {
+              setReqFilter("APPROVED");
+              setCurrentPage(1);
+            }}
+            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1 ml-auto"
+          >
+             فوری دیکھیں →
+          </button>
         </div>
       )}
 

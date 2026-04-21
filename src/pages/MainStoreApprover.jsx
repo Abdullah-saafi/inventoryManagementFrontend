@@ -185,7 +185,7 @@ export default function MainStoreApprover() {
       </div>
 
       {/* ── Pending alert ── */}
-      {pendingCount > 0 && (
+      {pendingCount > 0 && filter !== "PENDING" && (
         <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-yellow-700 text-sm font-semibold" dir="rtl">
             {pendingCount} {pendingCount > 1 ? "درخواستیں" : "درخواست"} آپ کی

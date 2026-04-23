@@ -5,24 +5,20 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-  submitGRN
+  submitGRN,
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
-import API from "../services/api";
-import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Toast from "../components/Toast";
-import StatusBadge from "../components/StatusBadge";
-import StoreFilters from "../components/StoreFilters";
-import Pagination from "../components/Pagination";
-import CreateRequestModal from "../components/CreateRequestModal";
-import PendingRequestIndicator from "../components/PendingRequestIndicator";
+import BlockedUI from "../components/BlockedUI";
+import useErrorHandler from "../components/useErrorHandler";
 import SubStoreHeader from "../components/SubStoreHeader";
-import DateTimeCell from "../components/DateTimeCell"
-import TypeBadge from "../components/TypeBadge";
+import StoreFilters from "../components/StoreFilters";
+import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import RequestRow from "../components/RequestRow";
-// import DetailPanel from "../components/DetailPanel"
-
+import CreateRequestModal from "../components/CreateRequestModal";
+import Pagination from "../components/Pagination";
+import PendingRequestIndicator from "../components/PendingRequestIndicator";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -31,24 +27,14 @@ const EMPTY_LINE = {
   item_no: "",
   item_name: "",
   item_uom: "",
-  requested_qty: 1,
-};
-
-const EMPTY_FORM = {
-  from_store_id: "",
-  to_store_id: "",
-  requested_by_name: "",
-  notes: "",
-  is_emergency: false,
-  items: [{ ...EMPTY_LINE }],
-  requested_assets: [],
+  requested_qty: 0,
 };
 
 export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
   const [filterStatus, setFilterStatus] = useState("");
@@ -58,19 +44,30 @@ export default function SubStore() {
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [creating, setCreating] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
 
+  // ── Pagination state ─────────────────────────────────────────
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  // ─────────────────────────────────────────────────────────────
+  
   const { auth } = useAuth();
+  const handleError = useErrorHandler();
+
   const pageType = "subStore"
 
-  // ─── Load ─────────────────────────────────────────────────────────────────
+  const [form, setForm] = useState({
+    from_store_id: "",
+    to_store_id: "",
+    requested_by_name: "",
+    notes: "",
+    items: [{ ...EMPTY_LINE }],
+  });
+
   const load = async () => {
-    setPageLoading(true);
+    setLoading(true);
     try {
       const params = { direction: "SUB_TO_MAIN" };
       if (filterStatus) params.status = filterStatus;
@@ -87,17 +84,17 @@ export default function SubStore() {
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
       setRequests(rRes.data.data);
-    } catch {
-      setError("Failed to load data");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data");
+      setError(msg);
     } finally {
-      setPageLoading(false);
+      setLoading(false);
     }
   };
 
-  useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
-
+    useEffect(() => {
+      setTimeout(() => setToast(null), 7000);
+    }, [toast]);
 
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
@@ -107,7 +104,11 @@ export default function SubStore() {
     if (form.to_store_id) {
       getItems({ store_id: form.to_store_id })
         .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
+        .catch((e) => {
+          setStoreItems([]);
+          const msg = handleError(e, "Failed to set store items");
+          setError(msg);
+        });
     } else {
       setStoreItems([]);
     }
@@ -119,32 +120,33 @@ export default function SubStore() {
     }
   }, [mainStores]);
 
-  // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
     }
     setDL(true);
-    setDetail({ ...r, items: [], assets: [] });
+    setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to get request");
+      setToast({ message: msg, type:"error"});
     } finally {
       setDL(false);
     }
   };
 
-  // ─── GRN ──────────────────────────────────────────────────────────────────
   const openGRN = async (e, r) => {
     e.stopPropagation();
     setGrnLoading(true);
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      setToast({ message: "Failed to load request details", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details");
+      setToast({ message: msg, type:"error"});
     } finally {
       setGrnLoading(false);
     }
@@ -160,39 +162,98 @@ export default function SubStore() {
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
             : "Delivery rejected — main store notified";
-      setToast({ message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn", });
+      setToast({message: label , type: payload.grn_status === "RECEIVED" ? "success" : "warn",});
       setGrnRequest(null);
       setDetail(null);
       load();
     } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit GRN", type: "error" });
+      const msg = handleError(e, "Failed to submit GRN");
+      setToast({ message: msg, type:"error"});
     } finally {
       setGrnSubmitting(false);
     }
   };
 
-  // ─── Form helpers ─────────────────────────────────────────────────────────
-  const addLine = () =>
-    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
-  const removeLine = (idx) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+  const addLine = () => {
+    setForm((f) => {
+      const allItems = [...storeItems, ...f.items];
+      const nextItemNo = getNextItemNo(allItems);
+      return {
+        ...f,
+        items: [...f.items, { ...EMPTY_LINE, item_no: nextItemNo }],
+      };
+    });
+  };
+  const removeLine = (idx) => {
+    setForm((f) => {
+      const items = f.items.filter((_, i) => i !== idx);
+      return {
+        ...f,
+        items: items.length ? items : [{ ...EMPTY_LINE }],
+      };
+    });
+  };
   const updateLine = (idx, field, value) => {
     setForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
       if (field === "selected_item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_no = found.item_no;
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
+        if (value) {
+          const found = storeItems.find((i) => i.item_no === value);
+          if (found) {
+            items[idx].item_no = found.item_no;
+            items[idx].item_name = found.item_name;
+            items[idx].item_uom = found.item_uom;
+          }
         } else {
-          items[idx].item_no = items[idx].item_name = items[idx].item_uom = "";
+          items[idx].item_no = "";
+          items[idx].item_name = "";
+          items[idx].item_uom = "";
         }
       }
       return { ...f, items };
     });
   };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    const { from_store_id, to_store_id, requested_by_name, items } = form;
+    const invalid = items.some(
+      (i) => !i.item_no || !i.item_name || !i.item_uom || i.requested_qty < 1,
+    );
+    if (!from_store_id || !to_store_id || !requested_by_name || invalid)
+      return setToast({message:"Please fill all required fields", type: "error"});
+    setCreating(true);
+    try {
+      const payload = {
+        ...form,
+        direction: "SUB_TO_MAIN",
+        items: items.map(
+          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
+        ),
+      };
+      await createRequest(payload);
+      setToast({message:"Request submitted successfully", type:"success"});
+      setShowCreate(false);
+      setForm({
+        from_store_id: "",
+        to_store_id: "",
+        requested_by_name: "",
+        notes: "",
+        items: [{ ...EMPTY_LINE }],
+      });
+      load();
+    } catch (e) {
+      const msg = handleError(e, "Failed to submit");
+      setToast({ message: msg, type:"error"});
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const pendingGRN = requests.filter(
+    (r) => r.status === "FULFILLED" && !r.grn_at,
+  ).length;
 
   const getNextItemNo = (items = []) => {
     if (!items.length) return "ITM-001";
@@ -209,67 +270,16 @@ export default function SubStore() {
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
 
-  // ─── Submit ───────────────────────────────────────────────────────────────
-  const handleCreate = async (e) => {
-    e?.preventDefault();
-    const {
-      from_store_id,
-      to_store_id,
-      requested_by_name,
-      items,
-      requested_assets = [],
-    } = form;
-
-    const itemLines = items.filter((i) => i.item_no);
-    const hasItems = itemLines.length > 0;
-    const hasAssets = requested_assets.length > 0;
-
-    if (!from_store_id || !to_store_id || !requested_by_name)
-      return setToast({ message: "Please fill all required fields", type: "error" });
-    if (!hasItems && !hasAssets)
-      return setToast({ message: "Add at least one item or one asset", type: "error" });
-    if (
-      hasItems &&
-      itemLines.some((i) => !i.item_name || !i.item_uom || i.requested_qty < 1)
-    )
-      return setToast({ message: "Check item details", type: "error" });
-
-    setCreating(true);
-    try {
-      const payload = {
-        from_store_id,
-        to_store_id,
-        requested_by_name,
-        notes: form.notes,
-        is_emergency: form.is_emergency,
-        direction: "SUB_TO_MAIN",
-        items: itemLines.map(
-          ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
-        ),
-        requested_assets: requested_assets.map((a) => a.asset_id),
-      };
-      await createRequest(payload);
-      setToast({ message: "Request submitted successfully", type: "success" });
-      setShowCreate(false);
-      setForm({ ...EMPTY_FORM });
-      load();
-    } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit", type: "error" });
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  // ─── Computed ─────────────────────────────────────────────────────────────
-  const pendingGRN = requests.filter(
-    (r) => r.status === "FULFILLED" && !r.grn_at,
-  ).length;
-
-  const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
-
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
   }
+
+  // ── Paginated slice ──────────────────────────────────────────
+  const paginatedRequests = requests.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
+  // ─────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -286,30 +296,20 @@ export default function SubStore() {
             requested_by_name: auth.username || "",
             notes: "",
             items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
-            requested_assets: [],
           });
           setShowCreate(true);
         }}
       />
-
-      {(pendingGRN > 0 && filterStatus !== "FULFILLED") && (
-        <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType} />
-      )}
-
-      {/* ── Filters ── */}
-      <div className="flex h-full py-2  items-end justify-between">
+      {pendingGRN > 0 && (
+          <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType}/>
+        )}
+      <div className="flex items-end justify-between py-2">
         <div className="Filter">
           <StoreFilters
             filterStatus={filterStatus}
-            setFilterStatus={(v) => {
-              setFilterStatus(v);
-              setPage(1);
-            }}
+            setFilterStatus={setFilterStatus}
             filterStore={filterStore}
-            setFilterStore={(v) => {
-              setFilterStore(v);
-              setPage(1);
-            }}
+            setFilterStore={setFilterStore}
             role={auth.role}
             subStores={subStores}
           />
@@ -320,11 +320,12 @@ export default function SubStore() {
             ↻ Refresh
           </button>
         </div>
-
-        <div className="Temp-downloader">
+        {/* Excel specific Date Downloader */}
+        <div className="downloader">
           <ExcelDownloaderWithDates
+            data={requests}
             dateKey="created_at"
-            fileName="requests"
+            fileName={auth.username}
             columns={[
               { key: "request_id", label: "درخواست نمبر" },
               { key: "requested_by_name", label: "درخواست کنندہ" },
@@ -349,20 +350,19 @@ export default function SubStore() {
         </div>
       </div>
 
-      {/* ── Table ── */}
+      {/* Main table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
                 "درخواست نمبر",
-                "نوع",
                 "درخواست کنندہ",
-                "درخواست کا وقت",
+                "درخواست کی تاریخ",
                 "حالت",
-                "منظوری کا وقت",
-                "مکمل ہونے کا وقت",
-                "",
+                "منظوری کی تاریخ",
+                "تکمیل کی تاریخ",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -374,9 +374,9 @@ export default function SubStore() {
             </tr>
           </thead>
           <tbody>
-            {pageLoading ? (
+            {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="flex justify-center">
                     <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                   </div>
@@ -384,20 +384,20 @@ export default function SubStore() {
               </tr>
             ) : error ? (
               <tr>
-                <td colSpan={8} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
                     {error}
                   </div>
                 </td>
               </tr>
-            ) : requests.length === 0 ? (
+            ) : paginatedRequests.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-400">
+                <td colSpan={7} className="text-center py-12 text-gray-400">
                   No requests found. Click New Request to place one.
                 </td>
               </tr>
             ) : (
-              paginated.map((r) => (
+              paginatedRequests.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
@@ -413,20 +413,17 @@ export default function SubStore() {
           </tbody>
         </table>
 
+        {/* ── Pagination ── */}
         <Pagination
           currentPage={page}
           totalItems={requests.length}
           pageSize={pageSize}
           onPageChange={setPage}
           pageSizeOptions={[10, 25, 50]}
-          onPageSizeChange={(s) => {
-            setPageSize(s);
-            setPage(1);
-          }}
+          onPageSizeChange={setPageSize}
         />
       </div>
 
-      {/* GRN Modal */}
       {grnRequest && (
         <GRNModal
           request={grnRequest}
@@ -435,8 +432,6 @@ export default function SubStore() {
           submitting={grnSubmitting}
         />
       )}
-
-      {/* Create Modal */}
       {showCreate && (
         <CreateRequestModal
           form={form}
@@ -451,9 +446,12 @@ export default function SubStore() {
           creating={creating}
         />
       )}
-
-      <Toast toast={toast} onClose={() => setToast(null)} />
+      {toast && (
+        <Toast
+          toast={toast}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
-

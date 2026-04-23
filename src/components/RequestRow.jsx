@@ -1,14 +1,15 @@
 import StatusBadge from "../components/StatusBadge";
 import DateTimeCell from "../components/DateTimeCell";
 import ItemsTable from "../components/ItemsTable";
+import TypeBadge from "./TypeBadge";
 
 export default function RequestRow({
   r,
   detail,
   detailLoad,
   openDetail,
-  openGRN,
-  grnLoading,
+  openGRN,    // this is not provided by managet sub store manager
+  grnLoading, // this is not provided by managet sub store manager
   pageType,
   actioning,
   openApprove,
@@ -18,23 +19,31 @@ export default function RequestRow({
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
+  const hasItems = (r.item_count ?? 0) > 0;
+  const hasAssets = (r.asset_count ?? 0) > 0;
 
   return (
     <>
       <tr
         className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
-            ? "bg-blue-50/40 hover:bg-blue-50"
-            : isDisputed
-              ? "bg-amber-50/40 hover:bg-amber-50"
-              : "hover:bg-gray-50"
+          ? "bg-blue-50/40 hover:bg-blue-50"
+          : isDisputed
+            ? "bg-amber-50/40 hover:bg-amber-50"
+            : "hover:bg-gray-50"
           } ${isExpanded ? "bg-gray-50" : ""}`}
         onClick={() => openDetail(r)}
       >
+        {/* Request No */}
         <td className="px-4 py-3">
           <div className="flex items-center gap-2">
             <span className="font-mono text-emerald-600 text-xs font-bold">
               {r.request_no}
             </span>
+            {r.is_emergency && (
+              <span className="bg-red-100 text-red-600 text-xs font-bold rounded px-1.5 py-0.5 border border-red-200">
+                URGENT
+              </span>
+            )}
             {r.item_count > 0 && (
               <span className="bg-gray-100 text-gray-500 text-xs font-mono rounded px-1.5 py-0.5 border border-gray-200">
                 {r.item_count} item{r.item_count > 1 ? "s" : ""}
@@ -42,6 +51,12 @@ export default function RequestRow({
             )}
           </div>
         </td>
+
+        {pageType === "subStore" && (
+          <td className="px-4 py-3">
+            <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
+          </td>
+        )}
         <td className="px-4 py-3 text-gray-600">
           {r.requested_by_name || "—"}
         </td>
@@ -68,7 +83,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            
+
             {(r.status === "PENDING" && pageType === "subStoreManager") && (
               <>
                 <button

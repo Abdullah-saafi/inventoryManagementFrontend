@@ -1,6 +1,11 @@
-import React from 'react'
+import React from "react";
 
-const PendingRequestIndicator = ({pendingCount, setFilterStatus, filterStatus, pageType}) => {
+const PendingRequestIndicator = ({
+  pendingCount,
+  setFilterStatus,
+  filterStatus,
+  pageType,
+}) => {
   return (
     <>
     <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center justify-between">
@@ -36,7 +41,7 @@ const PendingRequestIndicator = ({pendingCount, setFilterStatus, filterStatus, p
         </div>
     )} */}
     </>
-  )
-}
+  );
+};
 
-export default PendingRequestIndicator
+export default PendingRequestIndicator;

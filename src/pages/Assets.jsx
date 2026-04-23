@@ -42,7 +42,7 @@ export default function Assets({ showToast }) {
       const params = new URLSearchParams();
       if (filterStatus) params.set("status", filterStatus);
       if (filterStore) params.set("store_id", filterStore);
-      const res = await API.get(`/assets?${params}`);
+      const res = await API.get(`/reusableItems${params}`);
       setAssets(res.data.data || []);
     } catch {
       showToast?.("Failed to load assets", "error");
@@ -76,7 +76,7 @@ export default function Assets({ showToast }) {
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this asset?")) return;
     try {
-      await API.delete(`/assets/${id}`);
+      await API.delete(`/reusableItems/${id}`);
       showToast?.("Deleted");
       load();
     } catch (e) {
@@ -156,10 +156,10 @@ export default function Assets({ showToast }) {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               {[
-                "Asset Name",
-                "Serial No.",
-                "Store",
-                "Status",
+                "Reusable Items",
+                "Reusable Items No.",
+                "Store ?",
+                "Current Status",
                 "Assigned To",
                 "Actions",
               ].map((h) => (
@@ -189,24 +189,21 @@ export default function Assets({ showToast }) {
               </tr>
             ) : (
               assets.map((a) => (
-                <tr
-                  key={a.asset_id}
-                  className="border-b border-gray-100 hover:bg-gray-50"
-                >
+                <tr className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-800">
-                    {a.asset_name}
+                    {a.reusableItem_name}
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-emerald-600">
-                    {a.serial_number}
+                    {a.reusableItem_id}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
                     {a.store_name || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-0.5 rounded border text-xs font-bold ${STATUS_COLORS[a.status]}`}
+                      className={`px-2 py-0.5 rounded border text-xs font-bold ${STATUS_COLORS[a.reusableItem_status]}`}
                     >
-                      {a.status}
+                      {a.reusableItem_status}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-gray-500">

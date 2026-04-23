@@ -14,13 +14,12 @@ import ExcelDownloaderWithDates from "../components/Exceldownloaderwithdates";
 import Pagination from "../components/Pagination";
 import StoreFilters from "../components/StoreFilters";
 import StatusBadge from "../components/StatusBadge";
-import DateTimeCell from "../components/DateTimeCell"
+import DateTimeCell from "../components/DateTimeCell";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
 import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 
 export default function SubStoreManager() {
-
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +40,7 @@ export default function SubStoreManager() {
   const { auth } = useAuth();
   const handleError = useErrorHandler();
 
-  const pageType = "subStoreManager"
+  const pageType = "subStoreManager";
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -82,7 +81,7 @@ export default function SubStoreManager() {
               res.data.data.filter((s) => s.store_type === "SUB_STORE"),
             ),
           )
-          .catch(() => { });
+          .catch(() => {});
       });
     }
   }, [auth.role]);
@@ -107,7 +106,7 @@ export default function SubStoreManager() {
 
   const openApprove = async (r) => {
     try {
-      setActioning(true)
+      setActioning(true);
       const res = await getRequestById(r.request_id);
       setEditedItems(
         (res.data.data.items || []).map((i) => ({
@@ -121,7 +120,7 @@ export default function SubStoreManager() {
       const msg = handleError(error, "Failed to load items");
       setToast({ message: msg, type: "error" });
     } finally {
-      setActioning(false)
+      setActioning(false);
     }
   };
 
@@ -139,7 +138,6 @@ export default function SubStoreManager() {
       setActioning(false);
     }
   };
-
 
   const handleApprove = async () => {
     if (!approverName.trim()) return;
@@ -213,7 +211,11 @@ export default function SubStoreManager() {
       </div>
 
       {pendingCount > 0 && (
-        <PendingRequestIndicator pendingCount={pendingCount} setFilterStatus={setFilterStatus} filterStatus={filterStatus} />
+        <PendingRequestIndicator
+          pendingCount={pendingCount}
+          setFilterStatus={setFilterStatus}
+          filterStatus={filterStatus}
+        />
       )}
 
       <div className="flex h-full py-2  items-end justify-between">
@@ -342,32 +344,31 @@ export default function SubStoreManager() {
       {/* Approve Modal */}
       {approveModal && (
         <ApproveRejectModal
-         setApproveModal={setApproveModal}
-         approveModal={approveModal}
-         approverName={approverName}
-         setApproverName={setApproverName}
-         editedItems={editedItems}
-         setEditedItems={setEditedItems}
-         actioning={actioning}
-         setApproveModal={setApproveModal}
-         handleApprove={handleApprove}
-         action={"Approve"}
-         />
+          setApproveModal={setApproveModal}
+          approveModal={approveModal}
+          approverName={approverName}
+          setApproverName={setApproverName}
+          editedItems={editedItems}
+          setEditedItems={setEditedItems}
+          actioning={actioning}
+          handleApprove={handleApprove}
+          action={"Approve"}
+        />
       )}
 
       {/* Reject Modal */}
       {rejectModal && (
         <ApproveRejectModal
-         setRejectModal={setRejectModal}
-         rejectModal={rejectModal}
-         rejecterName={rejecterName}
-         setRejecterName={setRejecterName}
-         rejectReason={rejectReason}
-         setRejectReason={setRejectReason}
-         actioning={actioning}
-         handleReject={handleReject}
-         action={"Reject"}
-         />
+          setRejectModal={setRejectModal}
+          rejectModal={rejectModal}
+          rejecterName={rejecterName}
+          setRejecterName={setRejecterName}
+          rejectReason={rejectReason}
+          setRejectReason={setRejectReason}
+          actioning={actioning}
+          handleReject={handleReject}
+          action={"Reject"}
+        />
       )}
 
       <Toast toast={toast} onClose={() => setToast(null)} />

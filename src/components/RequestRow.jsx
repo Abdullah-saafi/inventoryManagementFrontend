@@ -52,11 +52,9 @@ export default function RequestRow({
           </div>
         </td>
 
-        {pageType === "subStore" && (
-          <td className="px-4 py-3">
-            <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
-          </td>
-        )}
+        <td className="px-4 py-3">
+          <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
+        </td>        
         <td className="px-4 py-3 text-gray-600">
           {r.requested_by_name || "—"}
         </td>

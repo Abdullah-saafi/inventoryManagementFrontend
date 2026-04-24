@@ -18,9 +18,12 @@ import DateTimeCell from "../components/DateTimeCell";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
 import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
+import TableHead from "../components/TableHead";
+import TableBody from "../components/TableBody";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
@@ -59,6 +62,9 @@ export default function SubStoreManager() {
       if (auth.role === "super admin" && filterStore)
         params.store_id = filterStore;
       const r = await getRequests(params);
+      if (!filterStatus) {
+        setAllRequests(r.data.data)
+      }
       setRequests(r.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to load requests");
@@ -81,7 +87,7 @@ export default function SubStoreManager() {
               res.data.data.filter((s) => s.store_type === "SUB_STORE"),
             ),
           )
-          .catch(() => {});
+          .catch(() => { });
       });
     }
   }, [auth.role]);
@@ -192,7 +198,7 @@ export default function SubStoreManager() {
     page * pageSize,
   );
 
-  const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+  const pendingCount = allRequests.filter((r) => r.status === "PENDING").length;
 
   if (auth.isBlocked) {
     return <BlockedUI message={auth.message} />;
@@ -204,6 +210,7 @@ export default function SubStoreManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName}</span>
           <p className="text-gray-500 text-sm mt-0.5">
             Review and approve or reject staff item requests
           </p>
@@ -211,7 +218,10 @@ export default function SubStoreManager() {
       </div>
 
       {pendingCount > 0 && filterStatus !== "PENDING" && (
-        <PendingRequestIndicator pendingCount={pendingCount} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType} />
+        <PendingRequestIndicator
+          pendingCount={pendingCount}
+          setFilterStatus={setFilterStatus}
+          pageType={pageType} />
       )}
 
       <div className="flex h-full py-2  items-end justify-between">
@@ -267,60 +277,26 @@ export default function SubStoreManager() {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "درخواست کنندہ",
-                "درخواست کی تاریخ",
-                "حالت",
-                "منظوری کی تاریخ",
-                "تکمیل کی تاریخ",
-                "عملیات",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead />
           </thead>
           <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : paginatedRequests.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400">
-                  No requests found.
-                </td>
-              </tr>
+            {(loading || error || paginatedRequests.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={error}
+                requests={paginatedRequests}
+              />
             ) : (
-              paginatedRequests.map((r) => (
+              paginated.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
-                  pageType="subStoreManager"
                   detail={detail}
                   detailLoad={detailLoad}
                   openDetail={openDetail}
-                  actioning={actioning}
-                  openApprove={openApprove}
-                  openReject={openReject}
+                  openGRN={openGRN}
+                  grnLoading={grnLoading}
+                  pageType={pageType}
                 />
               ))
             )}

@@ -137,7 +137,7 @@ export default function MainStore() {
         </div>
 
         {/* Right tab (ho-create) */}
-        <div className="ml-auto">
+        <div>
           {TABS.filter((t) => t.id === "ho-create").map((t) => (
             <button
               key={t.id}
@@ -171,16 +171,6 @@ export default function MainStore() {
           requests={requests}
           onRefresh={refresh}
           setToast={setToast}
-          loading={loading}
-          mainStoreError={mainStoreError}
-        />
-      )}
-
-      {tab === "ho-status" && (
-        <MainReqStatus
-          hoRequests={hoRequests}
-          setToast={setToast}
-          onRefresh={refresh}
           loading={loading}
           mainStoreError={mainStoreError}
         />

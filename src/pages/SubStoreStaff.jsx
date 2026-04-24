@@ -17,10 +17,11 @@ import StoreFilters from "../components/StoreFilters";
 import Pagination from "../components/Pagination";
 import CreateRequestModal from "../components/CreateRequestModal";
 import PendingRequestIndicator from "../components/PendingRequestIndicator";
-import SubStoreHeader from "../components/SubStoreHeader";
 import DateTimeCell from "../components/DateTimeCell"
 import TypeBadge from "../components/TypeBadge";
 import RequestRow from "../components/RequestRow";
+import TableHead from "../components/TableHead";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
 // import DetailPanel from "../components/DetailPanel"
 
 
@@ -48,6 +49,7 @@ export default function SubStore() {
   const [subStores, setSubStores] = useState([]);
   const [mainStores, setMainStores] = useState([]);
   const [requests, setRequests] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
@@ -86,6 +88,9 @@ export default function SubStore() {
       const all = sRes.data.data;
       setSubStores(all.filter((s) => s.store_type === "SUB_STORE"));
       setMainStores(all.filter((s) => s.store_type === "MAIN_STORE"));
+      if (!filterStatus) {
+        setAllRequests(rRes.data.data)
+      }
       setRequests(rRes.data.data);
     } catch {
       setError("Failed to load data");
@@ -261,7 +266,7 @@ export default function SubStore() {
   };
 
   // ─── Computed ─────────────────────────────────────────────────────────────
-  const pendingGRN = requests.filter(
+  const pendingGRN = allRequests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
 
@@ -273,27 +278,39 @@ export default function SubStore() {
 
   return (
     <div>
-      <SubStoreHeader
-        setFilterStatus={setFilterStatus}
-        pageType={pageType}
-        username={auth.username}
-        pendingGRN={pendingGRN}
-        onNewRequest={() => {
-          const nextItemNo = getNextItemNo(storeItems);
-          setForm({
-            from_store_id: auth.store_id || "",
-            to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
-            requested_by_name: auth.username || "",
-            notes: "",
-            items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
-            requested_assets: [],
-          });
-          setShowCreate(true);
-        }}
-      />
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName}</span>
+          <p className="text-gray-500 text-sm mt-0.5">
+            Manage requests, track inventory, and Request from Main Store.
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            const nextItemNo = getNextItemNo(storeItems);
+            setForm({
+              from_store_id: auth.store_id || "",
+              to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
+              requested_by_name: auth.username || "",
+              notes: "",
+              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+              requested_assets: [],
+            });
+            setShowCreate(true);
+          }}
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+        >
+          نئی درخواست
+        </button>
+      </div>
 
       {(pendingGRN > 0 && filterStatus !== "FULFILLED") && (
-        <PendingRequestIndicator pendingCount={pendingGRN} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType} />
+        <PendingRequestIndicator
+          pendingCount={pendingGRN}
+          setFilterStatus={setFilterStatus}
+          filterStatus={filterStatus}
+          pageType={pageType} />
       )}
 
       {/* ── Filters ── */}
@@ -353,49 +370,15 @@ export default function SubStore() {
       <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              {[
-                "درخواست نمبر",
-                "نوع",
-                "درخواست کنندہ",
-                "درخواست کا وقت",
-                "حالت",
-                "منظوری کا وقت",
-                "مکمل ہونے کا وقت",
-                "",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="text-left px-4 py-3 text-gray-500 font-semibold text-xs uppercase tracking-wider"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
+            <TableHead />
           </thead>
           <tbody>
-            {pageLoading ? (
-              <tr>
-                <td colSpan={8} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : error ? (
-              <tr>
-                <td colSpan={8} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {error}
-                  </div>
-                </td>
-              </tr>
-            ) : requests.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="text-center py-12 text-gray-400">
-                  No requests found. Click New Request to place one.
-                </td>
-              </tr>
+            {(pageLoading || error || requests.length === 0) ? (
+              <CheckLoadingAndError
+                loading={pageLoading}
+                error={error}
+                requests={requests}
+              />
             ) : (
               paginated.map((r) => (
                 <RequestRow

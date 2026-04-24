@@ -18,6 +18,7 @@ import NotFound from "./pages/NotFound";
 import EditUser from "./components/Admin/EditUser";
 import EditStore from "./components/Admin/EditStore";
 import Assets from "./pages/Assets";
+import AddItemsAndCategories from "./components/Admin/AddItemsAndCategories";
 
 export default function App() {
   return (
@@ -112,6 +113,7 @@ export default function App() {
                   <Route path="store/:id" element={<EditStore />} />
                   <Route path="all-users" element={<AllUsersTab />} />
                   <Route path="all-stores" element={<AllStoresTab />} />
+                  <Route path="items-and-categories" element={<AddItemsAndCategories />} />
                 </Route>
               </Route>
 

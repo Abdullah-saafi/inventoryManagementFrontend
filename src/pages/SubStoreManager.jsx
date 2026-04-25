@@ -20,6 +20,7 @@ import RequestRow from "../components/RequestRow";
 import ApproveRejectModal from "../components/ApproveRejectModal";
 import TableHead from "../components/TableHead";
 import TableBody from "../components/TableBody";
+import CheckLoadingAndError from "../components/CheckLoadingAndError";
 
 export default function SubStoreManager() {
   const [requests, setRequests] = useState([]);
@@ -229,6 +230,7 @@ export default function SubStoreManager() {
           <StoreFilters
             filterStatus={filterStatus}
             setFilterStatus={setFilterStatus}
+            pageType={pageType}
             filterStore={filterStore}
             setFilterStore={setFilterStore}
             role={auth.role}
@@ -287,15 +289,16 @@ export default function SubStoreManager() {
                 requests={paginatedRequests}
               />
             ) : (
-              paginated.map((r) => (
+              paginatedRequests.map((r) => (
                 <RequestRow
                   key={r.request_id}
                   r={r}
                   detail={detail}
                   detailLoad={detailLoad}
                   openDetail={openDetail}
-                  openGRN={openGRN}
-                  grnLoading={grnLoading}
+                  actioning={actioning}
+                  openApprove={openApprove}
+                  openReject={openReject}
                   pageType={pageType}
                 />
               ))

@@ -14,6 +14,8 @@ import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import StatusBadge from "../StatusBadge";
 import DateTimeCell from "../DateTimeCell";
+import PendingRequestIndicator from "../PendingRequestIndicator"
+import StoreFilters from "../StoreFilters";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -55,6 +57,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   });
 
   const { auth } = useAuth();
+  const pageType = "mainReqToHO"
 
   // ── Data loading ───────────────────────────────────────────────────────────
   const load = async () => {
@@ -268,17 +271,14 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
   return (
     <div>
       {/* ── Header ── */}
+        
+          <PendingRequestIndicator
+            pendingCount={pendingGRN}
+            filterStatus={filterStatus}
+            setFilterStatus={setFilterStatus}
+            pageType={pageType}
+          />          
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-gray-400 text-sm">{myStoreName}</p>
-          {pendingGRN > 0 && (
-            <div className="mt-1 flex items-center gap-2 text-xs text-blue-600 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse inline-block" />
-              {pendingGRN} delivery{pendingGRN > 1 ? "ies" : ""} waiting for
-              your confirmation
-            </div>
-          )}
-        </div>
         <button
           onClick={() => {
             const nextItemNo = getNextItemNo(storeItems);
@@ -299,7 +299,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
 
             setShowCreate(true);
           }}
-          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors"
+          className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-4 py-2 rounded transition-colors ml-auto mt-2"
         >
           نئی درخواست
         </button>
@@ -308,7 +308,7 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
       {/* ── Filters ── */}
       <div className="flex flex-wrap gap-2 items-end h-full py-2 justify-between">
         <div>
-          <select
+          {/* <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 mr-3"
@@ -320,7 +320,16 @@ export default function MainReqToHO({ loading, mainStoreError, setToast }) {
             <option value="FULFILLED">Fulfilled</option>
             <option value="RECEIVED">Received</option>
             <option value="DISPUTED">Disputed</option>
-          </select>
+          </select> */}
+
+          <StoreFilters
+            filterStatus={filterStatus}
+            setFilterStatus={(v) => {
+              setFilterStatus(v)
+              setPage(1)
+            }}
+            pageType={pageType}
+          />
           
           <button
             onClick={() => {

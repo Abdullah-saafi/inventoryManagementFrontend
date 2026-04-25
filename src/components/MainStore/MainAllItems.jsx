@@ -161,10 +161,11 @@ export default function MainAllItems({
             <option value="consumeable">Consumeable</option>
             <option value="non-consumeable">Non-Consumeable</option>
           </select>
-          {(search || filterCategory) && (
+          {(search || filterCategory || filterType) && (
             <button
               onClick={() => {
                 setSearch("");
+                setFilterType("")
                 setFilterCategory("");
                 setCurrentPage(1);
               }}

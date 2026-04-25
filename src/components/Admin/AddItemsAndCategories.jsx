@@ -138,9 +138,14 @@ const AddItemsAndCategories = () => {
                                     </label>
                                     <select
                                         value={newItem.item_type}
-                                        onChange={(e) =>
-                                            setNewItem((f) => ({ ...f, item_type: e.target.value }))
-                                        }
+                                        onChange={(e) => {
+                                            const selectedType = e.target.value
+                                            setNewItem((f) => ({
+                                                ...f,
+                                                item_type : selectedType,
+                                                item_uom : selectedType === "non-consumeable" ? "" : f.item_uom
+                                            }))
+                                        }}
                                         className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                                     >
                                         <option value=""> آئٹم کی قسم</option>
@@ -150,17 +155,19 @@ const AddItemsAndCategories = () => {
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
+                                        <label htmlFor="UOM" className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                                             UOM *
-                                        </label>
                                         <input
                                             value={newItem.item_uom}
+                                            id="UOM"
+                                            disabled={newItem.item_type === "non-consumeable"}
                                             onChange={(e) =>
                                                 setNewItem((f) => ({ ...f, item_uom: e.target.value }))
                                             }
                                             placeholder="pcs / kg / box…"
-                                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
-                                        />
+                                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500d disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            />
+                                            </label>
                                     </div>
                                     <div>
                                         <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">

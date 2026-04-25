@@ -322,6 +322,7 @@ export default function SubStore() {
               setFilterStatus(v);
               setPage(1);
             }}
+            pageType={pageType}
             filterStore={filterStore}
             setFilterStore={(v) => {
               setFilterStore(v);

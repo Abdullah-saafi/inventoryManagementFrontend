@@ -15,6 +15,8 @@ import DateTimeCell from "../DateTimeCell";
 import DisputeResolutionPanel from "../DisputeResolutionPanel";
 import RenderInlineDetail from "../RenderInlineDetail";
 import PendingRequestIndicator from "../PendingRequestIndicator";
+import StoreFilters from "../StoreFilters";
+import CheckLoadingAndError from "../CheckLoadingAndError";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
@@ -116,63 +118,24 @@ export default function MainSubStoreReqs({
       )}
 
       {disputedCount > 0 && reqFilter !== "DISPUTED" && (
-        <div
-          className="mb-4 flex items-center gap-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 cursor-pointer hover:bg-amber-100 transition-colors"
-          onClick={() => {
-            setReqFilter("DISPUTED");
-            setCurrentPage(1);
-          }}
-        >
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
-          <span className="text-amber-700 text-sm font-semibold" dir="rtl">
-            {disputedCount} {disputedCount > 1 ? "درخواستیں" : "درخواست"} ذیلی
-            اسٹور کی جانب سے متنازع ہیں — جائزہ لینے کے لیے کلک کریں
-          </span>
-          <span className="ml-auto text-amber-500 text-xs">View →</span>
-        </div>
+        <PendingRequestIndicator disputedCount={disputedCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
       )}
 
-      {/* <PendingRequestIndicator pendingCount={disputedCount} filterStatus={reqFilter}  pageType={pageType}/> */}
 
       {/* Emergency alert banner */}
       {emergencyCount > 0 && reqFilter !== "APPROVED" && (
-        <div
-          className="mb-4 flex items-center gap-3 bg-red-50 border border-red-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-red-100 transition-colors"
-        >
-          <span className="text-red-700 text-sm font-semibold" dir="rtl">
-            {emergencyCount} ہنگامی{" "}
-            {emergencyCount > 1 ? "درخواستیں" : "درخواست"} فوری توجہ کی ضرورت ہے
-          </span>
-          <button
-            onClick={() => {
-              setReqFilter("APPROVED");
-              setCurrentPage(1);
-            }}
-            className="text-xs border border-gray-300 text-gray-600 hover:text-gray-900 rounded px-3 py-1 ml-auto"
-          >
-             فوری دیکھیں →
-          </button>
-        </div>
+        <PendingRequestIndicator emergencyCount={emergencyCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
       )}
 
       <div className="flex h-full py-2 items-end justify-between">
-        <select
-          value={reqFilter}
-          onChange={(e) => {
-            setReqFilter(e.target.value);
-            setCurrentPage(1);
+        <StoreFilters
+          filterStatus={reqFilter}
+          setFilterStatus={(v) => {
+            setReqFilter(v)
+            setCurrentPage(1)
           }}
-          className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
-        >
-          <option value="">تمام حالتیں</option>
-          <option value="PENDING">زیر التواء</option>
-          <option value="APPROVED">منظور شدہ</option>
-          <option value="REJECTED">مسترد شدہ</option>
-          <option value="FULFILLED">مکمل شدہ</option>
-          <option value="RECEIVED">وصول شدہ</option>
-          <option value="DISPUTED">متنازع</option>
-          <option value="CLOSED">بند شدہ</option>
-        </select>
+          pageType={pageType}
+        />
 
         <div className="Temp-downloader">
           <div className="downloader">
@@ -233,31 +196,12 @@ export default function MainSubStoreReqs({
             </tr>
           </thead>
           <tbody>
-            {loading || fulfilling ? (
-              <tr>
-                <td colSpan={9} className="text-center py-12">
-                  <div className="flex justify-center">
-                    <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                  </div>
-                </td>
-              </tr>
-            ) : mainStoreError ? (
-              <tr>
-                <td colSpan={10} className="text-center py-12">
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 m-4 text-red-600 text-sm">
-                    {mainStoreError}
-                  </div>
-                </td>
-              </tr>
-            ) : filtered.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={COL_COUNT}
-                  className="text-center py-12 text-gray-400"
-                >
-                  No requests found.
-                </td>
-              </tr>
+            {(loading || mainStoreError || filtered.length === 0) ? (
+              <CheckLoadingAndError
+                loading={loading}
+                error={mainStoreError}
+                requests={filtered}
+              />
             ) : (
               paginatedData.map((r) => {
                 const isExpanded = detail && detail.request_id === r.request_id;
@@ -269,17 +213,16 @@ export default function MainSubStoreReqs({
                 return (
                   <React.Fragment key={r.request_id}>
                     <tr
-                      className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                        isEmergency && r.status === "APPROVED"
-                          ? "bg-red-50/60 hover:bg-red-50"
-                          : isDisputed
-                            ? "bg-amber-50/50 hover:bg-amber-50"
-                            : isReceived
-                              ? "bg-teal-50/30 hover:bg-teal-50"
-                              : isClosed
-                                ? "bg-gray-50/50 hover:bg-gray-100"
-                                : "hover:bg-gray-50"
-                      } ${isExpanded ? "bg-gray-50" : ""}`}
+                      className={`border-b border-gray-100 cursor-pointer transition-colors ${isEmergency && r.status === "APPROVED"
+                        ? "bg-red-50/60 hover:bg-red-50"
+                        : isDisputed
+                          ? "bg-amber-50/50 hover:bg-amber-50"
+                          : isReceived
+                            ? "bg-teal-50/30 hover:bg-teal-50"
+                            : isClosed
+                              ? "bg-gray-50/50 hover:bg-gray-100"
+                              : "hover:bg-gray-50"
+                        } ${isExpanded ? "bg-gray-50" : ""}`}
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
@@ -289,13 +232,8 @@ export default function MainSubStoreReqs({
                           </span>
                           {/* Emergency badge */}
                           {isEmergency && (
-                            <span className="bg-red-600 text-white text-xs font-bold rounded-full px-2 py-0.5 border border-red-700 animate-pulse">
-                              Urgent
-                            </span>
-                          )}
-                          {isDisputed && (
-                            <span className="bg-amber-100 text-amber-600 text-xs font-bold rounded px-1.5 py-0.5 border border-amber-200">
-                              ACTION NEEDED
+                            <span className="bg-red-100 text-red-600 text-xs font-bold rounded px-1.5 py-0.5 border border-red-200">
+                              URGENT
                             </span>
                           )}
                         </div>
@@ -337,11 +275,10 @@ export default function MainSubStoreReqs({
                                 e.stopPropagation();
                                 handleFulfill(r.request_id);
                               }}
-                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${
-                                isEmergency
-                                  ? "bg-red-600 hover:bg-red-500"
-                                  : "bg-blue-600 hover:bg-blue-500"
-                              }`}
+                              className={`text-white text-sm font-semibold px-2.5 ml-2 py-1.5 rounded disabled:opacity-40 ${isEmergency
+                                ? "bg-red-500 hover:bg-red-600"
+                                : "bg-blue-600 hover:bg-blue-500"
+                                }`}
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
@@ -352,17 +289,16 @@ export default function MainSubStoreReqs({
                     </tr>
                     {isExpanded && (
                       <tr
-                        className={`border-b-2 ${
-                          isEmergency && r.status === "APPROVED"
-                            ? "bg-red-50/20 border-red-300"
-                            : isDisputed
-                              ? "bg-amber-50/20 border-amber-300"
-                              : isReceived
-                                ? "bg-teal-50/20 border-teal-300"
-                                : isClosed
-                                  ? "bg-gray-50 border-gray-300"
-                                  : "bg-gray-50 border-emerald-200"
-                        }`}
+                        className={`border-b-2 ${isEmergency && r.status === "APPROVED"
+                          ? "bg-red-50/20 border-red-300"
+                          : isDisputed
+                            ? "bg-amber-50/20 border-amber-300"
+                            : isReceived
+                              ? "bg-teal-50/20 border-teal-300"
+                              : isClosed
+                                ? "bg-gray-50 border-gray-300"
+                                : "bg-gray-50 border-emerald-200"
+                          }`}
                       >
                         <td colSpan={COL_COUNT} className="px-6 py-4">
                           {detailLoad ? (

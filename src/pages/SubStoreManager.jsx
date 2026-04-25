@@ -211,7 +211,12 @@ export default function SubStoreManager() {
       </div>
 
       {pendingCount > 0 && filterStatus !== "PENDING" && (
-        <PendingRequestIndicator pendingCount={pendingCount} setFilterStatus={setFilterStatus} filterStatus={filterStatus} pageType={pageType} />
+        <PendingRequestIndicator
+          pendingCount={pendingCount}
+          setFilterStatus={setFilterStatus}
+          filterStatus={filterStatus}
+          pageType={pageType}
+        />
       )}
 
       <div className="flex h-full py-2  items-end justify-between">

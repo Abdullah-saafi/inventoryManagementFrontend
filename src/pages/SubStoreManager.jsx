@@ -211,7 +211,7 @@ export default function SubStoreManager() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName}</span>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
           <p className="text-gray-500 text-sm mt-0.5">
             Review and approve or reject staff item requests
           </p>

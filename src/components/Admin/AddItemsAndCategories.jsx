@@ -21,6 +21,8 @@ const AddItemsAndCategories = () => {
     const [mainStores, setMainStores] = useState([]);
     const [toast, setToast] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [submitLoading, setSubmitLoading] = useState(false);
+
 
     const handleError = useErrorHandler();
 
@@ -30,8 +32,8 @@ const AddItemsAndCategories = () => {
             const res = await getStores(),
                 stores = res.data.data || res.data;
             if (Array.isArray(stores)) {
-            setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
-        }
+                setMainStores(stores.filter((s) => s.store_type === "MAIN_STORE"));
+            }
         } catch (error) {
             const msg = handleError(error, "Failed to load data");
             setToast({ message: msg, type: "error" });
@@ -45,36 +47,39 @@ const AddItemsAndCategories = () => {
         regenerateItemNo()
     }, []);
 
-    const generateRandomItemNo = () =>
-        `ITM-${Math.floor(Math.random() * 900) + 100}`;
+
+    const generateRandomItemNo = (type) => {
+        const prefix = type === "REUSEABLE" ? "SN-" : "ITM-"
+        return `${prefix}${Math.floor(Math.random() * 900) + 100}`
+    };
 
     const regenerateItemNo = () =>
         setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
 
     const handleSaveItem = async () => {
-        console.log("Validation Check - Item No:", newItem.item_no);
-    console.log("Validation Check - Store ID:", newItem.store_id);
-
-    const { item_no, item_name, item_uom, store_id } = newItem;
-        if (
-            !newItem.item_no ||
-            !newItem.item_name ||
-            !newItem.item_uom ||
-            !newItem.store_id
-        )
+        const { item_no, item_name, item_uom, store_id, item_type } = newItem;
+        const missingFields = !newItem.item_no || !newItem.item_name || !newItem.store_id || !newItem.item_type
+        const isUOMMissing = item_type === "USEABLE" && !item_uom
+        if (missingFields || isUOMMissing)
             return setToast({
-                message: "Item No, Name, UOM and Store are required",
+                message: "Item No, Name, UOM, item type and Store are required",
                 type: "error",
             });
-        setLoading(true);
+
+        setSubmitLoading(true);
         try {
             await createItem(newItem);
             setToast({ message: "Item added successfully", type: "success" });
+            setNewItem({
+                ...EMPTY_NEW_ITEM,
+                item_no: generateRandomItemNo(item_type)
+            })
+            fetchData()
         } catch (e) {
             const msg = handleError(e, "Failed to add item");
             setToast({ message: msg, type: "error" });
-        } finally{
-            setLoading(false)
+        } finally {
+            setSubmitLoading(false)
         }
     };
 
@@ -110,13 +115,6 @@ const AddItemsAndCategories = () => {
                                             }
                                             className="flex-1 bg-white border border-gray-300 rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500"
                                         />
-                                        <button
-                                            onClick={() => regenerateItemNo()}
-                                            title="Generate new number"
-                                            className="px-3 py-2 border border-gray-300 rounded text-gray-500 hover:bg-gray-100 hover:text-gray-700 text-sm"
-                                        >
-                                            ↻
-                                        </button>
                                     </div>
                                 </div>
                                 <div>
@@ -139,35 +137,36 @@ const AddItemsAndCategories = () => {
                                     <select
                                         value={newItem.item_type}
                                         onChange={(e) => {
-                                            const selectedType = e.target.value
+                                            const selectedType = e.target.value;
                                             setNewItem((f) => ({
                                                 ...f,
-                                                item_type : selectedType,
-                                                item_uom : selectedType === "non-consumeable" ? "" : f.item_uom
-                                            }))
+                                                item_type: selectedType,
+                                                item_uom: selectedType === "REUSEABLE" ? "" : f.item_uom,
+                                                item_no: generateRandomItemNo(selectedType)
+                                            }));
                                         }}
                                         className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                                     >
                                         <option value=""> آئٹم کی قسم</option>
-                                        <option value="consumeable">Consumeable</option>
-                                        <option value="non-consumeable"> Non-Consumeable</option>
+                                        <option value="USEABLE">Consumable</option>
+                                        <option value="REUSEABLE">Non-Consumable</option>
                                     </select>
                                 </div>
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
                                         <label htmlFor="UOM" className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                                             UOM *
-                                        <input
-                                            value={newItem.item_uom}
-                                            id="UOM"
-                                            disabled={newItem.item_type === "non-consumeable"}
-                                            onChange={(e) =>
-                                                setNewItem((f) => ({ ...f, item_uom: e.target.value }))
-                                            }
-                                            placeholder="pcs / kg / box…"
-                                            className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500d disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            <input
+                                                value={newItem.item_uom}
+                                                id="UOM"
+                                                disabled={newItem.item_type === "REUSEABLE"}
+                                                onChange={(e) =>
+                                                    setNewItem((f) => ({ ...f, item_uom: e.target.value }))
+                                                }
+                                                placeholder="pcs / kg / box…"
+                                                className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500d disabled:bg-gray-100 disabled:cursor-not-allowed"
                                             />
-                                            </label>
+                                        </label>
                                     </div>
                                     <div>
                                         <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
@@ -250,7 +249,7 @@ const AddItemsAndCategories = () => {
                         disabled={loading}
                         className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold px-5 py-2 rounded disabled:opacity-40 transition-all"
                     >
-                        {loading ? "Saving..." : "Save Item"}
+                        {submitLoading ? "Adding..." : "Add Item"}
                     </button>
                 </div>
             </div>

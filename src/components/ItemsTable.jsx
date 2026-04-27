@@ -1,4 +1,5 @@
 export default function ItemsTable({ items = [], isDisputed, isReceived }) {
+  const abc = "abc"
   return (
     <table className="w-full text-sm">
       <thead>
@@ -23,12 +24,12 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
         {items.map((i) => (
           <tr key={i.request_item_id} className="border-b border-gray-100">
             <td className="py-2 pr-4 font-mono text-emerald-600 text-xs">
-              {i.item_no}
+              {i.item_type}
             </td>
 
             <td className="py-2 pr-4 text-gray-800">{i.item_name}</td>
 
-            <td className="py-2 pr-4 text-gray-400 text-xs">{i.item_uom}</td>
+            <td className="py-2 pr-4 text-gray-500 text-sm">{i.item_uom || "―"}</td>
 
             <td className="py-2 pr-4 font-mono text-gray-800 text-center">
               {i.requested_qty}

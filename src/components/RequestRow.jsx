@@ -8,8 +8,8 @@ export default function RequestRow({
   detail,
   detailLoad,
   openDetail,
-  openGRN,    // this is not provided by managet sub store manager
-  grnLoading, // this is not provided by managet sub store manager
+  openGRN,
+  grnLoading,
   pageType,
   actioning,
   openApprove,
@@ -19,8 +19,10 @@ export default function RequestRow({
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
+  const isREUSEABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
+  const isReturnable = detail?.items[0]?.item_type === "REUSEABLE"
 
   return (
     <>
@@ -54,7 +56,7 @@ export default function RequestRow({
 
         <td className="px-4 py-3">
           <TypeBadge hasItems={hasItems} hasAssets={hasAssets} />
-        </td>        
+        </td>
         <td className="px-4 py-3 text-gray-600">
           {r.requested_by_name || "—"}
         </td>
@@ -81,7 +83,15 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-
+            {isReturnable && (
+               <button
+                onClick={(e) => openGRN(e, r)}
+                disabled={grnLoading}
+                className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+              >
+                {grnLoading ? "…" : "Return Items"}
+              </button>
+            )}
             {(r.status === "PENDING" && pageType === "subStoreManager") && (
               <>
                 <button
@@ -117,7 +127,7 @@ export default function RequestRow({
 
       {isExpanded && (
         <tr className="bg-gray-50 border-b-2 border-emerald-200">
-          <td colSpan={7} className="px-6 py-4">
+          <td colSpan={10} className="px-6 py-4">
             {detailLoad ? (
               <div className="flex justify-center py-6">
                 <div className="w-6 h-6 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />

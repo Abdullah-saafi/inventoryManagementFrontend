@@ -128,14 +128,25 @@ export default function MainSubStoreReqs({
       )}
 
       <div className="flex h-full py-2 items-end justify-between">
-        <StoreFilters
-          filterStatus={reqFilter}
-          setFilterStatus={(v) => {
-            setReqFilter(v)
-            setCurrentPage(1)
-          }}
-          pageType={pageType}
-        />
+        <div>
+          <StoreFilters
+            filterStatus={reqFilter}
+            setFilterStatus={(v) => {
+              setReqFilter(v)
+              setCurrentPage(1)
+            }}
+            pageType={pageType}
+          />
+          <button
+              onClick={() => {
+                setCurrentPage(1)
+                onRefresh()
+              }}
+              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+            >
+              ↻ Refresh
+            </button>
+        </div>
 
         <div className="Temp-downloader">
           <div className="downloader">

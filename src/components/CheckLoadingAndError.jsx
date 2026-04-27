@@ -3,7 +3,7 @@ const CheckLoadingAndError = ({ loading, error, requests }) => {
     if (loading) {
         return (
             <tr>
-                <td colSpan={8} className="text-center py-12">
+                <td colSpan={9} className="text-center py-12">
                     <div className="flex justify-center">
                         <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                     </div>

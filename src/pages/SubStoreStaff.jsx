@@ -33,6 +33,7 @@ const EMPTY_LINE = {
   item_name: "",
   item_uom: "",
   requested_qty: 1,
+  item_type: "abc"
 };
 
 const EMPTY_FORM = {
@@ -59,13 +60,14 @@ export default function SubStore() {
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
+  const [reuseableItems, setReuseableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
   const pageType = "subStore"
@@ -107,25 +109,46 @@ export default function SubStore() {
   useEffect(() => {
     if (auth.store_id || auth.role === "super admin") load();
   }, [filterStatus, filterStore, auth.store_id]);
-
   useEffect(() => {
-    if (form.to_store_id) {
-      getItems({ store_id: form.to_store_id })
-        .then((r) => setStoreItems(r.data.data || []))
-        .catch(() => setStoreItems([]));
-    } else {
-      setStoreItems([]);
+    const fetchStoreData = async () => {
+      if (!itemForm.to_store_id) {
+        setStoreItems([]);
+        setReuseableItems([]);
+        return;
+      }
+      try {
+        const response = await getItems({ store_id: itemForm.to_store_id });
+        if (response.data?.success) {
+          const items = response.data.data || [];
+          setStoreItems(items);
+          const reusable = items.filter((i) => i.item_type === "REUSEABLE");
+          setReuseableItems(reusable);
+        } else {
+          setStoreItems([]);
+          setReuseableItems([]);
+        }
+      } catch {
+        setStoreItems([]);
+        setReuseableItems([]);
+        setToast({ message: "Failed to fetch items", type: "error" })
+      }
+      
     }
-  }, [form.to_store_id]);
+    fetchStoreData()
+  }, [itemForm.to_store_id]);
 
   useEffect(() => {
-    if (mainStores.length === 1 && !form.to_store_id) {
-      setForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
+    if (mainStores.length === 1 && !itemForm.to_store_id) {
+      setItemForm((f) => ({ ...f, to_store_id: mainStores[0].store_id }));
     }
   }, [mainStores]);
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
+    console.log("detail",detail);
+    console.log("r is here",r);
+
+    
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -178,22 +201,25 @@ export default function SubStore() {
 
   // ─── Form helpers ─────────────────────────────────────────────────────────
   const addLine = () =>
-    setForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+    setItemForm((f) => ({ ...f, items: [...f.items, { ...EMPTY_LINE }] }));
+  
   const removeLine = (idx) =>
-    setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+    setItemForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== idx) }));
+
   const updateLine = (idx, field, value) => {
-    setForm((f) => {
+    setItemForm((f) => {
       const items = [...f.items];
       items[idx] = { ...items[idx], [field]: value };
       if (field === "selected_item_no") {
-        const found = storeItems.find((i) => i.item_no === value);
-        if (found) {
-          items[idx].item_no = found.item_no;
-          items[idx].item_name = found.item_name;
-          items[idx].item_uom = found.item_uom;
-        } else {
-          items[idx].item_no = items[idx].item_name = items[idx].item_uom = "";
-        }
+          const found = storeItems.find((i) => i.item_no === value);
+          if (found) {
+            items[idx].item_no = found.item_no;
+            items[idx].item_name = found.item_name;
+            items[idx].item_uom = found.item_uom;
+            items[idx].item_type = found.item_type
+          } else {
+            items[idx].item_no = items[idx].item_name = items[idx].item_uom = items[idx].item_type;
+          }
       }
       return { ...f, items };
     });
@@ -223,19 +249,20 @@ export default function SubStore() {
       requested_by_name,
       items,
       requested_assets = [],
-    } = form;
+    } = itemForm;
 
+    const isUOMMissing = items.item_type === "USEABLE" && !item_uom
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
-    const hasAssets = requested_assets.length > 0;
+
+    console.log("items",items);
 
     if (!from_store_id || !to_store_id || !requested_by_name)
       return setToast({ message: "Please fill all required fields", type: "error" });
     if (!hasItems && !hasAssets)
       return setToast({ message: "Add at least one item or one asset", type: "error" });
     if (
-      hasItems &&
-      itemLines.some((i) => !i.item_name || !i.item_uom || i.requested_qty < 1)
+      itemLines.some((i) => !i.item_name || isUOMMissing || i.requested_qty < 1)
     )
       return setToast({ message: "Check item details", type: "error" });
 
@@ -245,8 +272,8 @@ export default function SubStore() {
         from_store_id,
         to_store_id,
         requested_by_name,
-        notes: form.notes,
-        is_emergency: form.is_emergency,
+        notes: itemForm.notes,
+        is_emergency: itemForm.is_emergency,
         direction: "SUB_TO_MAIN",
         items: itemLines.map(
           ({ selected_item_no, item_search, _showDropdown, ...rest }) => rest,
@@ -256,7 +283,7 @@ export default function SubStore() {
       await createRequest(payload);
       setToast({ message: "Request submitted successfully", type: "success" });
       setShowCreate(false);
-      setForm({ ...EMPTY_FORM });
+      setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
       setToast({ message: e.response?.data?.message || "Failed to submit", type: "error" });
@@ -281,7 +308,7 @@ export default function SubStore() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-black text-gray-900">{auth.username}</h1>
-          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName}</span>
+          <span className="text-gray-500 text-xs mt-0.5 bg-gray-200 rounded p-1">{auth.storeName || "loading..."}</span>
           <p className="text-gray-500 text-sm mt-0.5">
             Manage requests, track inventory, and Request from Main Store.
           </p>
@@ -289,12 +316,12 @@ export default function SubStore() {
         <button
           onClick={() => {
             const nextItemNo = getNextItemNo(storeItems);
-            setForm({
+            setItemForm({
               from_store_id: auth.store_id || "",
               to_store_id: mainStores.length === 1 ? mainStores[0].store_id : "",
               requested_by_name: auth.username || "",
               notes: "",
-              items: [{ ...EMPTY_LINE, item_no: nextItemNo }],
+              items: [{ ...EMPTY_LINE, }],
               requested_assets: [],
             });
             setShowCreate(true);
@@ -423,16 +450,18 @@ export default function SubStore() {
       {/* Create Modal */}
       {showCreate && (
         <CreateRequestModal
-          form={form}
-          setForm={setForm}
+          itemForm={itemForm}
+          setItemForm={setItemForm}
           mainStores={mainStores}
           storeItems={storeItems}
+          reuseableItems={reuseableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
           addLine={addLine}
           removeLine={removeLine}
           updateLine={updateLine}
           creating={creating}
+          EMPTY_FORM={EMPTY_FORM}
         />
       )}
 

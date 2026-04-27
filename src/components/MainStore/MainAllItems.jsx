@@ -158,8 +158,8 @@ export default function MainAllItems({
             className="bg-white border border-gray-300 rounded px-3 py-2 text-gray-700 text-sm focus:outline-none focus:border-emerald-500 shadow-sm mr-2"
           >
             <option value="">آئٹم کی قسم</option>
-            <option value="consumeable">Consumeable</option>
-            <option value="non-consumeable">Non-Consumeable</option>
+            <option value="USEABLE">Consumeable</option>
+            <option value="REUSEABLE">Non-Consumeable</option>
           </select>
           {(search || filterCategory || filterType) && (
             <button
@@ -258,7 +258,7 @@ export default function MainAllItems({
                       {i.category || "—"}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-gray-600">
-                      {i.item_uom}
+                      {i.item_uom || "―"}
                     </td>
                     <td className="px-4 py-3">
                       <span

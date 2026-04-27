@@ -32,7 +32,7 @@ const Login = () => {
                     accessToken: data.accessToken,
                     username: data.username,
                     role: data.role,
-                    storeName: data.store_name,
+                    storeName: data.storeName,
                     store_id: data.storeId
                 })
 

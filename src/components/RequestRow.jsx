@@ -13,7 +13,8 @@ export default function RequestRow({
   pageType,
   actioning,
   openApprove,
-  openReject
+  openReject,
+  returnItem,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
@@ -22,7 +23,7 @@ export default function RequestRow({
   const isREUSEABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = detail?.items[0]?.item_type === "REUSEABLE"
+  const isReturnable = r.item_type === "REUSEABLE" ? true : false
 
   return (
     <>
@@ -83,11 +84,11 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && (
+            {isReturnable && pageType === "subStore" && r.status === "RECEIVED" && (
                <button
-                onClick={(e) => openGRN(e, r)}
+                onClick={(e) => returnItem(r.request_id,)}
                 disabled={grnLoading}
-                className="text-xs bg-blue-600 hover:bg-blue-500 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
+                className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
                 {grnLoading ? "…" : "Return Items"}
               </button>

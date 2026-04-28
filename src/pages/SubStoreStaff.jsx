@@ -5,7 +5,8 @@ import {
   createRequest,
   getRequests,
   getRequestById,
-  submitGRN
+  submitGRN,
+  sendReturnToMain
 } from "../services/api";
 import { useAuth } from "../context/authContext";
 import GRNModal from "../components/GRNModal";
@@ -22,6 +23,7 @@ import TypeBadge from "../components/TypeBadge";
 import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
+import ReturnItemsModal from "../components/ReturnItemsModal";
 // import DetailPanel from "../components/DetailPanel"
 
 
@@ -67,6 +69,7 @@ export default function SubStore() {
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
+  const [returnItems, setReturnItems] = useState(false);
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
 
   const { auth } = useAuth();
@@ -239,6 +242,20 @@ export default function SubStore() {
     });
     return `${prefix}${String(max + 1).padStart(3, "0")}`;
   };
+
+  // Return Items ───────────────────────────────────────────────────────────────
+
+  const returnItem = async (id) => {
+    try {
+      const response = await getRequestById(id)
+      console.log("This is response", response.data.data)
+      const returnItemResponse = await sendReturnToMain(id, response.data.data)
+      console.log("return item log", returnItemResponse.data.data)
+    } catch (error) {
+      setToast({ message: error.returnItemResponse?.data?.message || "Failed to return", type: "error" });
+    }
+
+  }
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {
@@ -418,6 +435,7 @@ export default function SubStore() {
                   openGRN={openGRN}
                   grnLoading={grnLoading}
                   pageType={pageType}
+                  returnItem={returnItem}
                 />
               ))
             )}
@@ -444,6 +462,12 @@ export default function SubStore() {
           onClose={() => setGrnRequest(null)}
           onSubmit={handleGRNSubmit}
           submitting={grnSubmitting}
+        />
+      )}
+
+      {returnItems && (
+        <ReturnItemsModal
+          setReturnItems={setReturnItems}
         />
       )}
 

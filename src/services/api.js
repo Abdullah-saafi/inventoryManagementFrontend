@@ -139,6 +139,6 @@ export const editUserById = (id, data) =>
 export const getStoreManager = (params) =>
   API.get("/users/getManager", { params });
 
-export const reusableItems = (params) => API.get("/items", { params });
+export const sendReturnToMain = (id,data) => API.patch(`/requests/${id}/send-back`, { data });
 
 export default API;

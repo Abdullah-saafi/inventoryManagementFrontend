@@ -15,15 +15,16 @@ export default function RequestRow({
   openApprove,
   openReject,
   returnItem,
+  returnModalLoading,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
-  const needsGRN = r.status === "FULFILLED" && !r.grn_at;
+  const needsGRN = r.status === "FULFILLED" && r.item_type === "USEABLE" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
   const isREUSEABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = r.item_type === "REUSEABLE" ? true : false
+  // const isReturnable = r.item_type === "REUSEABLE" ? true : false
 
   return (
     <>
@@ -84,13 +85,16 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && r.status === "RECEIVED" && (
+            { pageType === "subStore" && r.status === "FULFILLED" && (
                <button
-                onClick={(e) => returnItem(r.request_id,)}
-                disabled={grnLoading}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  returnItem(r.request_id,)
+                }}
+                disabled={returnModalLoading}
                 className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                {grnLoading ? "…" : "Return Items"}
+                {returnModalLoading ? "…" : "Return Items"}
               </button>
             )}
             {(r.status === "PENDING" && pageType === "subStoreManager") && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -63,14 +63,23 @@ export default function SubStore() {
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
   const [reuseableItems, setReuseableItems] = useState([]);
+  const [useableItems, setUseableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnItems, setReturnItems] = useState(false);
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnModalLoading, setReturnModalLoading] = useState(false)
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [username, setUsername] = useState("");
+  const [returnItemData, setReturnItemData] = useState([]);
+  const [returnForm, setReturnForm] = useState({
+    sendByName: "",
+    returnData: [],
+    note: "",
+  });
 
   const { auth } = useAuth();
   const pageType = "subStore"
@@ -117,6 +126,7 @@ export default function SubStore() {
       if (!itemForm.to_store_id) {
         setStoreItems([]);
         setReuseableItems([]);
+        setUseableItems([])
         return;
       }
       try {
@@ -125,13 +135,17 @@ export default function SubStore() {
           const items = response.data.data || [];
           setStoreItems(items);
           const reusable = items.filter((i) => i.item_type === "REUSEABLE");
+          const useable = items.filter(i => i.item_type === "USEABLE")
           setReuseableItems(reusable);
+          setUseableItems(useable)
         } else {
           setStoreItems([]);
           setReuseableItems([]);
+          setUseableItems([])
         }
       } catch {
         setStoreItems([]);
+        setUseableItems([])
         setReuseableItems([]);
         setToast({ message: "Failed to fetch items", type: "error" })
       }
@@ -247,14 +261,37 @@ export default function SubStore() {
 
   const returnItem = async (id) => {
     try {
+      setReturnModalLoading(true)
       const response = await getRequestById(id)
-      console.log("This is response", response.data.data)
-      const returnItemResponse = await sendReturnToMain(id, response.data.data)
-      console.log("return item log", returnItemResponse.data.data)
+      setReturnForm((f) => ({...f, returnData: response.data.data, sendByName: auth.username }))
+      setReturnModal(true)
     } catch (error) {
-      setToast({ message: error.returnItemResponse?.data?.message || "Failed to return", type: "error" });
+      const msg = handleError(error, "Failed to open return modal");
+      setToast({ message: msg, type: "error" });
+    } finally{
+      setReturnModalLoading(false)
     }
+  }
 
+  const handleReturn = async (id, data) => {
+    try {
+      setReturnModalLoading(true)
+      const returnItemResponse = await sendReturnToMain(id,data)
+      setReturnModal(true)
+      setToast({ message: "Successfully returns the item", type: "success" });
+      setReturnModalLoading(false)
+      // setReturnForm({
+      //   sendByName: "",
+      //   returnData: [],
+      //   note: ""
+      // })
+      load()
+    } catch (error) {
+      const msg = handleError(error, "Failed to return");
+      setToast({ message: msg, type: "error" }); 
+    } finally {
+      setReturnModalLoading(false)
+    }
   }
 
   // ─── Submit ───────────────────────────────────────────────────────────────
@@ -436,6 +473,7 @@ export default function SubStore() {
                   grnLoading={grnLoading}
                   pageType={pageType}
                   returnItem={returnItem}
+                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -465,9 +503,13 @@ export default function SubStore() {
         />
       )}
 
-      {returnItems && (
+      {returnModal && (
         <ReturnItemsModal
-          setReturnItems={setReturnItems}
+          setReturnModal={setReturnModal}
+          handleReturn={handleReturn}
+          returnModalLoading={returnModalLoading}
+          returnForm={returnForm}
+          setReturnForm={setReturnForm}
         />
       )}
 
@@ -479,6 +521,7 @@ export default function SubStore() {
           mainStores={mainStores}
           storeItems={storeItems}
           reuseableItems={reuseableItems}
+          useableItems={useableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
           addLine={addLine}

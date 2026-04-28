@@ -4,6 +4,7 @@ import {
   fulfillRequest,
   acceptReturn,
   resendItems,
+  acceptReturnFromSub,
 } from "../../services/api";
 import StatusBadge from "../StatusBadge";
 import { useAuth } from "../../context/authContext";
@@ -32,6 +33,7 @@ export default function MainSubStoreReqs({
   const [fulfilling, setFulfilling] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [returnLoading, setReturnLoading] = useState(false)
 
   const { auth } = useAuth();
   const handleError = useErrorHandler();
@@ -79,6 +81,24 @@ export default function MainSubStoreReqs({
       setFulfilling(null);
     }
   };
+
+  const handleAcceptReturn = async (id) => {
+    try {
+      setReturnLoading(true)
+      const response = await getRequestById(id)
+      const accepted_by_name = auth.username
+      const requestId = response.data.data.request_id;
+      console.log("requesid",requestId);
+      await acceptReturnFromSub(requestId, accepted_by_name)
+      setToast({ message: "Return accepted successfully", type: "success" });
+      onRefresh();
+    } catch (error) {
+      const msg = handleError(error, "Failed to fulfill");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setReturnLoading(false)
+    }
+  }
 
   const handleResolved = () => {
     setDetail(null);
@@ -195,7 +215,7 @@ export default function MainSubStoreReqs({
                 "درخواست کی تاریخ",
                 "تکمیل کی تاریخ",
                 "حالت",
-                "",
+                "عملیات",
               ].map((h) => (
                 <th
                   key={h}
@@ -293,6 +313,18 @@ export default function MainSubStoreReqs({
                               disabled={fulfilling === r.request_id}
                             >
                               {fulfilling === r.request_id ? "..." : "Fulfill"}
+                            </button>
+                          )}
+                          {r.status === "RETURN_BACK" && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleAcceptReturn(r.request_id);
+                              }}
+                              className={`text-white text-xs rounded font-semibold px-2 py-1 ml-1rounded disabled:opacity-40 bg-orange-400 hover:bg-orange-300`}
+                              disabled={returnLoading}
+                            >
+                              {fulfilling === r.request_id ? "..." : "Accept Return"}
                             </button>
                           )}
                         </div>

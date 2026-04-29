@@ -78,7 +78,7 @@ const AddItemsAndCategories = () => {
   };
 
   const generateRandomItemNo = (type) => {
-    const prefix = type === "REUSEABLE" ? "SN-" : "ITM-";
+    const prefix = type === "REUSABLE" ? "SN-" : "ITM-";
     return `${prefix}${Math.floor(Math.random() * 900) + 100}`;
   };
 
@@ -108,7 +108,7 @@ const AddItemsAndCategories = () => {
       !newItem.item_name ||
       !newItem.store_id ||
       !newItem.item_type;
-    const isUOMMissing = item_type === "USEABLE" && !item_uom;
+    const isUOMMissing = item_type === "USABLE" && !item_uom;
 
     if (missingFields || isUOMMissing) {
       const errs = {};
@@ -282,7 +282,7 @@ const AddItemsAndCategories = () => {
                           ...f,
                           item_type: selectedType,
                           item_uom:
-                            selectedType === "REUSEABLE" ? "" : f.item_uom,
+                            selectedType === "REUSABLE" ? "" : f.item_uom,
                           item_no: generateRandomItemNo(selectedType),
                         }));
                         setItemErrors((f) => ({ ...f, item_type: undefined }));
@@ -290,8 +290,8 @@ const AddItemsAndCategories = () => {
                       className={inputCls("item_type")}
                     >
                       <option value="">آئٹم کی قسم</option>
-                      <option value="USEABLE">Consumable</option>
-                      <option value="REUSEABLE">Non-Consumable</option>
+                      <option value="USABLE">Consumable</option>
+                      <option value="REUSABLE">Non-Consumable</option>
                     </select>
                     {fieldError("item_type")}
                   </div>
@@ -304,7 +304,7 @@ const AddItemsAndCategories = () => {
                       <input
                         value={newItem.item_uom}
                         id="UOM"
-                        disabled={newItem.item_type === "REUSEABLE"}
+                        disabled={newItem.item_type === "REUSABLE"}
                         onChange={(e) => {
                           setNewItem((f) => ({
                             ...f,
@@ -587,5 +587,4 @@ const AddItemsAndCategories = () => {
     </div>
   );
 };
-``;
 export default AddItemsAndCategories;

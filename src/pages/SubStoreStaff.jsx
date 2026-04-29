@@ -498,20 +498,6 @@ export default function SubStore() {
             )}
           </tbody>
         </table>
-        <div>
-          <button onClick={() => {
-            console.log("reuseable items",reusableItems);
-            console.log("store items",storeItems);
-            console.log("usable items",usableItems);
-            console.log(items.map(i => i.item_type));
-            items.forEach(i =>
-  console.log(i.item_name, i.item_type)
-);
-            
-          }}>
-            button
-          </button>
-        </div>
 
         <Pagination
           currentPage={page}

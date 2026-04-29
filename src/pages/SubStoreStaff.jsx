@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   getStores,
   getItems,
@@ -24,8 +24,7 @@ import RequestRow from "../components/RequestRow";
 import TableHead from "../components/TableHead";
 import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ReturnItemsModal from "../components/ReturnItemsModal";
-// import DetailPanel from "../components/DetailPanel"
-
+import useErrorHandler from "../components/useErrorHandler";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -62,17 +61,27 @@ export default function SubStore() {
   const [detailLoad, setDL] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [storeItems, setStoreItems] = useState([]);
-  const [reuseableItems, setReuseableItems] = useState([]);
+  const [reusableItems, setReusableItems] = useState([]);
+  const [usableItems, setUsableItems] = useState([]);
   const [creating, setCreating] = useState(false);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [grnRequest, setGrnRequest] = useState(null);
   const [grnLoading, setGrnLoading] = useState(false);
   const [grnSubmitting, setGrnSubmitting] = useState(false);
-  const [returnItems, setReturnItems] = useState(false);
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnModalLoading, setReturnModalLoading] = useState(false)
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
+  const [username, setUsername] = useState("");
+  const [returnItemData, setReturnItemData] = useState([]);
+  const [returnForm, setReturnForm] = useState({
+    sendByName: "",
+    returnData: [],
+    note: "",
+  });
 
   const { auth } = useAuth();
+  const handleError = useErrorHandler()
   const pageType = "subStore"
 
   // ─── Load ─────────────────────────────────────────────────────────────────
@@ -97,26 +106,19 @@ export default function SubStore() {
         setAllRequests(rRes.data.data)
       }
       setRequests(rRes.data.data);
-    } catch {
-      setError("Failed to load data");
+    } catch (error) {
+      const msg = handleError(error, "Failed to load data")
+      setError(msg);
     } finally {
       setPageLoading(false);
     }
   };
 
-  useEffect(() => {
-    setTimeout(() => setToast(null), 7000);
-  }, [toast]);
-
-
-  useEffect(() => {
-    if (auth.store_id || auth.role === "super admin") load();
-  }, [filterStatus, filterStore, auth.store_id]);
-  useEffect(() => {
-    const fetchStoreData = async () => {
+  const fetchStoreData = async () => {
       if (!itemForm.to_store_id) {
         setStoreItems([]);
-        setReuseableItems([]);
+        setReusableItems([]);
+        setUsableItems([])
         return;
       }
       try {
@@ -124,19 +126,34 @@ export default function SubStore() {
         if (response.data?.success) {
           const items = response.data.data || [];
           setStoreItems(items);
-          const reusable = items.filter((i) => i.item_type === "REUSEABLE");
-          setReuseableItems(reusable);
+          const reusable = items.filter((i) => i.item_type === "REUSABLE");
+          const usable = items.filter(i => i.item_type === "USABLE")
+          setReusableItems(reusable);
+          setUsableItems(usable)
         } else {
           setStoreItems([]);
-          setReuseableItems([]);
+          setReusableItems([]);
+          setUsableItems([])
         }
-      } catch {
+      } catch (error) {
         setStoreItems([]);
-        setReuseableItems([]);
-        setToast({ message: "Failed to fetch items", type: "error" })
+        setUsableItems([])
+        setReusableItems([]);
+        const msg = handleError(error, "Failed to fetch items")
+        setToast({ message: msg, type: "error" })
       }
       
     }
+
+  useEffect(() => {
+    setTimeout(() => setToast(null), 7000);
+  }, [toast]);
+
+  useEffect(() => {
+    if (auth.store_id || auth.role === "super admin") load();
+  }, [filterStatus, filterStore, auth.store_id]);
+
+  useEffect(() => {
     fetchStoreData()
   }, [itemForm.to_store_id]);
 
@@ -161,7 +178,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-    } catch {
+    } catch (error) {
+      const msg = handleError(error, "Failed to open detail")
+      setToast({message: msg, type: "error"})
     } finally {
       setDL(false);
     }
@@ -174,8 +193,9 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setGrnRequest(res.data.data);
-    } catch {
-      setToast({ message: "Failed to load request details", type: "error" });
+    } catch (error) {
+      const msg = handleError(error, "Failed to load request details")
+      setToast({ message: msg, type: "error" });
     } finally {
       setGrnLoading(false);
     }
@@ -196,7 +216,8 @@ export default function SubStore() {
       setDetail(null);
       load();
     } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit GRN", type: "error" });
+      const msg = handleError(e, "Failed to submit GRN")
+      setToast({ message: msg, type: "error" });
     } finally {
       setGrnSubmitting(false);
     }
@@ -247,14 +268,36 @@ export default function SubStore() {
 
   const returnItem = async (id) => {
     try {
+      setReturnModalLoading(true)
       const response = await getRequestById(id)
-      console.log("This is response", response.data.data)
-      const returnItemResponse = await sendReturnToMain(id, response.data.data)
-      console.log("return item log", returnItemResponse.data.data)
+      setReturnForm((f) => ({...f, returnData: response.data.data, sendByName: auth.username }))
+      setReturnModal(true)
     } catch (error) {
-      setToast({ message: error.returnItemResponse?.data?.message || "Failed to return", type: "error" });
+      const msg = handleError(error, "Failed to open return modal");
+      setToast({ message: msg, type: "error" });
+    } finally{
+      setReturnModalLoading(false)
     }
+  }
 
+  const handleReturn = async (id, data) => {
+    try {
+      setReturnModalLoading(true)
+      const returnItemResponse = await sendReturnToMain(id,data)
+      setReturnModal(false)
+      setToast({ message: "Successfully returns the item", type: "success" });
+      setReturnForm({
+        sendByName: "",
+        returnData: [],
+        note: ""
+      })
+      load()
+    } catch (error) {
+      const msg = handleError(error, "Failed to return");
+      setToast({ message: msg, type: "error" }); 
+    } finally {
+      setReturnModalLoading(false)
+    }
   }
 
   // ─── Submit ───────────────────────────────────────────────────────────────
@@ -268,11 +311,9 @@ export default function SubStore() {
       requested_assets = [],
     } = itemForm;
 
-    const isUOMMissing = items.item_type === "USEABLE" && !item_uom
+    const isUOMMissing = items.item_type === "USABLE" && !item_uom
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
-
-    console.log("items",items);
 
     if (!from_store_id || !to_store_id || !requested_by_name)
       return setToast({ message: "Please fill all required fields", type: "error" });
@@ -303,7 +344,8 @@ export default function SubStore() {
       setItemForm({ ...EMPTY_FORM });
       load();
     } catch (e) {
-      setToast({ message: e.response?.data?.message || "Failed to submit", type: "error" });
+      const msg = handleError(e, "Failed to load request details")
+      setToast({ message: msg, type: "error" });
     } finally {
       setCreating(false);
     }
@@ -313,6 +355,8 @@ export default function SubStore() {
   const pendingGRN = allRequests.filter(
     (r) => r.status === "FULFILLED" && !r.grn_at,
   ).length;
+
+  const pendingReturn = allRequests.filter((r) => r.status === "RECEIVED" && r.item_type === "REUSABLE").length
 
   const paginated = requests.slice((page - 1) * pageSize, page * pageSize);
 
@@ -357,6 +401,15 @@ export default function SubStore() {
           pageType={pageType} />
       )}
 
+      {(pendingReturn > 0 && filterStatus !== "RECEIVED") && (
+        <PendingRequestIndicator
+          pendingCount={pendingReturn}
+          setFilterStatus={setFilterStatus}
+          filterStatus={filterStatus}
+          pendingType={"Return"}
+          pageType={pageType} />
+      )}
+
       {/* ── Filters ── */}
       <div className="flex h-full py-2  items-end justify-between">
         <div className="Filter">
@@ -376,7 +429,10 @@ export default function SubStore() {
             subStores={subStores}
           />
           <button
-            onClick={load}
+            onClick={() => {
+              load()
+              fetchStoreData()
+            }}
             className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded ml-auto hover:bg-gray-50 shadow-sm"
           >
             ↻ Refresh
@@ -436,6 +492,7 @@ export default function SubStore() {
                   grnLoading={grnLoading}
                   pageType={pageType}
                   returnItem={returnItem}
+                  returnModalLoading={returnModalLoading}
                 />
               ))
             )}
@@ -465,9 +522,13 @@ export default function SubStore() {
         />
       )}
 
-      {returnItems && (
+      {returnModal && (
         <ReturnItemsModal
-          setReturnItems={setReturnItems}
+          setReturnModal={setReturnModal}
+          handleReturn={handleReturn}
+          returnModalLoading={returnModalLoading}
+          returnForm={returnForm}
+          setReturnForm={setReturnForm}
         />
       )}
 
@@ -478,7 +539,8 @@ export default function SubStore() {
           setItemForm={setItemForm}
           mainStores={mainStores}
           storeItems={storeItems}
-          reuseableItems={reuseableItems}
+          reusableItems={reusableItems}
+          usableItems={usableItems}
           onClose={() => setShowCreate(false)}
           onSubmit={handleCreate}
           addLine={addLine}

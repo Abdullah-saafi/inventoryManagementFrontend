@@ -15,20 +15,21 @@ export default function RequestRow({
   openApprove,
   openReject,
   returnItem,
+  returnModalLoading,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
   const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
-  const isREUSEABLE = r.item
+  const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  const isReturnable = r.item_type === "REUSEABLE" ? true : false
+  const isReturnable = r.item_type === "REUSABLE" ? true : false
 
   return (
     <>
       <tr
-        className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
+        className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-100 ${needsGRN
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
             ? "bg-amber-50/40 hover:bg-amber-50"
@@ -85,12 +86,15 @@ export default function RequestRow({
               </button>
             )}
             {isReturnable && pageType === "subStore" && r.status === "RECEIVED" && (
-               <button
-                onClick={(e) => returnItem(r.request_id,)}
-                disabled={grnLoading}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  returnItem(r.request_id,)
+                }}
+                disabled={returnModalLoading}
                 className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
               >
-                {grnLoading ? "…" : "Return Items"}
+                {returnModalLoading ? "…" : "Return Items"}
               </button>
             )}
             {(r.status === "PENDING" && pageType === "subStoreManager") && (

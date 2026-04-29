@@ -7,7 +7,7 @@ export default function CreateRequestModal({
   setItemForm,
   mainStores,
   storeItems,
-  reuseableItems,
+  reusableItems,
   onClose,
   onSubmit,
   addLine,
@@ -15,6 +15,7 @@ export default function CreateRequestModal({
   updateLine,
   creating,
   EMPTY_FORM,
+  usableItems,
 }) {
   // ── Asset section state ────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState("items"); // "items" | "assets"
@@ -23,7 +24,6 @@ export default function CreateRequestModal({
   const [assetSearch, setAssetSearch] = useState("");
 
   const { auth } = useAuth()
-
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -232,7 +232,7 @@ export default function CreateRequestModal({
                       {/* Search */}
                       <div className="mb-3">
                         <label className="text-gray-500 text-xs mb-1 block">
-                          Select from catalogue ({storeItems.length} items
+                          Select from catalogue ({usableItems.length} items
                           available)
                         </label>
                         <div className="relative mt-1.5">
@@ -256,7 +256,7 @@ export default function CreateRequestModal({
                           />
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                              {storeItems
+                              {usableItems
                                 .filter((si) => {
                                   const q = (
                                     item.item_search || ""
@@ -415,7 +415,7 @@ export default function CreateRequestModal({
                       {/* Search */}
                       <div className="mb-3">
                         <label className="text-gray-500 text-xs mb-1 block">
-                          Select from catalogue ({reuseableItems.length} items
+                          Select from catalogue ({reusableItems.length} items
                           available)
                         </label>
                         <div className="relative mt-1.5">
@@ -439,7 +439,7 @@ export default function CreateRequestModal({
                           />
                           {item._showDropdown && (
                             <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
-                              {reuseableItems
+                              {reusableItems
                                 .filter((si) => {
                                   const q = (
                                     item.item_search || ""

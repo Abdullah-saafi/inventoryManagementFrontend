@@ -284,10 +284,10 @@ export default function MainSubStoreReqs({
                       <td className="px-4 py-3 text-gray-500">
                         {r.fulfilled_by_name || "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-gray-500">
                         <DateTimeCell ts={r.created_at} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 text-gray-700">
                         <DateTimeCell ts={r.fulfilled_at} />
                       </td>
                       <td className="px-4 py-3">

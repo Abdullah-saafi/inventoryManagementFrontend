@@ -18,18 +18,18 @@ export default function RequestRow({
   returnModalLoading,
 }) {
   const isExpanded = detail && detail.request_id === r.request_id;
-  const needsGRN = r.status === "FULFILLED" && r.item_type === "USEABLE" && !r.grn_at;
+  const needsGRN = r.status === "FULFILLED" && !r.grn_at;
   const isDisputed = r.status === "DISPUTED";
   const isReceived = r.status === "RECEIVED";
-  const isREUSEABLE = r.item
+  const isREUSABLE = r.item
   const hasItems = (r.item_count ?? 0) > 0;
   const hasAssets = (r.asset_count ?? 0) > 0;
-  // const isReturnable = r.item_type === "REUSEABLE" ? true : false
+  const isReturnable = r.item_type === "REUSABLE" ? true : false
 
   return (
     <>
       <tr
-        className={`border-b border-gray-100 cursor-pointer transition-colors ${needsGRN
+        className={`border-b border-gray-100 cursor-pointer transition-colors hover:bg-gray-100 ${needsGRN
           ? "bg-blue-50/40 hover:bg-blue-50"
           : isDisputed
             ? "bg-amber-50/40 hover:bg-amber-50"
@@ -85,8 +85,8 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            { pageType === "subStore" && r.status === "FULFILLED" && (
-               <button
+            {isReturnable && pageType === "subStore" && r.status === "RECEIVED" && (
+              <button
                 onClick={(e) => {
                   e.stopPropagation()
                   returnItem(r.request_id,)

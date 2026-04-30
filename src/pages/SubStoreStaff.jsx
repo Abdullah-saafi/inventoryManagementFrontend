@@ -427,6 +427,7 @@ export default function SubStore() {
             }}
             role={auth.role}
             subStores={subStores}
+            loading={pageLoading}
           />
           <button
             onClick={() => {

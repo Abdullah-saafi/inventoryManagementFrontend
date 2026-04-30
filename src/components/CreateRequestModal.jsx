@@ -344,7 +344,7 @@ export default function CreateRequestModal({
                           />
                         </div>
                         <div className="col-span-2">
-                          <label className="text-[10px] text-gray-400 uppercase font-bold mb-1 block text-emerald-600">
+                          <label className="text-[10px] uppercase font-bold mb-1 block text-emerald-600">
                             Qty
                           </label>
                           <input

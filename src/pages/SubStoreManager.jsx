@@ -150,6 +150,9 @@ export default function SubStoreManager() {
     if (!approverName.trim()) return;
     setActioning(true);
     try {
+      console.log("Approver modal",approveModal);
+      console.log("edited items",editedItems);
+      
       await approveRequest(approveModal.request_id, {
         approved_by_name: approverName,
         approved_items: editedItems.map((i) => ({

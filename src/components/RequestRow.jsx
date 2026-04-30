@@ -85,7 +85,7 @@ export default function RequestRow({
                 {grnLoading ? "…" : "Verify Delivery"}
               </button>
             )}
-            {isReturnable && pageType === "subStore" && r.status === "RECEIVED" && (
+            {isReturnable && pageType === "subStore" && (r.status === "RECEIVED" || r.status === "DISPUTED") && (
               <button
                 onClick={(e) => {
                   e.stopPropagation()

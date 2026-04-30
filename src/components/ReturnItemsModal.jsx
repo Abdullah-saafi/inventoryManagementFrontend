@@ -7,8 +7,10 @@ const ReturnItemsModal = ({
     }) => {
 
     const handleQtyChange = (idx, newValue) => {
-        const originalQty = Number(returnForm.returnData.items[idx].fulfilled_qty);
+        const originalQty = Number(returnForm.returnData.items[idx].received_qty);
         let value = Number(newValue);
+        console.log("qty",originalQty);
+        
 
         if (value < 0) value = 0;
         if (value > originalQty) value = originalQty;
@@ -55,6 +57,14 @@ const ReturnItemsModal = ({
                         />
                     </div>
                     <div>
+                        <button onClick={() => {
+                            console.log("returnForm",returnForm);
+                            
+                        }}>
+                            click
+                        </button>
+                    </div>
+                    <div>
                             <label className="text-gray-500 text-xs font-semibold uppercase tracking-wider block mb-1">
                                 Note *
                             </label>
@@ -93,7 +103,7 @@ const ReturnItemsModal = ({
                                     <td className="py-2 text-center">
                                         <input
                                             type="number"
-                                            value={i.return_qty_input ?? i.fulfilled_qty}
+                                            value={i.return_qty_input ?? i.received_qty}
                                             onChange={(e) => handleQtyChange(idx, e.target.value)}
                                             className="w-20 bg-gray-50 border border-gray-300 rounded px-2 py-1 text-center text-sm focus:border-emerald-500 outline-none"
                                         />

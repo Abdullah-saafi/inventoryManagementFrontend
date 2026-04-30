@@ -221,11 +221,11 @@ const AddItemsAndCategories = () => {
               {loading ? (
                 <div className="flex justify-center">
                   <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                </div>
+                </div> 
               ) : (
                 <>
                   <div>
-                    <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء نمبر{" "}
                       <span className="text-gray-400 font-normal normal-case">
                         (auto-generated, editable)
@@ -252,7 +252,7 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اشیاء کا نام
                     </label>
                     <input
@@ -271,7 +271,7 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       آئٹم کی قسم
                     </label>
                     <select
@@ -298,7 +298,7 @@ const AddItemsAndCategories = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         UOM *
                       </label>
                       <input
@@ -323,7 +323,7 @@ const AddItemsAndCategories = () => {
                     </div>
 
                     <div id="category-dropdown-wrapper" className="relative">
-                      <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         زمرہ
                       </label>
                       <input
@@ -335,7 +335,7 @@ const AddItemsAndCategories = () => {
                           }))
                         }
                         onFocus={() => setShowCategoryDropdown(true)}
-                        placeholder="e.g. Medical"
+                        placeholder="Select Category"
                         className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                         autoComplete="off"
                       />
@@ -368,7 +368,7 @@ const AddItemsAndCategories = () => {
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
-                            <p className="px-3 py-2 text-l text-gray-400 italic">
+                            <p className="px-3 py-2 text-sm text-gray-400 italic">
                               No matching categories
                             </p>
                           )}
@@ -379,7 +379,7 @@ const AddItemsAndCategories = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         ابتدائی مقدار
                       </label>
                       <input
@@ -397,7 +397,7 @@ const AddItemsAndCategories = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                      <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                         کم از کم اسٹاک
                       </label>
                       <input
@@ -417,7 +417,7 @@ const AddItemsAndCategories = () => {
                   </div>
 
                   <div>
-                    <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                    <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                       اسٹور*
                     </label>
                     <select
@@ -483,7 +483,7 @@ const AddItemsAndCategories = () => {
               )}
 
               <div className="ADD_CATEGORY w-[40%] flex flex-col gap-4">
-                <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block ">
+                <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
                   زمرے کا نام *
                 </label>
                 <input
@@ -496,7 +496,7 @@ const AddItemsAndCategories = () => {
                   className="w-full bg-white border border-gray-300 rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500"
                 />
                 <div>
-                  <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block ">
+                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block ">
                     تفصیل
                   </label>
                   <textarea
@@ -524,7 +524,7 @@ const AddItemsAndCategories = () => {
               </div>
               <div className="DELETE_CATEGORY w-[40%] flex flex-col gap-4">
                 <div className="SEARCH">
-                  <label className="text-gray-500 text-l font-semibold uppercase tracking-wider block mb-1">
+                  <label className="text-gray-500 text-sm font-semibold uppercase tracking-wider block mb-1">
                     زمرے تلاش کریں
                     <span className="text-gray-400 font-normal normal-case ml-1">
                       (Search Categories)
@@ -543,7 +543,7 @@ const AddItemsAndCategories = () => {
                       <div className="w-5 h-5 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
                     </div>
                   ) : filteredCategories.length === 0 ? (
-                    <p className="text-gray-400 text-l italic px-4 py-3">
+                    <p className="text-gray-400 text-sm italic px-4 py-3">
                       {categorySearch
                         ? "No matching categories"
                         : "No categories yet"}
@@ -560,7 +560,7 @@ const AddItemsAndCategories = () => {
                               {cat.name}
                             </p>
                             {cat.description && (
-                              <p className="text-l text-gray-400">
+                              <p className="text-sm text-gray-400">
                                 {cat.description}
                               </p>
                             )}
@@ -568,7 +568,7 @@ const AddItemsAndCategories = () => {
                           <button
                             onClick={() => handleDeleteCategory(cat.id)}
                             disabled={deletingId === cat.id}
-                            className="text-red-400 hover:text-red-600 text-l font-semibold px-2 py-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
+                            className="text-red-400 hover:text-red-600 text-sm font-semibold px-2 py-1 rounded hover:bg-red-50 transition-all disabled:opacity-40"
                           >
                             {deletingId === cat.id ? "…" : "Delete"}
                           </button>

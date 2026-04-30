@@ -88,7 +88,7 @@ export default function MainSubStoreReqs({
       const response = await getRequestById(id)
       const accepted_by_name = auth.username
       const requestId = response.data.data.request_id;
-      console.log("requesid",requestId);
+      console.log("requesid", requestId);
       await acceptReturnFromSub(requestId, accepted_by_name)
       setToast({ message: "Return accepted successfully", type: "success" });
       onRefresh();
@@ -119,11 +119,8 @@ export default function MainSubStoreReqs({
 
   const disputedCount = requests.filter((r) => r.status === "DISPUTED").length;
   const approvedCount = requests.filter((r) => r.status === "APPROVED").length;
-
-  // Count emergency requests that are APPROVED (waiting to be fulfilled)
-  const emergencyCount = requests.filter(
-    (r) => r.is_emergency && r.status === "APPROVED",
-  ).length;
+  const emergencyCount = requests.filter((r) => r.is_emergency && r.status === "APPROVED",).length;
+  const returnBack = requests.filter((r) => r.status === "RETURN_BACK").length
 
   const COL_COUNT = 10;
 
@@ -133,6 +130,7 @@ export default function MainSubStoreReqs({
         <PendingRequestIndicator
           pendingCount={approvedCount}
           setFilterStatus={setReqFilter}
+          filterStatus={reqFilter}
           pageType={pageType}
         />
       )}
@@ -147,6 +145,16 @@ export default function MainSubStoreReqs({
         <PendingRequestIndicator emergencyCount={emergencyCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
       )}
 
+      {returnBack > 0 && reqFilter !== "RETURN_BACK" && (
+        <PendingRequestIndicator
+          pendingCount={returnBack}
+          setFilterStatus={setReqFilter}
+          filterStatus={reqFilter}
+          pendingType={"Return_Back"}
+          pageType={pageType}
+        />
+      )}
+
       <div className="flex h-full py-2 items-end justify-between">
         <div>
           <StoreFilters
@@ -158,14 +166,14 @@ export default function MainSubStoreReqs({
             pageType={pageType}
           />
           <button
-              onClick={() => {
-                setCurrentPage(1)
-                onRefresh()
-              }}
-              className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
-            >
-              ↻ Refresh
-            </button>
+            onClick={() => {
+              setCurrentPage(1)
+              onRefresh()
+            }}
+            className="text-gray-500 hover:text-gray-800 text-sm px-3 py-2 border border-gray-300 rounded hover:bg-gray-50 shadow-sm flex items-center mt-3"
+          >
+            ↻ Refresh
+          </button>
         </div>
 
         <div className="Temp-downloader">
@@ -321,7 +329,7 @@ export default function MainSubStoreReqs({
                                 e.stopPropagation();
                                 handleAcceptReturn(r.request_id);
                               }}
-                              className={`text-white text-xs rounded font-semibold px-2 py-1 ml-1rounded disabled:opacity-40 bg-orange-400 hover:bg-orange-300`}
+                              className="text-xs bg-orange-400 hover:bg-orange-300 text-white rounded-lg px-3 py-1.5 font-semibold transition-colors disabled:opacity-40 whitespace-nowrap"
                               disabled={returnLoading}
                             >
                               {fulfilling === r.request_id ? "..." : "Accept Return"}

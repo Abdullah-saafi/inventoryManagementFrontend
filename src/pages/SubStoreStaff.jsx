@@ -165,10 +165,8 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("detail",detail);
-    console.log("r is here",r);
-
-    
+    // console.log("detail",detail);
+    // console.log("r is here",r)
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -283,6 +281,8 @@ export default function SubStore() {
   const handleReturn = async (id, data) => {
     try {
       setReturnModalLoading(true)
+      console.log("Sending return to main log id",id,"and its log of data",data);
+      
       const returnItemResponse = await sendReturnToMain(id,data)
       setReturnModal(false)
       setToast({ message: "Successfully returns the item", type: "success" });

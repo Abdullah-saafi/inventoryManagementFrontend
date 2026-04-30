@@ -62,7 +62,7 @@ export default function StoreFilters({
             className="bg-white border border-gray-300 rounded px-3 py-1 text-gray-700 text-sm focus:outline-none focus:border-emerald-500"
           />
           {showDropdown && (
-            <div className="w-max h-max bg-emerald-950 z-49 ">
+              <div className="absolute inset-0 bg-black/30" onClick={() => setShowDropdown((prev) => !prev)}>
               <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
                 {categories.map((cat) => (
                   <button

@@ -2,8 +2,6 @@ import { useState } from "react";
 import {
   getRequestById,
   fulfillRequest,
-  acceptReturn,
-  resendItems,
   acceptReturnFromSub,
 } from "../../services/api";
 import StatusBadge from "../StatusBadge";
@@ -13,11 +11,11 @@ import React from "react";
 import ExcelDownloaderWithDates from "../Exceldownloaderwithdates";
 import Pagination from "../Pagination";
 import DateTimeCell from "../DateTimeCell";
-import DisputeResolutionPanel from "../DisputeResolutionPanel";
 import RenderInlineDetail from "../RenderInlineDetail";
 import PendingRequestIndicator from "../PendingRequestIndicator";
 import StoreFilters from "../StoreFilters";
 import CheckLoadingAndError from "../CheckLoadingAndError";
+import RequestDashboard from "../RequestDashboard";
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function MainSubStoreReqs({
@@ -126,34 +124,18 @@ export default function MainSubStoreReqs({
 
   return (
     <div>
-      {approvedCount > 0 && reqFilter !== "APPROVED" && (
-        <PendingRequestIndicator
-          pendingCount={approvedCount}
-          setFilterStatus={setReqFilter}
-          filterStatus={reqFilter}
-          pageType={pageType}
-        />
-      )}
-
-      {disputedCount > 0 && reqFilter !== "DISPUTED" && (
-        <PendingRequestIndicator disputedCount={disputedCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
-      )}
-
-
-      {/* Emergency alert banner */}
-      {emergencyCount > 0 && reqFilter !== "APPROVED" && (
-        <PendingRequestIndicator emergencyCount={emergencyCount} filterStatus={reqFilter} setFilterStatus={setReqFilter} pageType={pageType} />
-      )}
-
-      {returnBack > 0 && reqFilter !== "RETURN_BACK" && (
-        <PendingRequestIndicator
-          pendingCount={returnBack}
-          setFilterStatus={setReqFilter}
-          filterStatus={reqFilter}
-          pendingType={"Return_Back"}
-          pageType={pageType}
-        />
-      )}
+      <RequestDashboard
+        pageType={pageType}
+        setFilterStatus={setReqFilter}
+        filterStatus={reqFilter}
+        data={paginatedData}
+        counts={{
+          pending: approvedCount,
+          emergency: emergencyCount,
+          disputed: disputedCount,
+          returnBack: returnBack
+        }}
+      />
 
       <div className="flex h-full py-2 items-end justify-between">
         <div>

@@ -18,11 +18,7 @@ export default function CreateRequestModal({
   usableItems,
 }) {
   // ── Asset section state ────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState("items"); // "items" | "assets"
-  const [availableAssets, setAvailAssets] = useState([]);
-  const [assetsLoading, setAssetsLoading] = useState(false);
-  const [assetSearch, setAssetSearch] = useState("");
-
+  const [activeTab, setActiveTab] = useState("items");
   const { auth } = useAuth()
 
   return (

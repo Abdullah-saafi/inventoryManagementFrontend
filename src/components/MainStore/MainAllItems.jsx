@@ -127,6 +127,7 @@ export default function MainAllItems({
           ...row,
           total_qty: qty,
           main_qty: isMain ? qty : 0,
+          scrapped_qty: Number(row.scrapped_qty || 0),
           sub_qty: isSub ? qty : 0,
         };
       } else {
@@ -257,9 +258,9 @@ export default function MainAllItems({
                 "مرکزی اسٹور کا اسٹاک",
                 "ذیلی اسٹورز کو بھیجا گیا",
                 "باقی اسٹاک",
+                // "اسکریپ شدہ مقدار",
                 "کم از کم اسٹاک",
                 "حالت",
-                "عملیات"
               ].map((h) => (
                 <th
                   key={h}
@@ -312,6 +313,14 @@ export default function MainAllItems({
                     <td className="px-4 py-3 font-mono text-xs text-blue-600 font-bold">
                       {Number(i.sub_qty).toFixed(0)}
                     </td>
+
+
+                      {/* <button onClick={() => {
+                        console.log("paginated of main all items", paginatedItems);
+                        
+                      }}> log</button> */}
+
+                    
                     <td className="px-4 py-3">
                       <span
                         className={`font-mono text-xs font-bold ${i.main_qty - i.sub_qty <= 0 ? "text-red-500" : "text-gray-700"}`}
@@ -319,6 +328,16 @@ export default function MainAllItems({
                         {Number(i.main_qty - i.sub_qty).toFixed(0)}
                       </span>
                     </td>
+
+                    {/* Scrapped qty */}
+                    {/* <td className="px-4 py-3">
+                      <span
+                        className={`font-mono text-xs font-bold ${i.scrapped_qty > 0 ? "text-red-500" : "text-gray-400"}`}
+                      >
+                        {i.scrap_qty || "―"}
+                      </span>
+                    </td> */}
+
                     <td className="px-4 py-3 font-mono text-gray-400 text-xs">
                       {i.min_quantity ?? "—"}
                     </td>
@@ -328,25 +347,6 @@ export default function MainAllItems({
                       >
                         {isLow ? "Low" : "OK"}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <button className="border-none bg-yellow-300 hover:bg-yellow-400 rounded text-orange-900 font-bold px-3 py-1"
-                        onClick={() => {
-                          setScrapData(i)
-                          setScrapForm({
-                            removed_by: auth.username,
-                            note: "",
-                            main_store_id: auth.store_id,
-                            items: [{
-                              ...i,
-                              quantity: i.item_quantity
-                            }]
-                          })
-                          setScrapModal(true)
-                        }}
-                      >
-                        Scrap
-                      </button>
                     </td>
                   </tr>
                 );

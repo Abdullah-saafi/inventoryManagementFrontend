@@ -22,6 +22,8 @@ import CheckLoadingAndError from "../components/CheckLoadingAndError";
 import ReturnItemsModal from "../components/ReturnItemsModal";
 import useErrorHandler from "../components/useErrorHandler";
 import RequestDashboard from "../components/RequestDashboard";
+import SubStoreScrapModal from "../components/SubStoreScrapModal";
+import { sendScrapToMain } from "../services/api";
 
 const EMPTY_LINE = {
   selected_item_no: "",
@@ -71,6 +73,14 @@ export default function SubStore() {
   const [itemForm, setItemForm] = useState({ ...EMPTY_FORM });
   const [username, setUsername] = useState("");
   const [returnItemData, setReturnItemData] = useState([]);
+  const [scrapModal, setScrapModal] = useState(false);
+  const [scrapModalLoading, setScrapModalLoading] = useState(false);
+  const [scrapForm, setScrapForm] = useState({
+    sendByName: "",
+    requestData: null,
+    note: "",
+    scrap_items: [],
+  });
   const [returnForm, setReturnForm] = useState({
     sendByName: "",
     returnData: [],
@@ -142,6 +152,73 @@ export default function SubStore() {
 
   }
 
+  const scrapItem = async (id) => {
+    try {
+      setScrapModalLoading(true);
+
+      const response = await getRequestById(id);
+      const requestData = response.data.data;
+
+      const scrappableItems = (requestData.items || []).filter(
+        (i) => i.item_type === "USABLE" || i.item_type === "REUSABLE"
+      );
+
+      setScrapForm({
+        sendByName: auth.username,
+        requestData,
+        note: "",
+        from_sub_store: auth.store_id,
+        scrap_items: scrappableItems.map((i) => ({
+          request_item_id: i.request_item_id,
+          scrap_qty: 0,
+          max_qty:
+            Number(i.received_qty) ||
+            Number(i.fulfilled_qty) ||
+            Number(i.requested_qty) ||
+            0,
+        })),
+      });
+
+      setScrapModal(true);
+    } catch (error) {
+      const msg = handleError(error, "Failed to open scrap modal");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
+  const handleScrap = async (id, data) => {
+    try {
+      setScrapModalLoading(true);
+
+      await sendScrapToMain(id, {
+        ...data,
+        from_sub_store: auth.store_id,
+        to_main_store: scrapForm.requestData.to_store_id,
+      });
+
+      setScrapModal(false);
+
+      setToast({ message: "Items scrapped successfully", type: "success" });
+
+      setScrapForm({
+        sendByName: "",
+        requestData: null,
+        note: "",
+        scrap_items: [],
+      });
+
+      load();
+      fetchStoreData()
+    } catch (error) {
+      const msg = handleError(error, "Failed to scrap items");
+      setToast({ message: msg, type: "error" });
+    } finally {
+      setScrapModalLoading(false);
+    }
+  };
+
   useEffect(() => {
     setTimeout(() => setToast(null), 7000);
   }, [toast]);
@@ -162,8 +239,8 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    // console.log("detail",detail);
-    // console.log("r is here",r)
+    console.log("detail",detail);
+    console.log("r is here",r)
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -308,10 +385,12 @@ export default function SubStore() {
       requested_assets = [],
     } = itemForm;
 
-    const isUOMMissing = items.item_type === "USABLE" && !item_uom
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
-
+    
+    const isUOMMissing = itemLines.some(
+      (i) => i.item_type === "USABLE" && !i.item_uom
+    );
     if (!from_store_id || !to_store_id || !requested_by_name)
       return setToast({ message: "Please fill all required fields", type: "error" });
     if (!hasItems && !hasAssets)
@@ -480,6 +559,8 @@ export default function SubStore() {
                   detailLoad={detailLoad}
                   openDetail={openDetail}
                   openGRN={openGRN}
+                  scrapItem={scrapItem}
+                  scrapModalLoading={scrapModalLoading}
                   grnLoading={grnLoading}
                   pageType={pageType}
                   returnItem={returnItem}
@@ -520,6 +601,16 @@ export default function SubStore() {
           returnModalLoading={returnModalLoading}
           returnForm={returnForm}
           setReturnForm={setReturnForm}
+        />
+      )}
+
+      {scrapModal && (
+        <SubStoreScrapModal
+          scrapForm={scrapForm}
+          setScrapForm={setScrapForm}
+          handleScrap={handleScrap}
+          scrapModalLoading={scrapModalLoading}
+          setScrapModal={setScrapModal}
         />
       )}
 

@@ -9,10 +9,14 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
           <th className="text-center pb-2 pr-4">درخواست شدہ</th>
           <th className="text-center pb-2 pr-4">منظور شدہ</th>
           <th className="text-center pb-2 pr-4">مکمل شدہ</th>
-
           {(isDisputed || isReceived) && (
             <>
               <th className="text-center pb-2 pr-4">وصول شدہ</th>
+            </>
+          )}
+          <th className="text-center pb-2 pr-4">اسکریپ مقدار</th>
+          {(isDisputed || isReceived) && (
+            <>
               <th className="text-center pb-2">حالت</th>
             </>
           )}
@@ -69,17 +73,24 @@ export default function ItemsTable({ items = [], isDisputed, isReceived }) {
                     {i.received_qty ?? "—"}
                   </span>
                 </td>
+              </>
+            )}
 
+            <td className="py-2 pr-4 font-mono text-center text-red-700">
+              {i.requested_scrap_qty || "—"}
+            </td>
+
+            {(isDisputed || isReceived) && (
+              <>
                 <td className="py-2 text-center">
                   {i.item_condition ? (
                     <span
-                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${
-                        i.item_condition === "OK"
-                          ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-                          : i.item_condition === "DAMAGED"
-                            ? "bg-amber-50 border-amber-300 text-amber-700"
-                            : "bg-red-50 border-red-300 text-red-700"
-                      }`}
+                      className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${i.item_condition === "OK"
+                        ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+                        : i.item_condition === "DAMAGED"
+                          ? "bg-amber-50 border-amber-300 text-amber-700"
+                          : "bg-red-50 border-red-300 text-red-700"
+                        }`}
                     >
                       {i.item_condition}
                     </span>

@@ -108,8 +108,8 @@ export const approveRequest = (id, data) => API.patch(`/requests/${id}/approve`,
 export const rejectRequest = (id, data) => API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 export const headOfficeFulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-export const sendReturnToMain = (id,data) => API.patch(`/requests/${id}/send-back`, { data });
-export const acceptReturnFromSub = (id,accepted_by_name) => API.patch(`/requests/${id}/close-reusable`, {accepted_by_name})
+export const sendReturnToMain = (id, data) => API.patch(`/requests/${id}/send-back`, { data });
+export const acceptReturnFromSub = (id, accepted_by_name) => API.patch(`/requests/${id}/close-reusable`, { accepted_by_name })
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);
@@ -139,6 +139,7 @@ export const createCategory = (data) => API.post("/categories", data);
 export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 
 // ── Categories ────────────────────────────────────────────────
-export const scrapByMain = (data) => API.patch("/requests/scrapMain",data)
-
+export const scrapByMain = (data) => API.patch("/requests/scrapMain", data);
+export const sendScrapToMain = (id, data) =>
+  API.patch(`/requests/${id}/scrapSub`, data);
 export default API;

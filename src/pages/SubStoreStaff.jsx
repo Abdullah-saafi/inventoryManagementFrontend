@@ -239,7 +239,6 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("detail",detail);
     console.log("r is here",r)
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
@@ -250,6 +249,7 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
+      console.log("detail",res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to open detail")
       setToast({ message: msg, type: "error" })
@@ -276,13 +276,16 @@ export default function SubStore() {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
+      console.log("payload",payload);
+      console.log("paylod id",grnRequest.request_id);
       await submitGRN(grnRequest.request_id, payload);
+      
       const label =
         payload.grn_status === "RECEIVED"
           ? "Delivery confirmed — marked as RECEIVED"
           : payload.grn_status === "DISPUTED"
             ? "Issues reported — request marked DISPUTED"
-            : "Delivery rejected — main store notified";
+            : payload.grn_status === "RETURN_BACK" ? "Deliver Returned" : "Delivery rejected — main store notified";
       setToast({ message: label, type: payload.grn_status === "RECEIVED" ? "success" : "warn", });
       setGrnRequest(null);
       setDetail(null);
@@ -604,7 +607,7 @@ export default function SubStore() {
         />
       )}
 
-      {scrapModal && (
+      {/* {scrapModal && (
         <SubStoreScrapModal
           scrapForm={scrapForm}
           setScrapForm={setScrapForm}
@@ -612,7 +615,7 @@ export default function SubStore() {
           scrapModalLoading={scrapModalLoading}
           setScrapModal={setScrapModal}
         />
-      )}
+      )} */}
 
       {/* Create Modal */}
       {showCreate && (

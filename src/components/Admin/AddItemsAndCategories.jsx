@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   createItem,
   getStores,
   createCategory,
   getCategories,
   deleteCategory,
+  generateRandomNumber,
 } from "../../services/api";
 import useErrorHandler from "../useErrorHandler";
 import Toast from "../Toast";
@@ -77,20 +78,22 @@ const AddItemsAndCategories = () => {
     }
   };
 
-  // ON PROGRESS-------------------------
-
+  let latestRequest = useRef(0)
   const generateRandomItemNo = async (type) => {
-    const prefix = type === "REUSABLE" ? "SN-" : "ITM-";
-    // const randomNumber = await
-    return `${prefix}${Math.floor(Math.random() * 900) + 100}`;
+    const reqId = ++latestRequest.current
+    const response = await generateRandomNumber( {type} )
+    if (reqId !== latestRequest.current) return;
+    return response.data.data;
   };
 
-  const regenerateItemNo = () =>
-    setNewItem((f) => ({ ...f, item_no: generateRandomItemNo() }));
+  const regenerateItemNo = async () => {
+    const itemNo = await generateRandomItemNo(newItem.item_type)
+    if(!itemNo) return
+    setNewItem((f) => ({ ...f, item_no: itemNo }));
+  }
 
   useEffect(() => {
     fetchData();
-    regenerateItemNo();
     fetchCategories();
   }, []);
 
@@ -129,9 +132,11 @@ const AddItemsAndCategories = () => {
     try {
       await createItem(newItem);
       setToast({ message: "Item added successfully", type: "success" });
+      const itemNo = await generateRandomItemNo(item_type)
+      if(!itemNo) return
       setNewItem({
         ...EMPTY_NEW_ITEM,
-        item_no: generateRandomItemNo(item_type),
+        item_no: itemNo,
       });
       fetchData();
     } catch (e) {
@@ -187,8 +192,7 @@ const AddItemsAndCategories = () => {
     ) : null;
 
   const inputCls = (key) =>
-    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${
-      itemErrors[key] ? "border-red-400" : "border-gray-300"
+    `w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 ${itemErrors[key] ? "border-red-400" : "border-gray-300"
     }`;
 
   return (
@@ -197,21 +201,19 @@ const AddItemsAndCategories = () => {
       <div className="flex gap-1 mb-4">
         <button
           onClick={() => setActiveTab("item")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "item"
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "item"
               ? "bg-emerald-600 text-white shadow-sm"
               : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           Add Item
         </button>
         <button
           onClick={() => setActiveTab("category")}
-          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${
-            activeTab === "category"
+          className={`px-5 py-2 text-sm font-semibold rounded-lg transition-all ${activeTab === "category"
               ? "bg-emerald-600 text-white shadow-sm"
               : "bg-white border border-gray-200 text-gray-500 hover:text-gray-700"
-          }`}
+            }`}
         >
           Add Category
         </button>
@@ -224,7 +226,7 @@ const AddItemsAndCategories = () => {
               {loading ? (
                 <div className="flex justify-center">
                   <div className="w-7 h-7 border-2 border-gray-200 border-t-emerald-500 rounded-full animate-spin" />
-                </div> 
+                </div>
               ) : (
                 <>
                   <div>
@@ -241,11 +243,10 @@ const AddItemsAndCategories = () => {
                           }));
                           setItemErrors((f) => ({ ...f, item_no: undefined }));
                         }}
-                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${
-                          itemErrors.item_no
+                        className={`flex-1 bg-white border rounded px-3 py-2 text-emerald-600 font-mono font-bold text-sm focus:outline-none focus:border-emerald-500 ${itemErrors.item_no
                             ? "border-red-400"
                             : "border-gray-300"
-                        }`}
+                          }`}
                       />
                     </div>
                     {fieldError("item_no")}
@@ -276,22 +277,24 @@ const AddItemsAndCategories = () => {
                     </label>
                     <select
                       value={newItem.item_type}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const selectedType = e.target.value;
+                        const newItemNo = await generateRandomItemNo(selectedType)
+                        if(!newItemNo) return
                         setNewItem((f) => ({
                           ...f,
                           item_type: selectedType,
                           item_uom:
                             selectedType === "REUSABLE" ? "" : f.item_uom,
-                          item_no: generateRandomItemNo(selectedType),
+                          item_no: newItemNo,
                         }));
                         setItemErrors((f) => ({ ...f, item_type: undefined }));
                       }}
                       className={inputCls("item_type")}
                     >
                       <option value="">آئٹم کی قسم</option>
-                      <option value="USABLE">Consumable</option>
-                      <option value="REUSABLE">Non-Consumable</option>
+                      <option value="USABLE">USABLE</option>
+                      <option value="REUSABLE">REUSABLE</option>
                     </select>
                     {fieldError("item_type")}
                   </div>
@@ -313,11 +316,10 @@ const AddItemsAndCategories = () => {
                           setItemErrors((f) => ({ ...f, item_uom: undefined }));
                         }}
                         placeholder="pcs / kg / box…"
-                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${
-                          itemErrors.item_uom
+                        className={`w-full bg-white border rounded px-3 py-2 text-gray-800 text-sm focus:outline-none focus:border-emerald-500 disabled:bg-gray-100 disabled:cursor-not-allowed ${itemErrors.item_uom
                             ? "border-red-400"
                             : "border-gray-300"
-                        }`}
+                          }`}
                       />
                       {fieldError("item_uom")}
                     </div>
@@ -368,10 +370,10 @@ const AddItemsAndCategories = () => {
                               .toLowerCase()
                               .includes(newItem.category.toLowerCase()),
                           ).length === 0 && (
-                            <p className="px-3 py-2 text-sm text-gray-400 italic">
-                              No matching categories
-                            </p>
-                          )}
+                              <p className="px-3 py-2 text-sm text-gray-400 italic">
+                                No matching categories
+                              </p>
+                            )}
                         </div>
                       )}
                     </div>

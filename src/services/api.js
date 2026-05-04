@@ -132,13 +132,19 @@ export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, d
 
 export const getStoreManager = (params) => API.get("/users/getManager", { params });
 
+// ── Random Number ────────────────────────────────────────────────
+
+export const generateRandomNumber = (params) =>
+  API.get("/items/randomNumber", { params });
+
 // ── Categories ────────────────────────────────────────────────
+
 
 export const getCategories = () => API.get("/categories");
 export const createCategory = (data) => API.post("/categories", data);
 export const deleteCategory = (id) => API.delete(`/categories/${id}`);
 
-// ── Categories ────────────────────────────────────────────────
+// ── Scrap ────────────────────────────────────────────────
 export const scrapByMain = (data) => API.patch("/requests/scrapMain", data);
 export const sendScrapToMain = (id, data) =>
   API.patch(`/requests/${id}/scrapSub`, data);

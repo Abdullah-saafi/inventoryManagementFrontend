@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5100/api",
+  baseURL: "http://localhost:5500/api",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -99,17 +99,25 @@ export const deleteItem = (id) => API.delete(`/items/${id}`);
 // ── Requests ─────────────────────────────────────────────────
 export const getRequests = (params) => API.get("/requests", { params });
 export const getRequestById = (id) => API.get(`/requests/${id}`);
-export const getItemSummary = (params) => API.get("/requests/item-summary", { params });
+export const getItemSummary = (params) =>
+  API.get("/requests/item-summary", { params });
 export const createRequest = (data) => API.post("/requests", data);
 export const submitGRN = (id, data) => API.patch(`/requests/${id}/grn`, data);
-export const acceptReturn = (id, data) => API.patch(`/requests/${id}/accept-return`, data);
-export const resendItems = (id, data) => API.patch(`/requests/${id}/resend`, data);
-export const approveRequest = (id, data) => API.patch(`/requests/${id}/approve`, data);
-export const rejectRequest = (id, data) => API.patch(`/requests/${id}/reject`, data);
+export const acceptReturn = (id, data) =>
+  API.patch(`/requests/${id}/accept-return`, data);
+export const resendItems = (id, data) =>
+  API.patch(`/requests/${id}/resend`, data);
+export const approveRequest = (id, data) =>
+  API.patch(`/requests/${id}/approve`, data);
+export const rejectRequest = (id, data) =>
+  API.patch(`/requests/${id}/reject`, data);
 export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
-export const headOfficeFulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
-export const sendReturnToMain = (id, data) => API.patch(`/requests/${id}/send-back`, { data });
-export const acceptReturnFromSub = (id, accepted_by_name) => API.patch(`/requests/${id}/close-reusable`, { accepted_by_name })
+export const headOfficeFulfillRequest = (id, data) =>
+  API.patch(`/requests/${id}/fulfill`, data);
+export const sendReturnToMain = (id, data) =>
+  API.patch(`/requests/${id}/send-back`, { data });
+export const acceptReturnFromSub = (id, accepted_by_name) =>
+  API.patch(`/requests/${id}/close-reusable`, { accepted_by_name });
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);
@@ -126,11 +134,13 @@ export const userStatus = (data) => API.put("/users/action", data);
 
 export const getUserById = (id) => API.get(`/users/getUserById/${id}`);
 
-export const editUserById = (id, data) => API.put(`/users/editUserById/${id}`, data);
+export const editUserById = (id, data) =>
+  API.put(`/users/editUserById/${id}`, data);
 
 // ── Main Store ────────────────────────────────────────────────
 
-export const getStoreManager = (params) => API.get("/users/getManager", { params });
+export const getStoreManager = (params) =>
+  API.get("/users/getManager", { params });
 
 // ── Random Number ────────────────────────────────────────────────
 
@@ -138,7 +148,6 @@ export const generateRandomNumber = (params) =>
   API.get("/items/randomNumber", { params });
 
 // ── Categories ────────────────────────────────────────────────
-
 
 export const getCategories = () => API.get("/categories");
 export const createCategory = (data) => API.post("/categories", data);

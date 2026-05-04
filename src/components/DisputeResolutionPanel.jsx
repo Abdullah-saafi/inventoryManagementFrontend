@@ -1,7 +1,7 @@
 import { useState } from "react";
 import useErrorHandler from "./useErrorHandler";
 import StatusBadge from "./StatusBadge";
-import { acceptReturn, resendItems } from "../services/api";
+import { acceptReturn, resendItems, resolveDispute } from "../services/api";
 
 const DisputeResolutionPanel = ({
   request,
@@ -11,7 +11,9 @@ const DisputeResolutionPanel = ({
 }) => {
   const [processing, setProcessing] = useState(null);
   const [confirmed, setConfirmed] = useState(null);
-  
+  const [itemActions, setItemActions] = useState({});
+
+
   const handleError = useErrorHandler()
 
   const disputedItems = (request.items || []).filter(
@@ -21,15 +23,27 @@ const DisputeResolutionPanel = ({
         Number(i.received_qty) < Number(i.fulfilled_qty)),
   );
 
+  const handleResolve = async () => {
+    const payload = {
+      resolved_by_name: auth.username,
+      items: Object.entries(itemActions).map(([id, action]) => ({
+        request_item_id: Number(id),
+        action,
+      })),
+    };
+
+    await resolveDispute(request.request_id, payload);
+  };
+
   const handleAcceptReturn = async () => {
     setProcessing("return");
     try {
       await acceptReturn(request.request_id, { resolved_by_name: managerName });
-      setToast({message: "Return accepted — stock restored to main store", type: "success"});
+      setToast({ message: "Return accepted — stock restored to main store", type: "success" });
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to accept return");
-      setToast({message: msg, type:"error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -43,11 +57,11 @@ const DisputeResolutionPanel = ({
         resolved_by_name: managerName,
         item_type: request.item_type
       });
-      setToast({message: res.data?.message || "New request created and ready to fulfill"});
+      setToast({ message: res.data?.message || "New request created and ready to fulfill" });
       onResolved();
     } catch (e) {
       const msg = handleError(e, "Failed to create resend request");
-      setToast({message: msg, type:"error"});
+      setToast({ message: msg, type: "error" });
     } finally {
       setProcessing(null);
       setConfirmed(null);
@@ -101,12 +115,47 @@ const DisputeResolutionPanel = ({
                     </span>
                     {shortfall > 0 && (
                       <span className="text-xs text-amber-600 font-semibold whitespace-nowrap">
-                        {shortfall} {i.item_uom} short
+                        {shortfall} — {i.item_uom} short
                       </span>
                     )}
                     {i.item_condition && i.item_condition !== "OK" && (
                       <StatusBadge status={i.item_condition} />
                     )}
+                    <div>
+
+                      {i.item_condition === "RETURN" && (
+                        <button
+                          disabled={!!processing}
+                          className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
+                          onClick={() => {
+                            setConfirmed("return")
+                            setItemActions((prev) => ({
+                              ...prev,
+                              [i.request_item_id]: "RETURN_ACCEPT",
+                            }))
+                          }}
+                        >
+                          Accept Return
+                        </button>
+                      )}
+
+                      {(i.item_condition === "DAMAGED" ||
+                        i.item_condition === "MISSING") && (
+                          <button
+                            disabled={!!processing}
+                            className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
+                            onClick={() => {
+                              setConfirmed("resend")
+                              setItemActions((prev) => ({
+                                ...prev,
+                                [i.request_item_id]: "RESEND",
+                              }))
+                            }}
+                          >
+                            Resend Item
+                          </button>
+                        )}
+                    </div>
                   </div>
                 );
               })}
@@ -124,56 +173,54 @@ const DisputeResolutionPanel = ({
         </div>
 
         {confirmed === null ? (
-          <div className="flex items-center gap-3 pt-1">
-            <button
-              onClick={() => setConfirmed("return")}
-              disabled={!!processing}
-              className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
-            >
-              <span className="text-2xl">↩</span>
-              <span className="text-sm font-bold text-gray-700 group-hover:text-emerald-700">
-                Accept Return
-              </span>
-              <span className="text-xs text-gray-400 group-hover:text-emerald-500 text-center">
-                Add missing qty back to main store stock & close case
-              </span>
-            </button>
+          ""
+          // <div className="flex items-center gap-3 pt-1">
+          //   <button
+          //     onClick={() => setConfirmed("return")}
+          //     disabled={!!processing}
+          //     className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-emerald-400 hover:bg-emerald-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
+          //   >
+          //     <span className="text-2xl">↩</span>
+          //     <span className="text-sm font-bold text-gray-700 group-hover:text-emerald-700">
+          //       Accept Return
+          //     </span>
+          //     <span className="text-xs text-gray-400 group-hover:text-emerald-500 text-center">
+          //       Add missing qty back to main store stock & close case
+          //     </span>
+          //   </button>
 
-            <button
-              onClick={() => setConfirmed("resend")}
-              disabled={!!processing}
-              className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
-            >
-              <span className="text-2xl">🔄</span>
-              <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">
-                Resend Fresh Items
-              </span>
-              <span className="text-xs text-gray-400 group-hover:text-blue-500 text-center">
-                Auto-create new request for missing quantities
-              </span>
-            </button>
-          </div>
+          //   <button
+          //     onClick={() => setConfirmed("resend")}
+          //     disabled={!!processing}
+          //     className="flex-1 flex flex-col items-center gap-1 border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 rounded-xl px-4 py-3 transition-colors group disabled:opacity-40"
+          //   >
+          //     <span className="text-2xl">🔄</span>
+          //     <span className="text-sm font-bold text-gray-700 group-hover:text-blue-700">
+          //       Resend Fresh Items
+          //     </span>
+          //     <span className="text-xs text-gray-400 group-hover:text-blue-500 text-center">
+          //       Auto-create new request for missing quantities
+          //     </span>
+          //   </button>
+          // </div>
         ) : (
           <div
-            className={`rounded-xl border-2 p-4 space-y-3 ${
-              confirmed === "return"
-                ? "bg-emerald-50 border-emerald-200"
-                : "bg-blue-50 border-blue-200"
-            }`}
+            className={`rounded-xl border-2 p-4 space-y-3 ${confirmed === "return"
+              ? "bg-emerald-50 border-emerald-200"
+              : "bg-blue-50 border-blue-200"
+              }`}
           >
             <div
-              className={`text-sm font-bold ${
-                confirmed === "return" ? "text-emerald-700" : "text-blue-700"
-              }`}
+              className={`text-sm font-bold ${confirmed === "return" ? "text-emerald-700" : "text-blue-700"
+                }`}
             >
               {confirmed === "return"
                 ? "Confirm: Accept return and restore stock?"
                 : "Confirm: Create a new resend request?"}
             </div>
             <div
-              className={`text-xs ${
-                confirmed === "return" ? "text-emerald-600" : "text-blue-600"
-              }`}
+              className={`text-xs ${confirmed === "return" ? "text-emerald-600" : "text-blue-600"
+                }`}
             >
               {confirmed === "return"
                 ? "Missing quantities will be added back to main store inventory and this case will be closed."
@@ -189,14 +236,13 @@ const DisputeResolutionPanel = ({
               </button>
               <button
                 onClick={
-                  confirmed === "return" ? handleAcceptReturn : handleResend
+                  handleResolve
                 }
                 disabled={!!processing}
-                className={`flex-1 px-3 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 transition-colors ${
-                  confirmed === "return"
-                    ? "bg-emerald-600 hover:bg-emerald-500"
-                    : "bg-blue-600 hover:bg-blue-500"
-                }`}
+                className={`flex-1 px-3 py-1.5 text-xs font-bold text-white rounded-lg disabled:opacity-40 transition-colors ${confirmed === "return"
+                  ? "bg-emerald-600 hover:bg-emerald-500"
+                  : "bg-blue-600 hover:bg-blue-500"
+                  }`}
               >
                 {processing
                   ? "Processing…"

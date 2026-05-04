@@ -110,6 +110,7 @@ export const fulfillRequest = (id) => API.patch(`/requests/${id}/fulfill`, {});
 export const headOfficeFulfillRequest = (id, data) => API.patch(`/requests/${id}/fulfill`, data);
 export const sendReturnToMain = (id, data) => API.patch(`/requests/${id}/send-back`, { data });
 export const acceptReturnFromSub = (id, accepted_by_name) => API.patch(`/requests/${id}/close-reusable`, { accepted_by_name })
+export const resolveDispute = (id, data) => API.post(`/requests/resolve-dispute/${id}`, data);
 // ── Users ────────────────────────────────────────────────
 
 export const login = (credentials) => API.post("/users/login", credentials);

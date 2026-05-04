@@ -49,7 +49,7 @@ export default function MainSubStoreReqs({
     setDetail({ ...r, items: [] });
     try {
       const res = await getRequestById(r.request_id);
-      // setDetail(res.data.data);
+      setDetail(res.data.data);
       console.log("detail",res.data.data);
       console.log("r",r);
       
@@ -119,10 +119,7 @@ export default function MainSubStoreReqs({
       console.log("response main sub store reqs", response);
       console.log("requestDetails main sub store reqs", requestDetails);
       console.log("formatted items main sub store reqs", formattedItems);
-      console.log("formatted items items main sub store reqs", requestDetails.items);
-
-
-
+      console.log("formatted items items main sub store reqs", requestDetails.items)
 
       await scrapByMain({
         main_store_id: auth.store_id,

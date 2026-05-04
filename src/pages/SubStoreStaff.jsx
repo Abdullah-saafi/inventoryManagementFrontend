@@ -29,6 +29,7 @@ const EMPTY_LINE = {
   selected_item_no: "",
   item_search: "",
   _showDropdown: false,
+  item_id: 0,
   item_no: "",
   item_name: "",
   item_uom: "",
@@ -239,7 +240,7 @@ export default function SubStore() {
 
   // ─── Detail ───────────────────────────────────────────────────────────────
   const openDetail = async (r) => {
-    console.log("r is here",r)
+    console.log("r is here", r)
     if (detail && detail.request_id === r.request_id) {
       setDetail(null);
       return;
@@ -249,7 +250,7 @@ export default function SubStore() {
     try {
       const res = await getRequestById(r.request_id);
       setDetail(res.data.data);
-      console.log("detail",res.data.data);
+      console.log("detail", res.data.data);
     } catch (error) {
       const msg = handleError(error, "Failed to open detail")
       setToast({ message: msg, type: "error" })
@@ -276,10 +277,10 @@ export default function SubStore() {
   const handleGRNSubmit = async (payload) => {
     setGrnSubmitting(true);
     try {
-      console.log("payload",payload);
-      console.log("paylod id",grnRequest.request_id);
+      console.log("payload", payload);
+      console.log("paylod id", grnRequest.request_id);
       await submitGRN(grnRequest.request_id, payload);
-      
+
       const label =
         payload.grn_status === "RECEIVED"
           ? "Delivery confirmed — marked as RECEIVED"
@@ -312,12 +313,17 @@ export default function SubStore() {
       if (field === "selected_item_no") {
         const found = storeItems.find((i) => i.item_no === value);
         if (found) {
+          items[idx].item_id = found.item_id;
           items[idx].item_no = found.item_no;
           items[idx].item_name = found.item_name;
           items[idx].item_uom = found.item_uom;
           items[idx].item_type = found.item_type
         } else {
-          items[idx].item_no = items[idx].item_name = items[idx].item_uom = items[idx].item_type;
+          items[idx].item_id = 0;
+          items[idx].item_no = "";
+          items[idx].item_name = "";
+          items[idx].item_uom = "";
+          items[idx].item_type = "";
         }
       }
       return { ...f, items };
@@ -390,7 +396,7 @@ export default function SubStore() {
 
     const itemLines = items.filter((i) => i.item_no);
     const hasItems = itemLines.length > 0;
-    
+
     const isUOMMissing = itemLines.some(
       (i) => i.item_type === "USABLE" && !i.item_uom
     );

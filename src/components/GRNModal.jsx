@@ -1,19 +1,5 @@
 import { useState } from "react";
 import StatusBadge from "./StatusBadge";
-// const ConditionBadge = ({ condition }) => {
-//   const styles = {
-//     OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
-//     DAMAGED: "bg-amber-50 border-amber-300 text-orange-600",
-//     MISSING: "bg-red-50 border-red-300 text-red-700",
-//     RETURN: "bg-blue-50 border-blue-300 text-blue-700",
-//   };
-  
-//   return (
-//     <span className={`px-2 py-0.5 rounded border text-xs font-bold font-mono ${styles[condition] || ""}`}>
-//       {condition === "RETURN" ? "↵ RETURN" : condition}
-//     </span>
-//   );
-// };
 
 export default function GRNModal({ request, onClose, onSubmit, submitting }) {
   const [grnNote, setGrnNote] = useState("");
@@ -25,6 +11,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
       item_uom: i.item_uom,
       fulfilled_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
       received_qty: i.fulfilled_qty ?? i.approved_qty ?? i.requested_qty,
+      returned_qty: i.returned_qty,
       item_condition: "OK",
     })),
   );
@@ -60,10 +47,11 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
     onSubmit({
       grn_status,
       grn_note: grnNote.trim() || null,
-      received_items: items.map(({ request_item_id, received_qty, item_condition }) => ({
+      received_items: items.map(({ request_item_id, received_qty, item_condition, returned_qty }) => ({
         request_item_id,
         received_qty: Number(received_qty),
         item_condition,
+        returned_qty: Number(returned_qty)
       })),
     });
   };
@@ -250,7 +238,7 @@ export default function GRNModal({ request, onClose, onSubmit, submitting }) {
                         </span>
                       )}
                       {i.item_condition !== "OK" && (
-                        <StatusBadge condition={i.item_condition} />
+                        <StatusBadge status={i.item_condition} />
                       )}
                     </li>
                   ))}

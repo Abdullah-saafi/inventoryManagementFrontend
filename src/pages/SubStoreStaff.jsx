@@ -361,27 +361,42 @@ export default function SubStore() {
     }
   }
 
-  const handleReturn = async (id, data) => {
+  const handleReturn = async (id) => {
     try {
-      setReturnModalLoading(true)
-      console.log("Sending return to main log id", id, "and its log of data", data);
+      setReturnModalLoading(true);
 
-      const returnItemResponse = await sendReturnToMain(id, data)
-      setReturnModal(false)
-      setToast({ message: "Successfully returns the item", type: "success" });
-      setReturnForm({
+      const payload = {
+        resolved_by_name: auth.username,
+        note: returnForm.note,
+        returned_items: returnForm.returnData.items
+          .map((i) => ({
+            request_item_id: i.request_item_id,
+            returned_qty: Number(i.return_qty_input || 0),
+          }))
+          .filter((i) => i.returned_qty > 0),
+      };
+
+      console.log("payload", payload);
+
+
+      await sendReturnToMain(id, payload);
+      setReturnForm(() => ({
         sendByName: "",
         returnData: [],
-        note: ""
-      })
-      load()
+        note: "",
+      }))
+
+      setReturnModal(false);
+      setToast({ message: "Items returned successfully", type: "success" });
+
+      load();
     } catch (error) {
       const msg = handleError(error, "Failed to return");
       setToast({ message: msg, type: "error" });
     } finally {
-      setReturnModalLoading(false)
+      setReturnModalLoading(false);
     }
-  }
+  };
 
   // ─── Submit ───────────────────────────────────────────────────────────────
   const handleCreate = async (e) => {

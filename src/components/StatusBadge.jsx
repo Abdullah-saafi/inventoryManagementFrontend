@@ -12,6 +12,7 @@ export default function StatusBadge({ status }) {
     MISSING: "bg-red-50 border-red-300 text-red-700",
     RETURN: "bg-blue-50 border-blue-300 text-blue-700",
     OK: "bg-emerald-50 border-emerald-300 text-emerald-700",
+    PARTIALLY_RECEIVED: "bg-teal-50 text-teal-600 border border-teal-300"
   };
   return (
     <span
